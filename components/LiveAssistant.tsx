@@ -116,11 +116,11 @@ export const LiveAssistant: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto mt-10">
-        <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${active ? 'bg-slate-900 border-indigo-500 shadow-2xl shadow-indigo-500/20' : 'bg-white border-gray-200 shadow-lg'}`}>
+        <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${active ? 'bg-slate-900 border-indigo-500 shadow-2xl shadow-indigo-500/20' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg'}`}>
             
             <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
                 {/* Visualizer Circle */}
-                <div className={`relative mb-8 w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${active ? 'bg-indigo-500/10' : 'bg-gray-100'}`}>
+                <div className={`relative mb-8 w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${active ? 'bg-indigo-500/10' : 'bg-gray-100 dark:bg-slate-700'}`}>
                    {active && !isMuted && (
                        <>
                         <div className="absolute inset-0 rounded-full border border-indigo-500/30 animate-[ping_2s_ease-in-out_infinite]" />
@@ -128,31 +128,31 @@ export const LiveAssistant: React.FC = () => {
                        </>
                    )}
                    <div 
-                     className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200 ${active ? (isMuted ? 'bg-slate-700' : 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/50') : 'bg-gray-200'}`}
+                     className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200 ${active ? (isMuted ? 'bg-slate-700' : 'bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/50') : 'bg-gray-200 dark:bg-slate-600'}`}
                      style={{ transform: (active && !isMuted) ? `scale(${1 + volume / 200})` : 'scale(1)' }}
                    >
                         {active ? (
                             isMuted ? <MicOff className="w-10 h-10 text-slate-400" /> : <Radio className="w-10 h-10 text-white animate-pulse" />
                         ) : (
-                            <MicOff className="w-10 h-10 text-gray-400" />
+                            <MicOff className="w-10 h-10 text-gray-400 dark:text-gray-300" />
                         )}
                    </div>
                 </div>
 
-                <h2 className={`text-2xl font-bold mb-2 ${active ? 'text-white' : 'text-gray-900'}`}>
+                <h2 className={`text-2xl font-bold mb-2 ${active ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
                     {active ? 'AfriTrade Assistant' : 'AfriTrade Voice Assistant'}
                 </h2>
                 
                 {/* Persona Selector (Only when inactive) */}
                 {!active && (
                   <div className="mb-6 w-full max-w-xs relative animate-fade-in">
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 text-center">Select Your Persona</label>
+                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 text-center">Select Your Persona</label>
                     <div className="relative">
                       <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <select 
                         value={persona}
                         onChange={(e) => setPersona(e.target.value as UserPersona)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none appearance-none cursor-pointer transition-all hover:bg-white"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-400 outline-none appearance-none cursor-pointer transition-all hover:bg-white dark:hover:bg-slate-800"
                       >
                         {Object.values(UserPersona).map((p) => (
                           <option key={p} value={p}>{p}</option>
@@ -176,7 +176,7 @@ export const LiveAssistant: React.FC = () => {
                             {status}
                         </span>
                     )}
-                    {!active && <p className="text-gray-500">{status}</p>}
+                    {!active && <p className="text-gray-500 dark:text-gray-400">{status}</p>}
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -214,15 +214,15 @@ export const LiveAssistant: React.FC = () => {
             </div>
 
             {/* Live Transcript Area */}
-            <div className={`border-t p-6 ${active ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 border-gray-100'}`}>
+            <div className={`border-t p-6 ${active ? 'bg-slate-800/50 border-slate-700' : 'bg-gray-50 dark:bg-slate-900/50 border-gray-100 dark:border-slate-700'}`}>
                 <div className="flex items-center gap-2 mb-3">
                     <Volume2 className={`w-4 h-4 ${active ? 'text-indigo-400' : 'text-gray-400'}`} />
                     <span className={`text-xs font-semibold uppercase tracking-wider ${active ? 'text-indigo-400' : 'text-gray-400'}`}>Live Transcript</span>
                 </div>
                 <div className="space-y-2 h-32 overflow-y-auto custom-scrollbar">
-                    {transcript.length === 0 && <p className={`text-sm italic ${active ? 'text-slate-500' : 'text-gray-400'}`}>Transcript will appear here...</p>}
+                    {transcript.length === 0 && <p className={`text-sm italic ${active ? 'text-slate-500' : 'text-gray-400 dark:text-gray-500'}`}>Transcript will appear here...</p>}
                     {transcript.map((msg, i) => (
-                        <p key={i} className={`text-sm ${msg.role === 'user' ? 'text-slate-500' : (active ? 'text-slate-200' : 'text-gray-800')}`}>
+                        <p key={i} className={`text-sm ${msg.role === 'user' ? 'text-slate-500' : (active ? 'text-slate-200' : 'text-gray-800 dark:text-gray-200')}`}>
                             <span className="font-bold opacity-50">{msg.role === 'user' ? 'You' : 'AI'}:</span> {msg.text}
                         </p>
                     ))}

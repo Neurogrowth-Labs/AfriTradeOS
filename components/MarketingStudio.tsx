@@ -50,35 +50,35 @@ export const MarketingStudio: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-       <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm">
+       <div className="bg-white dark:bg-slate-800 p-8 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm transition-colors">
          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-pink-100 rounded-lg">
-              <ImageIcon className="w-6 h-6 text-pink-600" />
+            <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
+              <ImageIcon className="w-6 h-6 text-pink-600 dark:text-pink-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Marketing Studio</h2>
-              <p className="text-sm text-gray-500">Generate professional product shots with Gemini 3 Pro</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Marketing Studio</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Generate professional product shots with Gemini 3 Pro</p>
             </div>
          </div>
 
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Description</label>
                     <textarea 
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="A luxury jar of artisanal Shea Butter on a rustic wooden table with soft sunlight, 4k resolution..."
-                        className="w-full h-32 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-pink-200 outline-none"
+                        className="w-full h-32 p-3 rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-900 outline-none"
                     />
                 </div>
                 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Aspect Ratio</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Aspect Ratio</label>
                     <select 
                         value={aspectRatio} 
                         onChange={(e) => setAspectRatio(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-gray-300 bg-white"
+                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 dark:text-white"
                     >
                         {['1:1', '3:4', '4:3', '16:9', '9:16'].map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
@@ -96,7 +96,7 @@ export const MarketingStudio: React.FC = () => {
                     <button 
                         onClick={playDescription}
                         disabled={!prompt || descAudio}
-                        className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg"
+                        className="px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg"
                         title="Read prompt with TTS"
                     >
                         {descAudio ? <Loader2 className="animate-spin w-5 h-5" /> : <PlayCircle className="w-5 h-5" />}
@@ -104,7 +104,7 @@ export const MarketingStudio: React.FC = () => {
                 </div>
             </div>
 
-            <div className="bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center min-h-[300px] overflow-hidden relative group">
+            <div className="bg-gray-50 dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-center min-h-[300px] overflow-hidden relative group">
                 {image ? (
                     <>
                         <img src={image} alt="Generated" className="w-full h-full object-contain" />
@@ -118,8 +118,8 @@ export const MarketingStudio: React.FC = () => {
                     </>
                 ) : (
                     <div className="text-center p-8">
-                        <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                        <p className="text-gray-400">Preview Area</p>
+                        <ImageIcon className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                        <p className="text-gray-400 dark:text-gray-500">Preview Area</p>
                     </div>
                 )}
             </div>

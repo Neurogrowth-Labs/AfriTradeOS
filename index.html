@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AfriTradeOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              slate: {
+                750: '#2d3748', // Custom depth for dark mode cards
+                850: '#1a202c', // Custom depth for dark mode backgrounds
+                950: '#0f172a',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
       body {
@@ -19,9 +35,15 @@
       .custom-scrollbar::-webkit-scrollbar-track {
         background: #f1f5f9;
       }
+      .dark .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1e293b;
+      }
       .custom-scrollbar::-webkit-scrollbar-thumb {
         background: #cbd5e1;
         border-radius: 3px;
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #475569;
       }
     </style>
   <script type="importmap">
@@ -37,7 +59,7 @@
 }
 </script>
 </head>
-  <body>
+  <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300">
     <div id="root"></div>
   </body>
 </html>

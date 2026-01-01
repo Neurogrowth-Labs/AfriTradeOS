@@ -42,15 +42,15 @@ export const Logistics: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm transition-colors">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-teal-100 rounded-lg">
-            <Truck className="w-6 h-6 text-teal-600" />
+          <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+            <Truck className="w-6 h-6 text-teal-600 dark:text-teal-400" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Logistics Pathfinder</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Logistics Pathfinder</h2>
         </div>
         
-        <p className="text-gray-600 mb-8">
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
           Find bonded warehouses, freight forwarders, and optimal routes using Google Maps real-time data.
         </p>
 
@@ -60,7 +60,7 @@ export const Logistics: React.FC = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="E.g., Bonded warehouses near Mombasa port..."
-            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none transition-all text-gray-900"
+            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-900 dark:text-white focus:border-teal-500 focus:ring-2 focus:ring-teal-100 dark:focus:ring-teal-900 outline-none transition-all"
           />
           <Navigation className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <button
@@ -74,15 +74,15 @@ export const Logistics: React.FC = () => {
 
         {result && (
           <div className="space-y-6">
-            <div className="prose prose-teal max-w-none bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+            <div className="prose prose-teal dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-100 dark:border-slate-700">
+              <div className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 leading-relaxed">
                 {result.text}
               </div>
             </div>
 
             {result.maps.length > 0 && (
               <div>
-                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Map Locations</h4>
+                <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Map Locations</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {result.maps.map((source, idx) => (
                     <a
@@ -90,14 +90,14 @@ export const Logistics: React.FC = () => {
                       href={source.uri}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-4 bg-white border border-gray-200 rounded-xl hover:border-teal-400 hover:shadow-md transition-all group"
+                      className="block p-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl hover:border-teal-400 dark:hover:border-teal-500 hover:shadow-md transition-all group"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <MapPin className="w-5 h-5 text-teal-500" />
                         <ExternalLink className="w-4 h-4 text-gray-300 group-hover:text-teal-500" />
                       </div>
-                      <h5 className="font-semibold text-gray-900 mb-1 truncate">{source.title || "Location"}</h5>
-                      {source.address && <p className="text-sm text-gray-500 line-clamp-2">{source.address}</p>}
+                      <h5 className="font-semibold text-gray-900 dark:text-white mb-1 truncate">{source.title || "Location"}</h5>
+                      {source.address && <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{source.address}</p>}
                     </a>
                   ))}
                 </div>

@@ -1,5 +1,6 @@
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
+  TRADE_LIFECYCLE = 'TRADE_LIFECYCLE', // New Workspace
   MARKET_INTEL = 'MARKET_INTEL', // Search Grounding
   COMPLIANCE = 'COMPLIANCE', // Thinking Mode
   LOGISTICS = 'LOGISTICS', // Maps Grounding

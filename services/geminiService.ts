@@ -78,7 +78,24 @@ export const analyzeCompliance = async (scenario: string) => {
       },
     });
     return response.text;
-  } catch (error) {
+  } catch (error: any) {
+    // Handle Quota limits for Thinking Model (429)
+    if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
+         console.warn("Compliance Thinking Quota Exceeded. Falling back to standard model.");
+         try {
+             const fallbackResponse = await ai.models.generateContent({
+                model: 'gemini-2.0-flash-exp', // Fallback to faster, cheaper model
+                contents: `You are an expert AfCFTA trade lawyer. Analyze the following trade scenario strictly according to Rules of Origin and compliance protocols.
+                
+                Scenario: ${scenario}
+                
+                Note: Provide a concise analysis since deep thinking mode is currently unavailable.`,
+             });
+             return fallbackResponse.text + "\n\n(Note: Deep thinking mode was unavailable due to high traffic. This is a standard analysis.)";
+         } catch (fbError) {
+             return "Compliance analysis is currently unavailable due to system capacity. Please try again in a few minutes.";
+         }
+    }
     console.error("Compliance Analysis Error:", error);
     throw error;
   }

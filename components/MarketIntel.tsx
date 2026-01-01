@@ -1,104 +1,264 @@
 import React, { useState } from 'react';
-import { Search, Globe, ExternalLink, Loader2 } from 'lucide-react';
+import { 
+  Search, 
+  TrendingUp, 
+  Map as MapIcon, 
+  Users, 
+  BrainCircuit, 
+  ArrowRight, 
+  Loader2,
+  Globe,
+  AlertTriangle,
+  Target
+} from 'lucide-react';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart, 
+  Bar,
+  Legend
+} from 'recharts';
 import { getMarketIntelligence } from '../services/geminiService';
 
+// Mock Data Generators
+const generatePriceData = () => [
+  { month: 'Jan', price: 1100 + Math.random()*200, globalAvg: 1150 },
+  { month: 'Feb', price: 1150 + Math.random()*200, globalAvg: 1160 },
+  { month: 'Mar', price: 1080 + Math.random()*200, globalAvg: 1170 },
+  { month: 'Apr', price: 1250 + Math.random()*200, globalAvg: 1180 },
+  { month: 'May', price: 1300 + Math.random()*200, globalAvg: 1190 },
+  { month: 'Jun', price: 1400 + Math.random()*200, globalAvg: 1200 },
+];
+
+const COMPETITOR_DATA = [
+  { country: 'China', volume: 4500, share: '35%' },
+  { country: 'India', volume: 3200, share: '25%' },
+  { country: 'Vietnam', volume: 2100, share: '15%' },
+  { country: 'South Africa', volume: 1800, share: '12%' },
+  { country: 'Egypt', volume: 1200, share: '8%' },
+];
+
+const DEMAND_HEATMAP = [
+  { country: 'Nigeria', demand: 'High', trend: '+15%', region: 'West Africa', sentiment: 'Positive' },
+  { country: 'Kenya', demand: 'Medium', trend: '+5%', region: 'East Africa', sentiment: 'Neutral' },
+  { country: 'Ghana', demand: 'High', trend: '+12%', region: 'West Africa', sentiment: 'Positive' },
+  { country: 'Ethiopia', demand: 'Low', trend: '-2%', region: 'East Africa', sentiment: 'Caution' },
+  { country: 'Angola', demand: 'Medium', trend: '+8%', region: 'Southern Africa', sentiment: 'Improving' },
+];
+
 export const MarketIntel: React.FC = () => {
-  const [query, setQuery] = useState('');
-  const [result, setResult] = useState<{ text: string; sources: any[] } | null>(null);
+  const [query, setQuery] = useState('Cocoa');
   const [loading, setLoading] = useState(false);
+  const [aiReport, setAiReport] = useState<{text: string, sources: any[]} | null>(null);
+  const [priceData, setPriceData] = useState(generatePriceData());
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!query) return;
     setLoading(true);
+    // Simulate data refresh
+    setPriceData(generatePriceData());
+    
     try {
-      const data = await getMarketIntelligence(`Provide a detailed market analysis for: ${query}. Focus on African markets, import/export demand, and recent price trends.`);
-      
-      const sources: any[] = [];
-      data.groundingChunks?.forEach((chunk: any) => {
-        if (chunk.web?.uri) {
-          sources.push({
-            title: chunk.web.title,
-            uri: chunk.web.uri
-          });
-        }
-      });
-
-      setResult({
-        text: data.text || "No analysis available.",
-        sources: sources
-      });
-    } catch (err) {
-      console.error(err);
-      setResult({ text: "Error fetching market intelligence. Please try again.", sources: [] });
+        const result = await getMarketIntelligence(`Analyze current market demand, pricing trends, and risks for ${query} in African markets. Provide a strategic outlook.`);
+        setAiReport({
+            text: result.text || "No report available.",
+            sources: result.groundingChunks?.map((c: any) => ({
+                title: c.web?.title,
+                uri: c.web?.uri
+            })).filter((s: any) => s.uri) || []
+        });
+    } catch (e) {
+        setAiReport({ text: "Market intelligence unavailable at this moment.", sources: [] });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
+  // Initial load
+  React.useEffect(() => {
+      handleSearch({ preventDefault: () => {} } as any);
+  }, []);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-white p-8 rounded-xl border border-gray-100 shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Globe className="w-6 h-6 text-blue-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">Market Intelligence Engine</h2>
-        </div>
-        
-        <p className="text-gray-600 mb-8">
-          Leverage real-time search grounding to analyze demand, pricing, and opportunities across the continent.
-        </p>
-
-        <form onSubmit={handleSearch} className="relative mb-8">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="E.g., Demand for processed cocoa in Egypt vs South Africa..."
-            className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all text-gray-900"
-          />
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <button
-            type="submit"
-            disabled={loading}
-            className="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-medium transition-colors disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Analyze'}
-          </button>
-        </form>
-
-        {result && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="prose prose-blue max-w-none bg-slate-50 p-6 rounded-xl border border-slate-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Strategic Analysis</h3>
-              <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                {result.text}
+      <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
+          {/* Header & Search */}
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                      <Globe className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Market Intelligence</h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Global data • Real-time AI Analysis</p>
+                  </div>
               </div>
-            </div>
 
-            {result.sources.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Verified Sources</h4>
-                <div className="grid gap-3">
-                  {result.sources.map((source, idx) => (
-                    <a
-                      key={idx}
-                      href={source.uri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all group"
-                    >
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-blue-700 truncate">{source.title || source.uri}</span>
-                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
+              <form onSubmit={handleSearch} className="relative w-full md:w-96">
+                  <input 
+                      type="text" 
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="Search commodity (e.g. Shea Butter)..."
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <button type="submit" disabled={loading} className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white p-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50">
+                      {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRight className="w-3 h-3" />}
+                  </button>
+              </form>
           </div>
-        )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0 flex-1">
+              {/* Left Column: Charts & Data */}
+              <div className="lg:col-span-8 flex flex-col gap-6 overflow-y-auto pr-2">
+                  
+                  {/* Price Chart */}
+                  <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                      <div className="flex items-center justify-between mb-6">
+                          <div>
+                              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                  <TrendingUp className="w-5 h-5 text-emerald-500" /> Price Intelligence
+                              </h3>
+                              <p className="text-xs text-gray-500">6-Month Trend vs Global Average (USD/MT)</p>
+                          </div>
+                          <span className="text-2xl font-bold text-gray-900 dark:text-white">$1,420 <span className="text-xs font-normal text-emerald-500">+4.2%</span></span>
+                      </div>
+                      <div className="h-64 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={priceData}>
+                                  <defs>
+                                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                      </linearGradient>
+                                  </defs>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                                  <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                  <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                                  <Tooltip 
+                                      contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                                      itemStyle={{ color: '#fff' }}
+                                  />
+                                  <Area type="monotone" dataKey="price" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" name="Local Price" />
+                                  <Area type="monotone" dataKey="globalAvg" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" fill="none" name="Global Avg" />
+                              </AreaChart>
+                          </ResponsiveContainer>
+                      </div>
+                  </div>
+
+                  {/* Competitors & Heatmap Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Competitor Analysis */}
+                      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                               <Users className="w-5 h-5 text-blue-500" /> Top Exporters
+                           </h3>
+                           <div className="h-52">
+                               <ResponsiveContainer width="100%" height="100%">
+                                   <BarChart data={COMPETITOR_DATA} layout="vertical">
+                                       <XAxis type="number" hide />
+                                       <YAxis dataKey="country" type="category" width={80} tick={{fontSize: 11, fill: '#94a3b8'}} />
+                                       <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white' }} />
+                                       <Bar dataKey="volume" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                                   </BarChart>
+                               </ResponsiveContainer>
+                           </div>
+                      </div>
+
+                      {/* Demand Heatmap */}
+                      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                              <Target className="w-5 h-5 text-red-500" /> Demand Heatmap
+                          </h3>
+                          <div className="space-y-3">
+                              {DEMAND_HEATMAP.map((item, i) => (
+                                  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-slate-700">
+                                      <div className="flex items-center gap-3">
+                                          <div className={`w-2 h-2 rounded-full ${item.demand === 'High' ? 'bg-green-500' : item.demand === 'Medium' ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                                          <div>
+                                              <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{item.country}</p>
+                                              <p className="text-[10px] text-gray-400 uppercase">{item.region}</p>
+                                          </div>
+                                      </div>
+                                      <div className="text-right">
+                                          <span className={`text-xs font-bold ${item.trend.startsWith('+') ? 'text-green-600' : 'text-red-500'}`}>{item.trend}</span>
+                                          <p className="text-[10px] text-gray-400">{item.sentiment}</p>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Right Column: AI Research */}
+              <div className="lg:col-span-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-0 flex flex-col overflow-hidden">
+                  <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                          <BrainCircuit className="w-5 h-5 text-purple-600" /> AI Forecast
+                      </h3>
+                      <p className="text-xs text-gray-500">Powered by Gemini 2.0 with Search Grounding</p>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                       {/* Forecast Gauge */}
+                       <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 text-center">
+                           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Q4 Demand Outlook</p>
+                           <div className="text-3xl font-black text-purple-600 dark:text-purple-400">STRONG BUY</div>
+                           <p className="text-xs text-gray-500 mt-1">Confidence Score: 88%</p>
+                       </div>
+
+                       {/* Risk Outlook */}
+                       <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30">
+                           <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 mb-2 flex items-center gap-2">
+                               <AlertTriangle className="w-4 h-4" /> Risk Outlook
+                           </h4>
+                           <p className="text-xs text-orange-700 dark:text-orange-400 leading-relaxed">
+                               Currency volatility in key import markets (Nigeria, Kenya) may impact short-term liquidity. Recommended hedging for contracts {'>'} $50k.
+                           </p>
+                       </div>
+
+                       {/* AI Report Content */}
+                       {loading ? (
+                           <div className="flex flex-col items-center justify-center py-10 opacity-50">
+                               <Loader2 className="w-8 h-8 text-purple-500 animate-spin mb-3" />
+                               <p className="text-xs text-gray-500">Analyzing global markets...</p>
+                           </div>
+                       ) : aiReport ? (
+                           <div className="space-y-4">
+                               <div className="prose prose-sm prose-purple dark:prose-invert max-w-none">
+                                   <div className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap font-sans">
+                                       {aiReport.text}
+                                   </div>
+                               </div>
+                               
+                               {aiReport.sources?.length > 0 && (
+                                   <div className="pt-4 border-t border-gray-100 dark:border-slate-700">
+                                       <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Citations</p>
+                                       <div className="space-y-1">
+                                           {aiReport.sources.slice(0, 3).map((s, i) => (
+                                               <a key={i} href={s.uri} target="_blank" rel="noreferrer" className="block text-xs text-blue-600 dark:text-blue-400 truncate hover:underline">
+                                                   {i+1}. {s.title}
+                                               </a>
+                                           ))}
+                                       </div>
+                                   </div>
+                               )}
+                           </div>
+                       ) : (
+                           <div className="text-center py-10 text-gray-400">
+                               <p className="text-sm">Initiate search to generate report.</p>
+                           </div>
+                       )}
+                  </div>
+              </div>
+          </div>
       </div>
-    </div>
   );
 };
