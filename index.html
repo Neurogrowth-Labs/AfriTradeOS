@@ -11,21 +11,42 @@
         theme: {
           extend: {
             colors: {
+              trade: {
+                primary: '#0B1F33', // Deep Trade Blue
+                secondary: '#163A5F', // Lighter Blue for gradients/hovers
+                accent: '#C9A24D',  // Pan-African Gold
+                success: '#1FA971',
+                warning: '#F5A623',
+                error: '#D64545',
+                bg: '#F7F9FC',      // Light Background
+                surface: '#FFFFFF'
+              },
               slate: {
-                750: '#2d3748', // Custom depth for dark mode cards
-                850: '#1a202c', // Custom depth for dark mode backgrounds
+                750: '#2d3748', 
+                850: '#1a202c', 
                 950: '#0f172a',
               }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              heading: ['IBM Plex Sans', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
             }
           }
         }
       }
     </script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
+        background-color: #F7F9FC;
+      }
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
       }
       /* Custom scrollbar for data tables */
       .custom-scrollbar::-webkit-scrollbar {
@@ -59,7 +80,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300">
+  <body class="bg-trade-bg text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300">
     <div id="root"></div>
   </body>
 </html>

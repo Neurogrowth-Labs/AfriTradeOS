@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PieChart, 
   Pie, 
@@ -17,12 +17,12 @@ import {
   TrendingUp, 
   FileCheck, 
   ArrowRight, 
-  Briefcase, 
-  Building2, 
   Clock,
   CheckCircle,
-  AlertCircle
+  Loader2
 } from 'lucide-react';
+import { mockDatabase } from '../services/mockDatabase';
+import { DbFinanceRequest } from '../types';
 
 const READINESS_DATA = [
   { name: 'Ready', value: 78, color: '#10b981' },
@@ -38,7 +38,7 @@ const RISK_DATA = [
 
 const FUNDING_OPTIONS = [
   { 
-    id: 1, 
+    id: 'opt_1', 
     provider: 'Ecobank', 
     type: 'Bank', 
     product: 'Letter of Credit', 
@@ -48,7 +48,7 @@ const FUNDING_OPTIONS = [
     logo: 'E' 
   },
   { 
-    id: 2, 
+    id: 'opt_2', 
     provider: 'Afreximbank', 
     type: 'DFI', 
     product: 'Trade Guarantee', 
@@ -58,7 +58,7 @@ const FUNDING_OPTIONS = [
     logo: 'A' 
   },
   { 
-    id: 3, 
+    id: 'opt_3', 
     provider: 'Allianz', 
     type: 'Insurer', 
     product: 'Credit Insurance', 
@@ -69,13 +69,27 @@ const FUNDING_OPTIONS = [
   },
 ];
 
-const APPLICATIONS = [
-  { id: 'FIN-2024-001', provider: 'Ecobank', product: 'Working Capital', amount: '$50,000', status: 'Approved', date: 'Oct 20' },
-  { id: 'FIN-2024-003', provider: 'Afreximbank', product: 'Export Factoring', amount: '$120,000', status: 'Under Review', date: 'Nov 02' },
-];
-
 export const TradeFinance: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'options' | 'applications'>('options');
+  const [applications, setApplications] = useState<DbFinanceRequest[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+        setLoading(true);
+        try {
+            const data = await mockDatabase.getFinanceRequests('current_user');
+            setApplications(data);
+        } catch(e) {
+            console.error("Failed to fetch applications", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    if (activeTab === 'applications') {
+        fetchApplications();
+    }
+  }, [activeTab]);
 
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
@@ -226,31 +240,33 @@ export const TradeFinance: React.FC = () => {
                  </div>
               ) : (
                  <div className="space-y-4">
-                    {APPLICATIONS.map(app => (
+                    {loading ? (
+                        <div className="text-center py-10"><Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" /></div>
+                    ) : applications.map(app => (
                        <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-lg border border-gray-200 dark:border-slate-700">
                           <div className="flex items-center gap-4">
                              <div className={`p-2 rounded-full ${
-                                app.status === 'Approved' ? 'bg-emerald-100 text-emerald-600' : 
-                                app.status === 'Under Review' ? 'bg-amber-100 text-amber-600' : 'bg-gray-200 text-gray-500'
+                                app.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 
+                                app.status === 'under_review' ? 'bg-amber-100 text-amber-600' : 'bg-gray-200 text-gray-500'
                              }`}>
-                                {app.status === 'Approved' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                {app.status === 'approved' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                              </div>
                              <div>
-                                <h4 className="font-bold text-gray-900 dark:text-white">{app.provider}</h4>
-                                <p className="text-xs text-gray-500">{app.product} • {app.id}</p>
+                                <h4 className="font-bold text-gray-900 dark:text-white">{app.provider_name}</h4>
+                                <p className="text-xs text-gray-500">{app.product_type} • {app.id}</p>
                              </div>
                           </div>
                           <div className="text-right">
-                             <p className="font-bold text-gray-900 dark:text-white">{app.amount}</p>
+                             <p className="font-bold text-gray-900 dark:text-white">${app.amount.toLocaleString()}</p>
                              <p className={`text-xs font-bold ${
-                                app.status === 'Approved' ? 'text-emerald-500' : 'text-amber-500'
-                             }`}>{app.status}</p>
-                             <p className="text-[10px] text-gray-400">{app.date}</p>
+                                app.status === 'approved' ? 'text-emerald-500' : 'text-amber-500'
+                             }`}>{app.status.replace('_', ' ')}</p>
+                             <p className="text-[10px] text-gray-400">{app.date_requested}</p>
                           </div>
                        </div>
                     ))}
                     
-                    {APPLICATIONS.length === 0 && (
+                    {!loading && applications.length === 0 && (
                         <div className="text-center py-12 text-gray-400">
                             <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-20" />
                             <p>No active applications</p>

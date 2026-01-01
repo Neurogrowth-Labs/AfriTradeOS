@@ -20,21 +20,14 @@ import {
   Download,
   UploadCloud,
   Sliders,
-  HelpCircle
+  HelpCircle,
+  Info
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
+import { DbTrade } from '../types';
 
 type Step = 'create' | 'compliance' | 'execution' | 'settlement';
 type SystemStatus = 'nominal' | 'warning' | 'critical';
-
-interface TradeData {
-  product: string;
-  hsCode: string;
-  origin: string;
-  destination: string;
-  value: string;
-  incoterm: string;
-}
 
 // Simulator State
 interface ComplianceSim {
@@ -48,13 +41,17 @@ export const TradeLifecycle: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>('create');
   const [loading, setLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<SystemStatus>('nominal');
-  const [tradeData, setTradeData] = useState<TradeData>({
+  
+  // Mapping UI State to Supabase DB Trade Structure
+  const [tradeData, setTradeData] = useState<Partial<DbTrade>>({
     product: '',
-    hsCode: '',
-    origin: 'Ghana',
-    destination: 'Kenya',
-    value: '',
-    incoterm: 'CIF'
+    hs_code: '',
+    origin_country: 'Ghana',
+    destination_country: 'Kenya',
+    value: 0,
+    currency: 'USD',
+    incoterm: 'CIF',
+    status: 'draft'
   });
   
   // Compliance Analysis State
@@ -69,12 +66,12 @@ export const TradeLifecycle: React.FC = () => {
   // Init simulator data when entering compliance step
   useEffect(() => {
     if (currentStep === 'compliance' && !simData.exWorksPrice) {
-      const val = parseInt(tradeData.value || '0');
+      const val = tradeData.value || 0;
       setSimData({
         nonOriginatingValue: val * 0.4, // Assume 40% non-originating initially
         exWorksPrice: val,
-        originCountry: tradeData.origin,
-        hsCode: tradeData.hsCode
+        originCountry: tradeData.origin_country || 'Ghana',
+        hsCode: tradeData.hs_code || ''
       });
     }
   }, [currentStep, tradeData]);
@@ -100,10 +97,10 @@ export const TradeLifecycle: React.FC = () => {
     : 0;
   
   const isCompliant = lvcPercentage >= 40; // Simple AfCFTA rule: 40% Value Add
-  const complianceStatus = isCompliant ? 'Compliant' : 'Non-Compliant';
 
   const handleNext = () => {
     const idx = steps.findIndex(s => s.id === currentStep);
+    // In a real app, here we would save tradeData to the 'trades' table via Supabase
     if (idx < steps.length - 1) setCurrentStep(steps[idx + 1].id);
   };
 
@@ -118,9 +115,10 @@ export const TradeLifecycle: React.FC = () => {
       // Simulate API delay for effect
       await new Promise(r => setTimeout(r, 1500));
       
-      const prompt = `Analyze AfCFTA compliance for exporting ${tradeData.product} (HS Code: ${tradeData.hsCode}, Value: $${tradeData.value}) from ${tradeData.origin} to ${tradeData.destination}. LVC calculated is ${lvcPercentage.toFixed(1)}%.`;
-      const result = await analyzeCompliance(prompt);
-      setComplianceResult(result);
+      const prompt = `Analyze AfCFTA compliance for exporting ${tradeData.product} (HS Code: ${tradeData.hs_code}, Value: $${tradeData.value}) from ${tradeData.origin_country} to ${tradeData.destination_country}. LVC calculated is ${lvcPercentage.toFixed(1)}%.`;
+      // We aren't displaying the raw result, but using state to show the specific UX copy messages
+      // const result = await analyzeCompliance(prompt); 
+      setComplianceResult(isCompliant ? "compliant" : "non_compliant");
       
       if (!isCompliant) {
           setSystemStatus('critical');
@@ -143,7 +141,7 @@ export const TradeLifecycle: React.FC = () => {
   // Trigger Co-Pilot Explanation
   const explain = (term: string) => {
     const event = new CustomEvent('open-copilot', { 
-        detail: { message: `Why is "${term}" required for this trade? Explain briefly.` } 
+        detail: { message: `Why is "${term}" required for this trade? Explain simply in 1 sentence.` } 
     });
     window.dispatchEvent(event);
   };
@@ -155,9 +153,9 @@ export const TradeLifecycle: React.FC = () => {
       <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div 
             className={`h-full transition-all duration-500 ease-out ${
-                systemStatus === 'critical' ? 'bg-red-500' :
-                systemStatus === 'warning' ? 'bg-amber-400' :
-                'bg-emerald-500'
+                systemStatus === 'critical' ? 'bg-trade-error' :
+                systemStatus === 'warning' ? 'bg-trade-warning' :
+                'bg-trade-success'
             }`}
             style={{ width: `${getProgressPercent()}%` }}
         />
@@ -169,21 +167,21 @@ export const TradeLifecycle: React.FC = () => {
         <div className="lg:col-span-3 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col overflow-hidden">
              <div className="p-5 border-b border-gray-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                 <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Flight Plan</span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider font-heading">Flight Plan</span>
                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
-                        systemStatus === 'nominal' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' :
-                        systemStatus === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' :
-                        'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+                        systemStatus === 'nominal' ? 'bg-green-100 dark:bg-green-900/30 text-trade-success border-green-200 dark:border-green-800' :
+                        systemStatus === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30 text-trade-warning border-amber-200 dark:border-amber-800' :
+                        'bg-red-100 dark:bg-red-900/30 text-trade-error border-red-200 dark:border-red-800'
                     }`}>
                         <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                             systemStatus === 'nominal' ? 'bg-emerald-500' :
-                             systemStatus === 'warning' ? 'bg-amber-500' :
-                             'bg-red-500'
+                             systemStatus === 'nominal' ? 'bg-trade-success' :
+                             systemStatus === 'warning' ? 'bg-trade-warning' :
+                             'bg-trade-error'
                         }`} />
                         {systemStatus === 'nominal' ? 'System Nominal' : systemStatus === 'warning' ? 'Check Required' : 'Critical Alert'}
                     </div>
                 </div>
-                <h2 className="font-bold text-gray-900 dark:text-white">Trade #TRD-089</h2>
+                <h2 className="font-bold font-heading text-trade-primary dark:text-white">Trade #TRD-089</h2>
              </div>
 
              <div className="flex-1 overflow-y-auto py-2">
@@ -197,20 +195,20 @@ export const TradeLifecycle: React.FC = () => {
                             onClick={() => goToStep(step.id)}
                             className={`w-full text-left px-5 py-4 flex items-start gap-3 transition-colors border-l-4 ${
                                 isCurrent 
-                                ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-500' 
+                                ? 'bg-blue-50 dark:bg-blue-900/10 border-trade-primary' 
                                 : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-700/50'
                             }`}
                          >
                              <div className={`mt-0.5 ${
-                                 isCurrent ? 'text-blue-600 dark:text-blue-400' : 
-                                 isPast ? 'text-emerald-500' : 
+                                 isCurrent ? 'text-trade-primary dark:text-blue-400' : 
+                                 isPast ? 'text-trade-success' : 
                                  'text-gray-300 dark:text-gray-600'
                              }`}>
                                  {isPast ? <CheckCircle className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
                              </div>
                              <div>
-                                 <div className={`text-sm font-semibold ${
-                                     isCurrent ? 'text-blue-700 dark:text-blue-300' : 
+                                 <div className={`text-sm font-semibold font-heading ${
+                                     isCurrent ? 'text-trade-primary dark:text-blue-300' : 
                                      isPast ? 'text-gray-700 dark:text-gray-300' : 
                                      'text-gray-400 dark:text-gray-500'
                                  }`}>
@@ -223,7 +221,7 @@ export const TradeLifecycle: React.FC = () => {
                  })}
              </div>
              
-             <div className="p-4 border-t border-gray-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-xs text-gray-400 text-center">
+             <div className="p-4 border-t border-gray-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-xs text-gray-400 text-center font-mono">
                  AfriTradeOS v2.1
              </div>
         </div>
@@ -235,8 +233,8 @@ export const TradeLifecycle: React.FC = () => {
             {currentStep === 'create' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <Briefcase className="w-6 h-6 text-blue-500" /> 
+                        <h3 className="text-xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
+                            <Briefcase className="w-6 h-6 text-trade-secondary" /> 
                             Initialize Trade
                         </h3>
                         <span className="text-sm text-gray-400">Step 1 of 4</span>
@@ -250,61 +248,72 @@ export const TradeLifecycle: React.FC = () => {
                             <div className="relative group">
                                 <input 
                                     type="text" 
-                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all group-hover:bg-white dark:group-hover:bg-slate-950"
+                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none font-medium transition-all group-hover:bg-white dark:group-hover:bg-slate-950"
                                     placeholder="e.g., Shea Butter"
                                     value={tradeData.product}
                                     onChange={(e) => setTradeData({...tradeData, product: e.target.value})}
                                 />
-                                {tradeData.product && <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />}
+                                {tradeData.product && <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-trade-success animate-in zoom-in" />}
                             </div>
+                            <p className="text-xs text-gray-400 mt-1 pl-1">Describe the main commodity being traded.</p>
                         </div>
 
                         <div className="space-y-1">
                             <div className="flex justify-between items-center">
                                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">HS Code</label>
-                                <button onClick={() => explain('HS Code')} className="text-gray-400 hover:text-blue-500 transition-colors" title="Why is this required?">
-                                    <HelpCircle className="w-3.5 h-3.5" />
+                                <button onClick={() => explain('HS Code')} className="text-gray-400 hover:text-trade-primary transition-colors flex items-center gap-1 text-[10px]" title="Why is this required?">
+                                    <Info className="w-3 h-3" /> Why is this needed?
                                 </button>
                             </div>
                             <div className="relative group">
                                 <input 
                                     type="text" 
-                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-mono transition-all group-hover:bg-white dark:group-hover:bg-slate-950"
+                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none font-mono transition-all group-hover:bg-white dark:group-hover:bg-slate-950"
                                     placeholder="####.##"
-                                    value={tradeData.hsCode}
-                                    onChange={(e) => setTradeData({...tradeData, hsCode: e.target.value})}
+                                    value={tradeData.hs_code}
+                                    onChange={(e) => setTradeData({...tradeData, hs_code: e.target.value})}
                                 />
+                                {tradeData.hs_code && <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-trade-success animate-in zoom-in" />}
                             </div>
+                            <p className="text-xs text-gray-400 mt-1 pl-1">Used to calculate tariff duties.</p>
                         </div>
 
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Origin</label>
-                            <select 
-                                className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium cursor-pointer"
-                                value={tradeData.origin}
-                                onChange={(e) => setTradeData({...tradeData, origin: e.target.value})}
-                            >
-                                <option>Ghana</option>
-                                <option>Nigeria</option>
-                                <option>Kenya</option>
-                                <option>South Africa</option>
-                                <option>Egypt</option>
-                            </select>
+                            <div className="relative">
+                                <select 
+                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none font-medium cursor-pointer appearance-none"
+                                    value={tradeData.origin_country}
+                                    onChange={(e) => setTradeData({...tradeData, origin_country: e.target.value})}
+                                >
+                                    <option>Ghana</option>
+                                    <option>Nigeria</option>
+                                    <option>Kenya</option>
+                                    <option>South Africa</option>
+                                    <option>Egypt</option>
+                                </select>
+                                <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-trade-success animate-in zoom-in" />
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1 pl-1">Determines AfCFTA eligibility.</p>
                         </div>
 
                         <div className="space-y-1">
                             <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Destination</label>
-                            <select 
-                                className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium cursor-pointer"
-                                value={tradeData.destination}
-                                onChange={(e) => setTradeData({...tradeData, destination: e.target.value})}
-                            >
-                                <option>Kenya</option>
-                                <option>South Africa</option>
-                                <option>Egypt</option>
-                                <option>Ghana</option>
-                                <option>Nigeria</option>
-                            </select>
+                            <div className="relative">
+                                <select 
+                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none font-medium cursor-pointer appearance-none"
+                                    value={tradeData.destination_country}
+                                    onChange={(e) => setTradeData({...tradeData, destination_country: e.target.value})}
+                                >
+                                    <option>Kenya</option>
+                                    <option>South Africa</option>
+                                    <option>Egypt</option>
+                                    <option>Ghana</option>
+                                    <option>Nigeria</option>
+                                </select>
+                                <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-trade-success animate-in zoom-in" />
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1 pl-1">Where the goods are being shipped to.</p>
                         </div>
 
                         <div className="space-y-1">
@@ -312,23 +321,28 @@ export const TradeLifecycle: React.FC = () => {
                             <div className="relative group">
                                 <input 
                                     type="number" 
-                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium transition-all group-hover:bg-white dark:group-hover:bg-slate-950"
+                                    className="w-full p-4 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none font-medium transition-all group-hover:bg-white dark:group-hover:bg-slate-950"
                                     placeholder="0.00"
-                                    value={tradeData.value}
-                                    onChange={(e) => setTradeData({...tradeData, value: e.target.value})}
+                                    value={tradeData.value || ''}
+                                    onChange={(e) => setTradeData({...tradeData, value: parseFloat(e.target.value)})}
                                 />
-                                {tradeData.value && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">USD</span>}
+                                {tradeData.value ? (
+                                    <CheckCircle className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-trade-success animate-in zoom-in" />
+                                ) : (
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">USD</span>
+                                )}
                             </div>
+                            <p className="text-xs text-gray-400 mt-1 pl-1">Basis for customs valuation.</p>
                         </div>
 
                         <div className="space-y-1">
                             <div className="flex justify-between items-center mb-1">
                                 <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center justify-between">
                                     Incoterm
-                                    {tradeData.incoterm && <span className="text-blue-500 ml-2">{tradeData.incoterm} Selected</span>}
+                                    {tradeData.incoterm && <span className="text-trade-secondary ml-2">{tradeData.incoterm} Selected</span>}
                                 </label>
-                                <button onClick={() => explain('Incoterms')} className="text-gray-400 hover:text-blue-500 transition-colors" title="What are Incoterms?">
-                                    <HelpCircle className="w-3.5 h-3.5" />
+                                <button onClick={() => explain('Incoterms')} className="text-gray-400 hover:text-trade-primary transition-colors flex items-center gap-1 text-[10px]" title="What are Incoterms?">
+                                    <Info className="w-3 h-3" /> Why?
                                 </button>
                             </div>
                             <div className="grid grid-cols-4 gap-2">
@@ -338,7 +352,7 @@ export const TradeLifecycle: React.FC = () => {
                                     onClick={() => setTradeData({...tradeData, incoterm: term})}
                                     className={`py-3 rounded-xl border text-sm font-bold transition-all ${
                                         tradeData.incoterm === term 
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20' 
+                                        ? 'bg-trade-primary text-white border-trade-primary shadow-lg shadow-trade-primary/20' 
                                         : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
                                     }`}
                                 >
@@ -356,7 +370,7 @@ export const TradeLifecycle: React.FC = () => {
                             className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all ${
                                 systemStatus === 'warning'
                                 ? 'bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30'
+                                : 'bg-trade-primary hover:bg-trade-secondary text-white shadow-lg shadow-trade-primary/20 hover:shadow-trade-primary/30'
                             }`}
                         >
                             Next: Compliance <ArrowRight className="w-5 h-5" />
@@ -370,7 +384,7 @@ export const TradeLifecycle: React.FC = () => {
             {currentStep === 'compliance' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in flex flex-col">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
                             <ShieldCheck className="w-6 h-6 text-purple-600 dark:text-purple-400" /> 
                             AfCFTA Rules Engine
                         </h3>
@@ -429,10 +443,10 @@ export const TradeLifecycle: React.FC = () => {
                              {/* ... Rules breakdown ... */}
                              <div className="lg:col-span-8 space-y-6">
                                     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
-                                        <h4 className="font-bold text-gray-900 dark:text-white mb-4">Rules of Origin Breakdown</h4>
+                                        <h4 className="font-bold font-heading text-gray-900 dark:text-white mb-4">Rules of Origin Breakdown</h4>
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-3">
-                                                <div className="mt-0.5"><CheckCircle className="w-5 h-5 text-emerald-500" /></div>
+                                                <div className="mt-0.5"><CheckCircle className="w-5 h-5 text-trade-success" /></div>
                                                 <div>
                                                     <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Substantial Transformation</p>
                                                     <p className="text-xs text-gray-500">The product has undergone sufficient processing in {simData.originCountry} to change its tariff classification.</p>
@@ -440,7 +454,7 @@ export const TradeLifecycle: React.FC = () => {
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="mt-0.5">
-                                                    {isCompliant ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                                                    {isCompliant ? <CheckCircle className="w-5 h-5 text-trade-success" /> : <XCircle className="w-5 h-5 text-trade-error" />}
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Value Added Rule (40%)</p>
@@ -468,15 +482,31 @@ export const TradeLifecycle: React.FC = () => {
                         </div>
                     ) : (
                         <div className="space-y-6">
-                             <div className="bg-gray-50 dark:bg-slate-900/50 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
-                                 <h5 className="text-sm font-bold text-gray-900 dark:text-white mb-3">AI Legal Opinion</h5>
-                                 <div className="prose prose-sm prose-purple dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
-                                     <div className="whitespace-pre-wrap">{complianceResult}</div>
+                             <div className={`p-6 rounded-xl border flex gap-4 items-start animate-fade-in ${
+                                 complianceResult === 'compliant' 
+                                 ? 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800' 
+                                 : 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800'
+                             }`}>
+                                 {complianceResult === 'compliant' 
+                                    ? <CheckCircle className="w-6 h-6 text-trade-success shrink-0" /> 
+                                    : <AlertCircle className="w-6 h-6 text-trade-error shrink-0" />
+                                 }
+                                 <div>
+                                     <h5 className={`text-lg font-bold font-heading mb-1 ${
+                                         complianceResult === 'compliant' ? 'text-trade-success' : 'text-trade-error'
+                                     }`}>
+                                         {complianceResult === 'compliant' ? 'Compliance Confirmed' : 'Compliance Alert'}
+                                     </h5>
+                                     <p className="text-sm text-gray-700 dark:text-gray-300">
+                                         {complianceResult === 'compliant' 
+                                            ? "Your trade is AfCFTA-compliant and ready for execution. You are eligible for 0% preferential tariff rates." 
+                                            : "Value added is below 40%. This shipment may face full MFN tariffs unless local content is increased."}
+                                     </p>
                                  </div>
                             </div>
                             <div className="flex justify-end pt-4 gap-3">
                                  <button onClick={() => setComplianceResult(null)} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white text-sm font-medium px-4">
-                                     Back to Simulator
+                                     Modify Parameters
                                  </button>
                             </div>
                         </div>
@@ -488,7 +518,7 @@ export const TradeLifecycle: React.FC = () => {
             {currentStep === 'execution' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
                             <Truck className="w-6 h-6 text-teal-500" /> 
                             Logistics Monitor
                         </h3>
@@ -538,7 +568,7 @@ export const TradeLifecycle: React.FC = () => {
             {currentStep === 'settlement' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
                             <CreditCard className="w-6 h-6 text-emerald-500" /> 
                             Financial Settlement
                         </h3>
@@ -551,13 +581,13 @@ export const TradeLifecycle: React.FC = () => {
                              <div className="flex justify-between items-start">
                                  <div>
                                      <div className="flex items-center gap-2 mb-1">
-                                         <div className="w-6 h-6 bg-gradient-to-tr from-blue-500 to-teal-400 rounded flex items-center justify-center font-bold text-white text-xs">A</div>
-                                         <span className="font-bold text-gray-900 dark:text-white tracking-tight">AfriTradeOS</span>
+                                         <div className="w-6 h-6 bg-gradient-to-tr from-trade-secondary to-trade-primary rounded flex items-center justify-center font-bold font-heading text-white text-xs">A</div>
+                                         <span className="font-bold font-heading text-gray-900 dark:text-white tracking-tight">AfriTradeOS</span>
                                      </div>
                                      <p className="text-gray-500 text-sm mt-2">Invoice #INV-2024-001</p>
                                  </div>
                                  <div className="text-right">
-                                     <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+                                     <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 font-mono">
                                         PAYMENT PENDING
                                      </span>
                                  </div>
@@ -573,7 +603,7 @@ export const TradeLifecycle: React.FC = () => {
                                  </div>
                                  <div className="text-right">
                                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Amount Due</p>
-                                     <p className="text-3xl font-bold text-gray-900 dark:text-white">$ {parseInt(tradeData.value || "0").toLocaleString()}</p>
+                                     <p className="text-3xl font-bold font-mono text-gray-900 dark:text-white">$ {(tradeData.value || 0).toLocaleString()}</p>
                                      <p className="text-sm text-gray-500">Due Nov 24, 2024</p>
                                  </div>
                              </div>
@@ -592,7 +622,7 @@ export const TradeLifecycle: React.FC = () => {
                     <div className="mt-8 flex justify-center">
                         <button 
                             onClick={() => setCurrentStep('create')}
-                            className="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 text-sm font-medium transition-colors"
+                            className="text-gray-500 hover:text-trade-primary dark:text-gray-400 dark:hover:text-blue-400 text-sm font-medium transition-colors"
                         >
                             Start New Trade
                         </button>
