@@ -25,10 +25,12 @@ export interface TradeRoute {
 }
 
 export enum UserPersona {
-  EXPORTER_SME = 'Exporting SME',
-  IMPORTER_SME = 'Importing SME',
+  EXPORTER_SME = 'SME Exporter',
+  EXPORTER_ENTERPRISE = 'Enterprise Exporter',
+  IMPORTER = 'Importer',
   CUSTOMS = 'Customs Authority',
   LOGISTICS = 'Logistics Provider',
   BANK = 'Bank / Insurer',
-  AGENCY = 'Trade Promotion Agency'
+  GOVERNMENT = 'Government Agency',
+  ANALYST = 'Trade Analyst'
 }

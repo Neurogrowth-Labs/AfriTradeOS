@@ -102,12 +102,19 @@ export const analyzeCompliance = async (scenario: string) => {
 };
 
 // 4. Fast Responses (Chatbot/General)
-export const fastChatResponse = async (message: string) => {
+export const fastChatResponse = async (message: string, context?: string) => {
   try {
+    const systemInstruction = context 
+      ? `You are an AI Trade Co-Pilot embedded in the AfriTradeOS platform. The user is currently viewing: ${context}. Keep answers concise, actionable, and relevant to this context.` 
+      : `You are an AI Trade Co-Pilot. Keep answers concise.`;
+
     // Switch to gemini-2.0-flash-exp to resolve 429 quota errors
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
       contents: message,
+      config: {
+        systemInstruction: systemInstruction
+      }
     });
     return response.text;
   } catch (error: any) {
@@ -118,6 +125,16 @@ export const fastChatResponse = async (message: string) => {
     console.error("Fast Chat Error:", error);
     throw error;
   }
+};
+
+// 4.1 Explainability (Why is this required?)
+export const explainTradeTerm = async (term: string, context: string) => {
+    return await fastChatResponse(
+        `Explain why "${term}" is required in the context of ${context}. 
+         Focus on compliance risks, financial implications, or logistics necessity. 
+         Keep it under 30 words.`,
+        "Trade Help Tooltip"
+    );
 };
 
 // 5. Image Generation (Marketing)
