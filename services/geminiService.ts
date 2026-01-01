@@ -1,0 +1,273 @@
+import { GoogleGenAI, Modality, Type, LiveServerMessage } from "@google/genai";
+import { createBlob, decode, decodeAudioData } from "./audioUtils";
+
+// Initialize the client. 
+// NOTE: In a real environment, verify API_KEY exists.
+const apiKey = process.env.API_KEY || ''; 
+const ai = new GoogleGenAI({ apiKey });
+
+// 1. Market Intelligence (Search Grounding)
+export const getMarketIntelligence = async (query: string) => {
+  try {
+    // Switch to stable gemini-2.0-flash to resolve 429 quota errors and improve stability
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: query,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
+    return {
+      text: response.text,
+      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
+    };
+  } catch (error) {
+    console.error("Market Intel Error:", error);
+    throw error;
+  }
+};
+
+// 2. Logistics & Maps (Maps Grounding)
+// Maps is only supported on Gemini 2.5 models
+export const getLogisticsInfo = async (query: string, location?: { lat: number; lng: number }) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: query,
+      config: {
+        tools: [{ googleMaps: {} }],
+        toolConfig: location ? {
+          retrievalConfig: {
+            latLng: {
+              latitude: location.lat,
+              longitude: location.lng
+            }
+          }
+        } : undefined
+      },
+    });
+    return {
+      text: response.text,
+      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
+    };
+  } catch (error) {
+    console.error("Logistics Error:", error);
+    throw error;
+  }
+};
+
+// 3. Compliance & Legal (Thinking Mode)
+// Uses gemini-3-pro-preview with high thinking budget for complex AfCFTA rules
+export const analyzeCompliance = async (scenario: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: `You are an expert AfCFTA trade lawyer. Analyze the following trade scenario strictly according to Rules of Origin and compliance protocols.
+      
+      Scenario: ${scenario}`,
+      config: {
+        thinkingConfig: { thinkingBudget: 32768 },
+      },
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Compliance Analysis Error:", error);
+    throw error;
+  }
+};
+
+// 4. Fast Responses (Chatbot/General)
+export const fastChatResponse = async (message: string) => {
+  try {
+    // Switch to stable gemini-2.0-flash to resolve 429 quota errors
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: message,
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Fast Chat Error:", error);
+    throw error;
+  }
+};
+
+// 5. Image Generation (Marketing)
+export const generateMarketingImage = async (prompt: string, aspectRatio: string) => {
+  try {
+    // Using gemini-3-pro-image-preview for high quality marketing assets
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-image-preview',
+      contents: {
+        parts: [{ text: prompt }],
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: aspectRatio as any, // 1:1, 16:9, etc.
+          imageSize: "1K"
+        }
+      },
+    });
+    
+    // Extract image
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Image Gen Error:", error);
+    throw error;
+  }
+};
+
+// 6. Image Analysis (Document Scanning)
+export const analyzeDocument = async (base64Data: string, mimeType: string, prompt: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          },
+          { text: prompt }
+        ]
+      }
+    });
+    return response.text;
+  } catch (error) {
+    console.error("Doc Analysis Error:", error);
+    throw error;
+  }
+};
+
+// 7. Text to Speech
+export const generateSpeech = async (text: string) => {
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-preview-tts",
+      contents: [{ parts: [{ text }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
+    });
+    
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!base64Audio) throw new Error("No audio generated");
+    
+    return base64Audio;
+  } catch (error) {
+    console.error("TTS Error:", error);
+    throw error;
+  }
+};
+
+// 8. Live API (Real-time Voice)
+export type LiveEvent = {
+  type: 'user' | 'model' | 'audio';
+  text?: string;
+  audio?: AudioBuffer;
+}
+
+export const connectLiveSession = async (
+  onEvent: (event: LiveEvent) => void,
+  onClose: () => void
+) => {
+  const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+  const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+  
+  let stream: MediaStream;
+  let isMuted = false;
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    console.error("Mic Access Error:", err);
+    onClose();
+    return null;
+  }
+
+  const sessionPromise = ai.live.connect({
+    model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+    config: {
+      responseModalities: [Modality.AUDIO],
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
+      },
+      systemInstruction: "You are 'AfriTrade Assistant', a helpful voice guide for the AfriTradeOS platform. Keep answers concise and professional.",
+      outputAudioTranscription: {}, 
+      inputAudioTranscription: {}, 
+    },
+    callbacks: {
+      onopen: () => {
+        console.log("Live Session Opened");
+        const source = inputAudioContext.createMediaStreamSource(stream);
+        const scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
+        
+        scriptProcessor.onaudioprocess = (e) => {
+          if (isMuted) return;
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcmBlob = createBlob(inputData);
+          sessionPromise.then(session => {
+            session.sendRealtimeInput({ media: pcmBlob });
+          });
+        };
+        
+        source.connect(scriptProcessor);
+        scriptProcessor.connect(inputAudioContext.destination);
+      },
+      onmessage: async (msg: LiveServerMessage) => {
+        if (msg.serverContent?.inputTranscription?.text) {
+          onEvent({ type: 'user', text: msg.serverContent.inputTranscription.text });
+        }
+
+        if (msg.serverContent?.outputTranscription?.text) {
+          onEvent({ type: 'model', text: msg.serverContent.outputTranscription.text });
+        }
+
+        const base64Audio = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+        if (base64Audio) {
+           const audioBuffer = await decodeAudioData(
+            decode(base64Audio),
+            outputAudioContext,
+            24000,
+            1
+          );
+          onEvent({ type: 'audio', audio: audioBuffer });
+        }
+      },
+      onclose: () => {
+        console.log("Live Session Closed");
+        onClose();
+        try {
+          stream?.getTracks().forEach(track => track.stop());
+          inputAudioContext.close();
+          outputAudioContext.close();
+        } catch(e) { console.error("Cleanup error", e); }
+      },
+      onerror: (err) => {
+        console.error("Live Session Error:", err);
+      }
+    }
+  });
+
+  return {
+    disconnect: async () => {
+      const session = await sessionPromise;
+      session.close();
+    },
+    setMute: (mute: boolean) => {
+      isMuted = mute;
+    },
+    outputAudioContext 
+  };
+};

@@ -1,0 +1,8 @@
+{
+  "name": "AfriTradeOS",
+  "description": "The operating system for African cross-border trade, powering the AfCFTA with AI-driven compliance, logistics, and market intelligence.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}
