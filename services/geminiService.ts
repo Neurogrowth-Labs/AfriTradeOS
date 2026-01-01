@@ -9,9 +9,9 @@ const ai = new GoogleGenAI({ apiKey });
 // 1. Market Intelligence (Search Grounding)
 export const getMarketIntelligence = async (query: string) => {
   try {
-    // Switch to stable gemini-2.0-flash to resolve 429 quota errors and improve stability
+    // Switch to gemini-2.0-flash-exp for better quota handling
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-exp',
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
@@ -21,7 +21,15 @@ export const getMarketIntelligence = async (query: string) => {
       text: response.text,
       groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
     };
-  } catch (error) {
+  } catch (error: any) {
+    // Graceful degradation for quota limits
+    if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
+        console.warn("Market Intel Quota Exceeded");
+        return { 
+            text: "Market intelligence is momentarily unavailable due to high demand. Please try again in a minute.", 
+            groundingChunks: [] 
+        };
+    }
     console.error("Market Intel Error:", error);
     throw error;
   }
@@ -79,13 +87,17 @@ export const analyzeCompliance = async (scenario: string) => {
 // 4. Fast Responses (Chatbot/General)
 export const fastChatResponse = async (message: string) => {
   try {
-    // Switch to stable gemini-2.0-flash to resolve 429 quota errors
+    // Switch to gemini-2.0-flash-exp to resolve 429 quota errors
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-exp',
       contents: message,
     });
     return response.text;
-  } catch (error) {
+  } catch (error: any) {
+    // Handle quota exhaustion gracefully
+    if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
+        return "AfriTradeOS Strategic Brief: Market stability is currently being monitored. Real-time insights are paused due to high traffic volume.";
+    }
     console.error("Fast Chat Error:", error);
     throw error;
   }
@@ -180,7 +192,8 @@ export type LiveEvent = {
 
 export const connectLiveSession = async (
   onEvent: (event: LiveEvent) => void,
-  onClose: () => void
+  onClose: () => void,
+  persona: string 
 ) => {
   const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
   const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
@@ -203,7 +216,7 @@ export const connectLiveSession = async (
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
       },
-      systemInstruction: "You are 'AfriTrade Assistant', a helpful voice guide for the AfriTradeOS platform. Keep answers concise and professional.",
+      systemInstruction: `You are 'AfriTrade Assistant', a helpful voice guide for the AfriTradeOS platform. You are speaking with a user who is a: ${persona}. Tailor your advice and tone to their specific needs. Keep answers concise and professional.`,
       outputAudioTranscription: {}, 
       inputAudioTranscription: {}, 
     },

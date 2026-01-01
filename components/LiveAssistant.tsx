@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Mic, MicOff, Radio, Volume2, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Radio, Volume2, Loader2, UserCircle } from 'lucide-react';
 import { connectLiveSession, LiveEvent } from '../services/geminiService';
+import { UserPersona } from '../types';
 
 export const LiveAssistant: React.FC = () => {
   const [active, setActive] = useState(false);
@@ -8,6 +9,7 @@ export const LiveAssistant: React.FC = () => {
   const [transcript, setTranscript] = useState<{role: 'user'|'model', text: string}[]>([]);
   const [volume, setVolume] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [persona, setPersona] = useState<UserPersona>(UserPersona.EXPORTER_SME);
   
   const disconnectRef = useRef<(() => Promise<void>) | null>(null);
   const setMuteRef = useRef<((mute: boolean) => void) | null>(null);
@@ -76,7 +78,8 @@ export const LiveAssistant: React.FC = () => {
         () => {
           setActive(false);
           updateStatus('Disconnected');
-        }
+        },
+        persona // Pass the selected persona
       );
 
       if (session) {
@@ -140,6 +143,25 @@ export const LiveAssistant: React.FC = () => {
                     {active ? 'AfriTrade Assistant' : 'AfriTrade Voice Assistant'}
                 </h2>
                 
+                {/* Persona Selector (Only when inactive) */}
+                {!active && (
+                  <div className="mb-6 w-full max-w-xs relative animate-fade-in">
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 text-center">Select Your Persona</label>
+                    <div className="relative">
+                      <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select 
+                        value={persona}
+                        onChange={(e) => setPersona(e.target.value as UserPersona)}
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-sm font-medium focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none appearance-none cursor-pointer transition-all hover:bg-white"
+                      >
+                        {Object.values(UserPersona).map((p) => (
+                          <option key={p} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {/* Granular Status Indicator */}
                 <div className="h-8 mb-6 flex items-center justify-center">
                     {active && (
