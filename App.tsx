@@ -11,7 +11,9 @@ import {
   Bell,
   Moon,
   Sun,
-  Briefcase
+  Briefcase,
+  Landmark,
+  Users
 } from 'lucide-react';
 import { AppView } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -21,6 +23,8 @@ import { Compliance } from './components/Compliance';
 import { Logistics } from './components/Logistics';
 import { LiveAssistant } from './components/LiveAssistant';
 import { MarketingStudio } from './components/MarketingStudio';
+import { TradeFinance } from './components/TradeFinance';
+import { Marketplace } from './components/Marketplace';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -52,6 +56,8 @@ export default function App() {
       case AppView.MARKET_INTEL: return <MarketIntel />;
       case AppView.COMPLIANCE: return <Compliance />;
       case AppView.LOGISTICS: return <Logistics />;
+      case AppView.TRADE_FINANCE: return <TradeFinance />;
+      case AppView.MARKETPLACE: return <Marketplace />;
       case AppView.LIVE_ASSISTANT: return <LiveAssistant />;
       case AppView.MARKETING: return <MarketingStudio />;
       default: return <Dashboard />;
@@ -93,13 +99,17 @@ export default function App() {
           </button>
         </div>
 
-        <nav className="p-4 space-y-1 mt-4">
+        <nav className="p-4 space-y-1 mt-4 overflow-y-auto max-h-[calc(100vh-180px)] custom-scrollbar">
           <div className="px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">Platform</div>
           <NavItem view={AppView.DASHBOARD} icon={LayoutDashboard} label="Command Center" />
           <NavItem view={AppView.TRADE_LIFECYCLE} icon={Briefcase} label="Trade Workspace" />
+          <NavItem view={AppView.TRADE_FINANCE} icon={Landmark} label="Trade Finance" />
           <NavItem view={AppView.MARKET_INTEL} icon={Globe} label="Market Intelligence" />
           <NavItem view={AppView.COMPLIANCE} icon={Scale} label="Trade Compliance" />
           <NavItem view={AppView.LOGISTICS} icon={Truck} label="Logistics Grid" />
+          
+          <div className="px-4 py-2 mt-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Ecosystem</div>
+          <NavItem view={AppView.MARKETPLACE} icon={Users} label="Partner Network" />
           
           <div className="px-4 py-2 mt-6 text-xs font-bold text-slate-500 uppercase tracking-wider">AI Tools</div>
           <NavItem view={AppView.LIVE_ASSISTANT} icon={Mic} label="Voice Assistant" />
@@ -128,9 +138,11 @@ export default function App() {
             <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               {currentView === AppView.DASHBOARD ? 'Dashboard' : 
                currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
+               currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
                currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
                currentView === AppView.COMPLIANCE ? 'Compliance Engine' :
                currentView === AppView.LOGISTICS ? 'Logistics' :
+               currentView === AppView.MARKETPLACE ? 'Partner Network' :
                currentView === AppView.LIVE_ASSISTANT ? 'Live Assistant' : 'Marketing Studio'}
             </h1>
           </div>

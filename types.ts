@@ -4,6 +4,8 @@ export enum AppView {
   MARKET_INTEL = 'MARKET_INTEL', // Search Grounding
   COMPLIANCE = 'COMPLIANCE', // Thinking Mode
   LOGISTICS = 'LOGISTICS', // Maps Grounding
+  TRADE_FINANCE = 'TRADE_FINANCE', // New Finance
+  MARKETPLACE = 'MARKETPLACE', // New Network
   LIVE_ASSISTANT = 'LIVE_ASSISTANT', // Live API
   MARKETING = 'MARKETING', // Image Gen
   READINESS = 'READINESS', // Fast responses
