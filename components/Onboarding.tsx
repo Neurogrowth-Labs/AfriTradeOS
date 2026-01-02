@@ -12,45 +12,97 @@ import {
   Loader2,
   Lock,
   Landmark,
-  User
+  User,
+  Mail,
+  Phone,
+  Key
 } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (role: UserPersona, profile: any) => void;
 }
 
+const AFRICAN_COUNTRIES = [
+  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde", 
+  "Cameroon", "Central African Republic", "Chad", "Comoros", "DR Congo", "Republic of Congo", 
+  "Cote d'Ivoire", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", 
+  "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", 
+  "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", 
+  "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", 
+  "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", 
+  "Tunisia", "Uganda", "Zambia", "Zimbabwe"
+];
+
+type AuthView = 'LOGIN' | 'SIGNUP' | 'ROLE_SELECT' | 'PROFILE_SETUP';
+
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
-  const [step, setStep] = useState(0);
+  const [view, setView] = useState<AuthView>('LOGIN');
   const [selectedRole, setSelectedRole] = useState<UserPersona | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Login State
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Signup State
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+
+  // Profile State
   const [profile, setProfile] = useState({
     country: 'Ghana',
-    partners: 'Kenya, Nigeria',
+    companyName: '',
+    userName: '',
+    email: '',
+    phone: '',
     products: 'Cocoa, Shea Butter',
     size: 'SME'
   });
 
-  const handleLogin = (method: string) => {
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    // Simulate auth delay
+    // Simulate Login API
     setTimeout(() => {
         setLoading(false);
-        setStep(1);
-    }, 800);
+        // Existing user bypasses onboarding
+        onComplete(UserPersona.EXPORTER_SME, {
+            userName: 'Kofi Mensah',
+            companyName: 'Golden Cocoa Ltd',
+            email: loginEmail || 'kofi@example.com',
+            country: 'Ghana',
+            role: UserPersona.EXPORTER_SME,
+            phone: '+233 54 123 4567'
+        });
+    }, 1500);
+  };
+
+  const handleSignupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupName || !signupEmail || !signupPassword) return;
+    
+    setLoading(true);
+    // Simulate Signup API
+    setTimeout(() => {
+        setLoading(false);
+        setProfile(prev => ({ ...prev, userName: signupName, email: signupEmail }));
+        setView('ROLE_SELECT');
+    }, 1000);
   };
 
   const handleRoleSelect = (role: UserPersona) => {
       setSelectedRole(role);
   };
 
-  const handleNextStep = () => {
-      if (step === 1 && selectedRole) setStep(2);
+  const handleRoleNext = () => {
+      if (selectedRole) setView('PROFILE_SETUP');
   };
 
   const handleFinalize = () => {
       if (!selectedRole) return;
       setLoading(true);
-      // Simulate profile creation
+      // Simulate Profile Update API
       setTimeout(() => {
           setLoading(false);
           onComplete(selectedRole, profile);
@@ -72,185 +124,292 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-trade-secondary/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-trade-accent/10 rounded-full blur-3xl" />
 
-        <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 min-h-[600px] flex">
+        <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 min-h-[550px] flex">
             
             {/* Left Panel: Visual & Messaging */}
-            <div className="hidden md:flex w-1/2 bg-trade-primary relative p-10 flex-col justify-between text-white overflow-hidden">
+            <div className="hidden md:flex w-5/12 bg-trade-primary relative p-8 flex-col justify-between text-white overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-trade-primary/95 to-trade-secondary/95 z-10" />
                 <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" alt="Trade" />
                 
                 <div className="relative z-20">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-xl flex items-center justify-center font-bold font-heading text-white text-2xl shadow-lg">A</div>
-                        <span className="text-2xl font-bold font-heading tracking-tight">AfriTradeOS</span>
+                    <div className="flex items-center gap-2 mb-4">
+                        <div className="w-8 h-8 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-lg flex items-center justify-center font-bold font-heading text-white text-lg shadow-lg">A</div>
+                        <span className="text-xl font-bold font-heading tracking-tight">AfriTradeOS</span>
                     </div>
-                    <h1 className="text-4xl font-bold font-heading leading-tight mb-4">
-                        Africa’s Unified Digital Trade Infrastructure.
+                    <h1 className="text-3xl font-bold font-heading leading-tight mb-3">
+                        {view === 'LOGIN' ? 'Welcome Back.' : 'Join the Network.'}
                     </h1>
-                    <p className="text-gray-300 text-lg">
-                        Powering the AfCFTA with AI-driven compliance, logistics, and market intelligence.
+                    <p className="text-gray-300 text-sm leading-relaxed">
+                        {view === 'LOGIN' 
+                            ? 'Securely access your trade dashboard, monitor live shipments, and manage compliance from one unified operating system.'
+                            : 'Powering the AfCFTA with AI-driven compliance, logistics, and market intelligence. Start your journey today.'
+                        }
                     </p>
                 </div>
 
-                <div className="relative z-20 space-y-4">
-                    <div className="flex items-center gap-3 text-sm text-gray-200">
-                        <CheckCircle className="w-5 h-5 text-trade-accent" /> 
+                <div className="relative z-20 space-y-3">
+                    <div className="flex items-center gap-3 text-xs text-gray-200">
+                        <CheckCircle className="w-4 h-4 text-trade-accent" /> 
                         <span>Instant Rules of Origin Compliance</span>
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-200">
-                        <CheckCircle className="w-5 h-5 text-trade-accent" /> 
+                    <div className="flex items-center gap-3 text-xs text-gray-200">
+                        <CheckCircle className="w-4 h-4 text-trade-accent" /> 
                         <span>Verified Partner Network</span>
                     </div>
-                    <div className="flex items-center gap-3 text-sm text-gray-200">
-                        <CheckCircle className="w-5 h-5 text-trade-accent" /> 
+                    <div className="flex items-center gap-3 text-xs text-gray-200">
+                        <CheckCircle className="w-4 h-4 text-trade-accent" /> 
                         <span>Access to Trade Finance</span>
                     </div>
                 </div>
             </div>
 
             {/* Right Panel: Interactive Flow */}
-            <div className="w-full md:w-1/2 p-10 flex flex-col justify-center relative bg-trade-surface">
+            <div className="w-full md:w-7/12 p-8 flex flex-col justify-center relative bg-white dark:bg-slate-900 transition-all">
                 
-                {/* Step 0: Welcome / Login */}
-                {step === 0 && (
-                    <div className="space-y-8 animate-fade-in">
+                {/* 1. LOGIN VIEW */}
+                {view === 'LOGIN' && (
+                    <form onSubmit={handleLoginSubmit} className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
                         <div>
-                            <h2 className="text-3xl font-bold font-heading text-trade-primary dark:text-white mb-2">Welcome Back</h2>
-                            <p className="text-gray-500 dark:text-gray-400">Sign in to access your trade dashboard.</p>
+                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">Sign In</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Access your AfriTradeOS account.</p>
                         </div>
 
                         <div className="space-y-4">
-                            <button 
-                                onClick={() => handleLogin('email')}
-                                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-medium text-gray-700 dark:text-gray-200"
-                            >
-                                <User className="w-5 h-5" />
-                                Continue with Email
+                            <div>
+                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Email Address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="email" 
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        placeholder="name@company.com"
+                                        value={loginEmail}
+                                        onChange={e => setLoginEmail(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5 flex justify-between">
+                                    Password
+                                    <a href="#" className="text-trade-secondary dark:text-blue-400 hover:underline normal-case font-medium">Forgot?</a>
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="password" 
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        placeholder="••••••••"
+                                        value={loginPassword}
+                                        onChange={e => setLoginPassword(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70"
+                        >
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
+                        </button>
+
+                        <div className="relative my-6">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100 dark:border-slate-800"></div></div>
+                            <div className="relative flex justify-center text-xs"><span className="px-2 bg-white dark:bg-slate-900 text-gray-400">Or continue with</span></div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <button type="button" className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all">
+                                <Globe className="w-4 h-4 text-trade-primary dark:text-white" />
+                                <span className="text-xs font-bold text-trade-primary dark:text-white">Google</span>
                             </button>
-                            <button 
-                                onClick={() => handleLogin('google')}
-                                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-medium text-gray-700 dark:text-gray-200"
-                            >
-                                <Globe className="w-5 h-5 text-trade-secondary" />
-                                Continue with Google
-                            </button>
-                            <button 
-                                onClick={() => handleLogin('sso')}
-                                className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-all font-medium text-gray-700 dark:text-gray-200"
-                            >
-                                <Lock className="w-5 h-5 text-trade-accent" />
-                                Government SSO
+                            <button type="button" className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all">
+                                <Lock className="w-4 h-4 text-trade-accent" />
+                                <span className="text-xs font-bold text-trade-primary dark:text-white">SSO</span>
                             </button>
                         </div>
 
-                        <div className="text-center text-xs text-gray-400">
-                            By continuing, you agree to the AfCFTA Digital Trade Protocols.
-                        </div>
-                    </div>
+                        <p className="text-center text-sm text-gray-500 mt-6">
+                            Don't have an account? <button type="button" onClick={() => setView('SIGNUP')} className="text-trade-primary dark:text-white font-bold hover:underline">Sign up</button>
+                        </p>
+                    </form>
                 )}
 
-                {/* Step 1: Role Selection */}
-                {step === 1 && (
-                    <div className="space-y-6 animate-fade-in">
+                {/* 2. SIGN UP VIEW */}
+                {view === 'SIGNUP' && (
+                    <form onSubmit={handleSignupSubmit} className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
                         <div>
-                             <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-2">Select Account Type</h2>
-                             <p className="text-gray-500 dark:text-gray-400 text-sm">Your role determines tools, permissions, and insights.</p>
+                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">Create Account</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Start your AfCFTA journey today.</p>
                         </div>
 
-                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Full Name</label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="text" 
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        placeholder="Kofi Mensah"
+                                        value={signupName}
+                                        onChange={e => setSignupName(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Work Email</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="email" 
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        placeholder="name@company.com"
+                                        value={signupEmail}
+                                        onChange={e => setSignupEmail(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Password</label>
+                                <div className="relative">
+                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="password" 
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        placeholder="Create a strong password"
+                                        value={signupPassword}
+                                        onChange={e => setSignupPassword(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70"
+                        >
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Account'}
+                        </button>
+
+                        <p className="text-center text-sm text-gray-500 mt-6">
+                            Already have an account? <button type="button" onClick={() => setView('LOGIN')} className="text-trade-primary dark:text-white font-bold hover:underline">Sign in</button>
+                        </p>
+                    </form>
+                )}
+
+                {/* 3. ROLE SELECTION (Onboarding Step 1) */}
+                {view === 'ROLE_SELECT' && (
+                    <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
+                        <div>
+                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-1">Select Account Type</h2>
+                             <p className="text-gray-500 dark:text-gray-400 text-xs">Your role determines tools, permissions, and insights.</p>
+                        </div>
+
+                        <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
                             {roles.map(r => (
                                 <button
                                     key={r.id}
                                     onClick={() => handleRoleSelect(r.id)}
-                                    className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
                                         selectedRole === r.id 
                                         ? 'border-trade-accent bg-trade-accent/5 ring-1 ring-trade-accent' 
                                         : 'border-gray-200 dark:border-slate-700 hover:border-trade-secondary/50 dark:hover:border-slate-600'
                                     }`}
                                 >
-                                    <div className={`p-3 rounded-lg ${selectedRole === r.id ? 'bg-trade-accent text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400'}`}>
-                                        <r.icon className="w-6 h-6" />
+                                    <div className={`p-2 rounded-md ${selectedRole === r.id ? 'bg-trade-accent text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400'}`}>
+                                        <r.icon className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className={`font-bold ${selectedRole === r.id ? 'text-trade-primary dark:text-trade-accent' : 'text-gray-900 dark:text-white'}`}>{r.label}</h3>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{r.desc}</p>
+                                        <h3 className={`text-sm font-bold ${selectedRole === r.id ? 'text-trade-primary dark:text-trade-accent' : 'text-trade-primary dark:text-white'}`}>{r.label}</h3>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{r.desc}</p>
                                     </div>
                                 </button>
                             ))}
                         </div>
 
                         <button 
-                            onClick={handleNextStep}
+                            onClick={handleRoleNext}
                             disabled={!selectedRole}
-                            className="w-full py-4 bg-trade-primary hover:bg-trade-secondary text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                            Continue <ArrowRight className="w-5 h-5" />
+                            Continue <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
                 )}
 
-                {/* Step 2: Trade Profile */}
-                {step === 2 && (
-                     <div className="space-y-6 animate-fade-in">
+                {/* 4. PROFILE SETUP (Onboarding Step 2) */}
+                {view === 'PROFILE_SETUP' && (
+                     <div className="space-y-5 animate-fade-in max-w-sm mx-auto w-full">
                          <div>
-                             <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-2">Complete Profile</h2>
-                             <p className="text-gray-500 dark:text-gray-400 text-sm">Customize your trade operating system.</p>
+                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-1">Organization Profile</h2>
+                             <p className="text-gray-500 dark:text-gray-400 text-xs">Tell us about your business to optimize the OS.</p>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Country of Operation</label>
-                                <select 
-                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-trade-accent/50"
-                                    value={profile.country}
-                                    onChange={(e) => setProfile({...profile, country: e.target.value})}
-                                >
-                                    <option>Ghana</option>
-                                    <option>Nigeria</option>
-                                    <option>Kenya</option>
-                                    <option>South Africa</option>
-                                    <option>Egypt</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Primary Products (HS Code Assisted)</label>
-                                <input 
-                                    type="text" 
-                                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-trade-accent/50"
-                                    value={profile.products}
-                                    onChange={(e) => setProfile({...profile, products: e.target.value})}
-                                    placeholder="e.g. Cocoa, Textiles, Machinery"
-                                />
-                                <div className="mt-1 flex items-center gap-1 text-xs text-trade-secondary dark:text-blue-400">
-                                    <Sparkles className="w-3 h-3 text-trade-accent" />
-                                    <span>AI suggests: HS 1806.32 (Cocoa Paste)</span>
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Your Name</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        value={profile.userName}
+                                        onChange={(e) => setProfile({...profile, userName: e.target.value})}
+                                        placeholder="John Doe"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Company</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        value={profile.companyName}
+                                        onChange={(e) => setProfile({...profile, companyName: e.target.value})}
+                                        placeholder="Trading Co. Ltd"
+                                    />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Company Size</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button 
-                                        onClick={() => setProfile({...profile, size: 'SME'})}
-                                        className={`p-3 rounded-xl border text-center text-sm font-bold transition-all ${
-                                            profile.size === 'SME' 
-                                            ? 'bg-trade-accent/10 border-trade-accent text-trade-primary dark:text-trade-accent' 
-                                            : 'border-gray-200 dark:border-slate-700 text-gray-500'
-                                        }`}
+                                <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Country of Operation</label>
+                                <select 
+                                    className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                    value={profile.country}
+                                    onChange={(e) => setProfile({...profile, country: e.target.value})}
+                                >
+                                    {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Phone</label>
+                                    <input 
+                                        type="tel" 
+                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        value={profile.phone}
+                                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                                        placeholder="+233..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Size</label>
+                                    <select 
+                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        value={profile.size}
+                                        onChange={(e) => setProfile({...profile, size: e.target.value})}
                                     >
-                                        SME
-                                    </button>
-                                    <button 
-                                        onClick={() => setProfile({...profile, size: 'Enterprise'})}
-                                        className={`p-3 rounded-xl border text-center text-sm font-bold transition-all ${
-                                            profile.size === 'Enterprise' 
-                                            ? 'bg-trade-accent/10 border-trade-accent text-trade-primary dark:text-trade-accent' 
-                                            : 'border-gray-200 dark:border-slate-700 text-gray-500'
-                                        }`}
-                                    >
-                                        Enterprise
-                                    </button>
+                                        <option>Sole Proprietor</option>
+                                        <option>SME</option>
+                                        <option>Enterprise</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -258,14 +417,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <button 
                             onClick={handleFinalize}
                             disabled={loading}
-                            className="w-full py-4 bg-trade-primary hover:bg-trade-secondary text-white rounded-xl font-bold transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2"
                         >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Launch Dashboard'}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Launch Dashboard'}
                         </button>
                      </div>
                 )}
                 
-                {loading && step === 0 && (
+                {/* Global Loading Overlay (if needed) */}
+                {loading && (
                     <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center z-50">
                         <Loader2 className="w-10 h-10 text-trade-primary animate-spin" />
                     </div>
@@ -296,22 +456,3 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     </div>
   );
 };
-
-function Sparkles(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-    </svg>
-  );
-}

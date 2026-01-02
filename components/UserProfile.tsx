@@ -6,41 +6,43 @@ import {
   Settings, 
   CreditCard, 
   FileText, 
-  Lock, 
   CheckCircle, 
   AlertTriangle, 
   Globe, 
   Smartphone, 
   Mail, 
-  Bell, 
   Zap, 
   LogOut, 
   LayoutGrid, 
   Users, 
-  Activity, 
-  Clock, 
   Download,
   HelpCircle,
-  MessageSquare,
-  Loader2
+  Loader2,
+  Key
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbAuditLog, UserPersona } from '../types';
 
 type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit';
 
-export const UserProfile: React.FC = () => {
+interface UserProfileProps {
+  profileData?: any;
+  userRole?: UserPersona;
+}
+
+export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole }) => {
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [logs, setLogs] = useState<DbAuditLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
 
-  // Mock State for Form Data
+  // Initialize state from props or defaults
   const [personalInfo, setPersonalInfo] = useState({
-    name: 'Kofi Mensah',
-    email: 'kofi.m@afrotrade.com',
-    phone: '+233 54 123 4567',
-    role: UserPersona.EXPORTER_SME,
-    country: 'Ghana',
+    name: profileData?.userName || 'Kofi Mensah',
+    email: profileData?.email || 'kofi.m@afrotrade.com',
+    phone: profileData?.phone || '+233 54 123 4567',
+    role: userRole || UserPersona.EXPORTER_SME,
+    country: profileData?.country || 'Ghana',
+    companyName: profileData?.companyName || 'Golden Cocoa Ltd.',
     language: 'English',
     timezone: 'GMT (Accra)'
   });
@@ -52,6 +54,21 @@ export const UserProfile: React.FC = () => {
     aiDataShare: true,
     aiExplain: true
   });
+
+  // Sync state if props update
+  useEffect(() => {
+    if (profileData) {
+      setPersonalInfo(prev => ({
+        ...prev,
+        name: profileData.userName || prev.name,
+        email: profileData.email || prev.email,
+        phone: profileData.phone || prev.phone,
+        role: userRole || prev.role,
+        country: profileData.country || prev.country,
+        companyName: profileData.companyName || prev.companyName
+      }));
+    }
+  }, [profileData, userRole]);
 
   useEffect(() => {
     if (activeTab === 'audit') {
@@ -85,7 +102,7 @@ export const UserProfile: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center gap-6">
          <div className="relative">
              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-slate-700 overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg">
-                 <img src="https://picsum.photos/200" alt="Profile" className="w-full h-full object-cover" />
+                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personalInfo.name)}&background=0B1F33&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
              </div>
              <div className="absolute bottom-0 right-0 bg-green-500 text-white p-1.5 rounded-full border-2 border-white dark:border-slate-800" title="Verified ID">
                  <CheckCircle className="w-4 h-4" />
@@ -93,9 +110,9 @@ export const UserProfile: React.FC = () => {
          </div>
          
          <div className="flex-1 text-center md:text-left">
-             <h1 className="text-2xl font-bold font-heading text-gray-900 dark:text-white mb-1">{personalInfo.name}</h1>
+             <h1 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">{personalInfo.name}</h1>
              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                 <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> Golden Cocoa Ltd.</span>
+                 <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> {personalInfo.companyName}</span>
                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
                  <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" /> {personalInfo.country}</span>
              </div>
@@ -159,27 +176,27 @@ export const UserProfile: React.FC = () => {
              {activeTab === 'general' && (
                  <div className="space-y-8 animate-fade-in">
                      <div>
-                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Identity & Personal Information</h2>
+                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Identity & Personal Information</h2>
                          <p className="text-sm text-gray-500">Your profile represents your trade credibility across the AfriTradeOS network.</p>
                      </div>
 
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <div className="space-y-1">
-                             <label className="text-xs font-bold text-gray-500 uppercase">Full Legal Name</label>
-                             <input type="text" value={personalInfo.name} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white" readOnly />
+                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Full Legal Name</label>
+                             <input type="text" value={personalInfo.name} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
                              <p className="text-[10px] text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Verified by Govt ID</p>
                          </div>
                          <div className="space-y-1">
-                             <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
-                             <input type="email" value={personalInfo.email} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white" />
+                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Email Address</label>
+                             <input type="email" value={personalInfo.email} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
                          </div>
                          <div className="space-y-1">
-                             <label className="text-xs font-bold text-gray-500 uppercase">Phone Number</label>
-                             <input type="tel" value={personalInfo.phone} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white" />
+                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Phone Number</label>
+                             <input type="tel" value={personalInfo.phone} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
                          </div>
                          <div className="space-y-1">
-                             <label className="text-xs font-bold text-gray-500 uppercase">Primary Language</label>
-                             <select className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white">
+                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Primary Language</label>
+                             <select className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white">
                                  <option>English</option>
                                  <option>French</option>
                                  <option>Portuguese</option>
@@ -189,13 +206,13 @@ export const UserProfile: React.FC = () => {
                      </div>
 
                      <div className="pt-6 border-t border-gray-100 dark:border-slate-700">
-                         <h3 className="font-bold text-gray-900 dark:text-white mb-4">Notification Preferences</h3>
+                         <h3 className="font-bold text-trade-primary dark:text-white mb-4">Notification Preferences</h3>
                          <div className="space-y-4">
                              <div className="flex items-center justify-between">
                                  <div className="flex items-center gap-3">
                                      <Mail className="w-5 h-5 text-gray-400" />
                                      <div>
-                                         <p className="text-sm font-medium text-gray-900 dark:text-white">Email Notifications</p>
+                                         <p className="text-sm font-medium text-trade-primary dark:text-white">Email Notifications</p>
                                          <p className="text-xs text-gray-500">Weekly digests and critical alerts</p>
                                      </div>
                                  </div>
@@ -207,7 +224,7 @@ export const UserProfile: React.FC = () => {
                                  <div className="flex items-center gap-3">
                                      <Smartphone className="w-5 h-5 text-gray-400" />
                                      <div>
-                                         <p className="text-sm font-medium text-gray-900 dark:text-white">SMS / WhatsApp Alerts</p>
+                                         <p className="text-sm font-medium text-trade-primary dark:text-white">SMS / WhatsApp Alerts</p>
                                          <p className="text-xs text-gray-500">Real-time trade status updates</p>
                                      </div>
                                  </div>
@@ -225,10 +242,10 @@ export const UserProfile: React.FC = () => {
                  <div className="space-y-8 animate-fade-in">
                      <div className="flex justify-between items-start">
                          <div>
-                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Organization Profile</h2>
+                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Organization Profile</h2>
                              <p className="text-sm text-gray-500">Manage business details and team permissions.</p>
                          </div>
-                         <button className="text-xs font-bold bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-900 dark:text-white px-3 py-2 rounded-lg flex items-center gap-2">
+                         <button className="text-xs font-bold bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-trade-primary dark:text-white px-3 py-2 rounded-lg flex items-center gap-2">
                              <LayoutGrid className="w-4 h-4" /> View Public Profile
                          </button>
                      </div>
@@ -239,7 +256,7 @@ export const UserProfile: React.FC = () => {
                                  <Building2 className="w-8 h-8 text-trade-primary" />
                              </div>
                              <div>
-                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Golden Cocoa Producers Ltd.</h3>
+                                 <h3 className="text-lg font-bold text-trade-primary dark:text-white">{personalInfo.companyName}</h3>
                                  <p className="text-sm text-gray-500 mb-2">Registration No: GH-2023-88291 • Tax ID: C00088219</p>
                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">KYB Verified</span>
                              </div>
@@ -247,7 +264,7 @@ export const UserProfile: React.FC = () => {
                      </div>
 
                      <div>
-                         <h3 className="font-bold text-gray-900 dark:text-white mb-4">Team & Permissions</h3>
+                         <h3 className="font-bold text-trade-primary dark:text-white mb-4">Team & Permissions</h3>
                          <div className="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
                              <table className="w-full text-sm text-left">
                                  <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 font-medium">
@@ -260,19 +277,19 @@ export const UserProfile: React.FC = () => {
                                  </thead>
                                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                                      <tr>
-                                         <td className="p-4 font-medium text-gray-900 dark:text-white">Kofi Mensah (You)</td>
+                                         <td className="p-4 font-medium text-trade-primary dark:text-white">{personalInfo.name} (You)</td>
                                          <td className="p-4">Admin</td>
                                          <td className="p-4 text-gray-500">Full Access</td>
                                          <td className="p-4 text-right text-gray-400">Owner</td>
                                      </tr>
                                      <tr>
-                                         <td className="p-4 font-medium text-gray-900 dark:text-white">Sarah Osei</td>
+                                         <td className="p-4 font-medium text-trade-primary dark:text-white">Sarah Osei</td>
                                          <td className="p-4">Logistics Mgr</td>
                                          <td className="p-4 text-gray-500">Trades, Shipments</td>
                                          <td className="p-4 text-right"><button className="text-blue-600 hover:underline">Edit</button></td>
                                      </tr>
                                      <tr>
-                                         <td className="p-4 font-medium text-gray-900 dark:text-white">Emmanuel K.</td>
+                                         <td className="p-4 font-medium text-trade-primary dark:text-white">Emmanuel K.</td>
                                          <td className="p-4">Finance</td>
                                          <td className="p-4 text-gray-500">Invoices, Banking</td>
                                          <td className="p-4 text-right"><button className="text-blue-600 hover:underline">Edit</button></td>
@@ -294,13 +311,13 @@ export const UserProfile: React.FC = () => {
                  <div className="space-y-8 animate-fade-in">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <div>
-                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Security Settings</h2>
+                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Security Settings</h2>
                              <p className="text-sm text-gray-500 mb-6">Manage how you access your account.</p>
                              
                              <div className="space-y-4">
                                  <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-between">
                                      <div>
-                                         <p className="font-bold text-gray-900 dark:text-white">Two-Factor Authentication</p>
+                                         <p className="font-bold text-trade-primary dark:text-white">Two-Factor Authentication</p>
                                          <p className="text-xs text-gray-500">Secure your account with SMS or Authenticator.</p>
                                      </div>
                                      <button onClick={() => toggle('twoFactor')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.twoFactor ? 'bg-green-500' : 'bg-gray-300'}`}>
@@ -309,16 +326,49 @@ export const UserProfile: React.FC = () => {
                                  </div>
                                  <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-between">
                                      <div>
-                                         <p className="font-bold text-gray-900 dark:text-white">Password</p>
+                                         <p className="font-bold text-trade-primary dark:text-white">Password</p>
                                          <p className="text-xs text-gray-500">Last changed 3 months ago.</p>
                                      </div>
                                      <button className="text-sm text-blue-600 hover:underline font-bold">Update</button>
+                                 </div>
+
+                                 {/* SSO Settings */}
+                                 <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                                     <div className="flex items-center justify-between mb-3">
+                                         <div>
+                                             <p className="font-bold text-trade-primary dark:text-white">Single Sign-On (SSO)</p>
+                                             <p className="text-xs text-gray-500">Link institutional identity providers.</p>
+                                         </div>
+                                     </div>
+                                     <div className="space-y-2">
+                                         <button className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                             <div className="flex items-center gap-2">
+                                                 <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-gray-200 text-xs font-bold text-slate-800">G</div>
+                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Google Workspace</span>
+                                             </div>
+                                             <span className="text-xs text-blue-600 font-bold">Link</span>
+                                         </button>
+                                         <button className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                             <div className="flex items-center gap-2">
+                                                 <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">M</div>
+                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Microsoft Entra ID</span>
+                                             </div>
+                                             <span className="text-xs text-blue-600 font-bold">Link</span>
+                                         </button>
+                                         <button className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                             <div className="flex items-center gap-2">
+                                                 <div className="w-6 h-6 rounded-full bg-trade-primary flex items-center justify-center text-white text-xs font-bold"><Key className="w-3 h-3" /></div>
+                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SAML / OIDC Custom</span>
+                                             </div>
+                                             <span className="text-xs text-blue-600 font-bold">Configure</span>
+                                         </button>
+                                     </div>
                                  </div>
                              </div>
                          </div>
 
                          <div>
-                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Compliance Center</h2>
+                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Compliance Center</h2>
                              <p className="text-sm text-gray-500 mb-6">Status of your regulatory requirements.</p>
 
                              <div className="space-y-3">
@@ -347,32 +397,6 @@ export const UserProfile: React.FC = () => {
                              </div>
                          </div>
                      </div>
-
-                     <div className="pt-6 border-t border-gray-100 dark:border-slate-700">
-                         <h3 className="font-bold text-gray-900 dark:text-white mb-4">Active Sessions</h3>
-                         <div className="space-y-2">
-                             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
-                                 <div className="flex items-center gap-3">
-                                     <Globe className="w-5 h-5 text-gray-400" />
-                                     <div>
-                                         <p className="text-sm font-bold text-gray-900 dark:text-white">Chrome on MacOS</p>
-                                         <p className="text-xs text-gray-500">Accra, Ghana • Active Now</p>
-                                     </div>
-                                 </div>
-                                 <span className="text-xs font-bold text-green-600">Current</span>
-                             </div>
-                             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
-                                 <div className="flex items-center gap-3">
-                                     <Smartphone className="w-5 h-5 text-gray-400" />
-                                     <div>
-                                         <p className="text-sm font-bold text-gray-900 dark:text-white">AfriTrade App on iPhone 13</p>
-                                         <p className="text-xs text-gray-500">Accra, Ghana • 2 hours ago</p>
-                                     </div>
-                                 </div>
-                                 <button className="text-xs text-red-500 font-bold hover:underline">Revoke</button>
-                             </div>
-                         </div>
-                     </div>
                  </div>
              )}
 
@@ -380,7 +404,7 @@ export const UserProfile: React.FC = () => {
              {activeTab === 'ai' && (
                  <div className="space-y-8 animate-fade-in">
                      <div>
-                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">AI & Data Control</h2>
+                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">AI & Data Control</h2>
                          <p className="text-sm text-gray-500">You control how your data contributes to Africa’s trade intelligence.</p>
                      </div>
 
@@ -397,7 +421,7 @@ export const UserProfile: React.FC = () => {
                      <div className="space-y-6">
                          <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-700">
                              <div>
-                                 <p className="font-bold text-gray-900 dark:text-white">Ecosystem Data Sharing</p>
+                                 <p className="font-bold text-trade-primary dark:text-white">Ecosystem Data Sharing</p>
                                  <p className="text-xs text-gray-500 max-w-md">Allow anonymized trade flow data to contribute to the Market Intelligence demand heatmap. Helps improve regional forecasting.</p>
                              </div>
                              <button onClick={() => toggle('aiDataShare')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.aiDataShare ? 'bg-purple-600' : 'bg-gray-300'}`}>
@@ -407,7 +431,7 @@ export const UserProfile: React.FC = () => {
 
                          <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-700">
                              <div>
-                                 <p className="font-bold text-gray-900 dark:text-white">AI Explainability Mode</p>
+                                 <p className="font-bold text-trade-primary dark:text-white">AI Explainability Mode</p>
                                  <p className="text-xs text-gray-500">Always show "Reasoning" and "Citations" for AI compliance decisions.</p>
                              </div>
                              <button onClick={() => toggle('aiExplain')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.aiExplain ? 'bg-purple-600' : 'bg-gray-300'}`}>
@@ -422,7 +446,7 @@ export const UserProfile: React.FC = () => {
              {activeTab === 'audit' && (
                  <div className="space-y-6 animate-fade-in">
                      <div>
-                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Audit Logs</h2>
+                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Audit Logs</h2>
                          <p className="text-sm text-gray-500">Security trail of all actions taken on your account.</p>
                      </div>
 
@@ -472,7 +496,7 @@ export const UserProfile: React.FC = () => {
              {activeTab === 'billing' && (
                  <div className="space-y-8 animate-fade-in">
                       <div>
-                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Billing & Subscription</h2>
+                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Billing & Subscription</h2>
                          <p className="text-sm text-gray-500">Manage your plan and payment methods.</p>
                      </div>
 
@@ -491,14 +515,14 @@ export const UserProfile: React.FC = () => {
                      </div>
 
                      <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-6">
-                         <h4 className="font-bold text-gray-900 dark:text-white mb-4">Payment Method</h4>
+                         <h4 className="font-bold text-trade-primary dark:text-white mb-4">Payment Method</h4>
                          <div className="flex items-center justify-between">
                              <div className="flex items-center gap-3">
                                  <div className="w-10 h-8 bg-gray-100 rounded flex items-center justify-center">
                                      <CreditCard className="w-5 h-5 text-gray-600" />
                                  </div>
                                  <div>
-                                     <p className="font-medium text-gray-900 dark:text-white">Visa ending in 4242</p>
+                                     <p className="font-medium text-trade-primary dark:text-white">Visa ending in 4242</p>
                                      <p className="text-xs text-gray-500">Expires 12/26</p>
                                  </div>
                              </div>

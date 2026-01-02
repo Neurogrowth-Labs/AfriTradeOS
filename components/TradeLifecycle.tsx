@@ -146,6 +146,14 @@ export const TradeLifecycle: React.FC = () => {
     window.dispatchEvent(event);
   };
 
+  const handlePayment = () => {
+      alert("Redirecting to Secure Payment Gateway (Pan-African Payment and Settlement System)...");
+  };
+
+  const handleDownload = () => {
+      alert("Downloading Commercial Invoice #INV-2024-001...");
+  };
+
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
       
@@ -609,10 +617,10 @@ export const TradeLifecycle: React.FC = () => {
                              </div>
                              
                              <div className="grid grid-cols-2 gap-4 pt-4">
-                                 <button className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20">
+                                 <button onClick={handlePayment} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20">
                                      <CreditCard className="w-4 h-4" /> Pay Now
                                  </button>
-                                 <button className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                 <button onClick={handleDownload} className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                      <FileText className="w-4 h-4" /> Download PDF
                                  </button>
                              </div>

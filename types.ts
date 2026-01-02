@@ -10,6 +10,8 @@ export enum AppView {
   MARKETING = 'MARKETING', // Image Gen
   READINESS = 'READINESS', // Fast responses
   PROFILE = 'PROFILE', // New User Settings
+  ADMIN = 'ADMIN', // New Platform Admin
+  REGULATOR = 'REGULATOR', // New Regulator Oversight
 }
 
 export interface ChartData {
@@ -33,7 +35,8 @@ export enum UserPersona {
   LOGISTICS = 'Logistics Provider',
   BANK = 'Bank / Insurer',
   GOVERNMENT = 'Government Agency',
-  ANALYST = 'Trade Analyst'
+  ANALYST = 'Trade Analyst',
+  ADMIN = 'Platform Admin'
 }
 
 // --- SUPABASE DATA MODEL MAPPING ---
@@ -70,7 +73,7 @@ export interface DbTrade {
   hs_code: string;
   value: number;
   currency: string;
-  status: 'draft' | 'compliance_check' | 'active' | 'completed';
+  status: 'draft' | 'compliance_check' | 'active' | 'completed' | 'paused';
   incoterm?: string;
   created_at: string;
 }
@@ -132,4 +135,24 @@ export interface DbAuditLog {
   timestamp: string;
   ip: string;
   status: 'Success' | 'Failed' | 'Warning';
+}
+
+export interface DbKYCRequest {
+  id: string;
+  entity_name: string;
+  entity_type: 'Individual' | 'Organization';
+  country: string;
+  document_type: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  submitted_at: string;
+  risk_level: 'Low' | 'Medium' | 'High';
+}
+
+export interface DbAMLAlert {
+  id: string;
+  trade_id: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  flag_reason: string;
+  detected_at: string;
+  status: 'Open' | 'Investigating' | 'Resolved';
 }

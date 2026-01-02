@@ -7,6 +7,8 @@ import {
   DbFinanceRequest, 
   DbMarketIntelligence,
   DbAuditLog,
+  DbKYCRequest,
+  DbAMLAlert,
   UserPersona 
 } from '../types';
 
@@ -140,6 +142,20 @@ const MOCK_AUDIT_LOGS: DbAuditLog[] = [
   { id: 'log_2', action: 'Trade Created #TRD-882', user: 'Kofi Mensah', timestamp: '2024-11-04 10:30:00', ip: '102.12.33.1', status: 'Success' },
   { id: 'log_3', action: 'Password Change Attempt', user: 'Kofi Mensah', timestamp: '2024-11-03 14:22:10', ip: '102.12.33.1', status: 'Failed' },
   { id: 'log_4', action: 'API Key Generated', user: 'Admin', timestamp: '2024-11-01 16:45:00', ip: '197.23.11.5', status: 'Warning' },
+  { id: 'log_5', action: 'User Profile Updated', user: 'Sarah Osei', timestamp: '2024-11-05 08:00:00', ip: '154.11.22.9', status: 'Success' },
+  { id: 'log_6', action: 'AML Alert Review', user: 'System Admin', timestamp: '2024-11-05 09:10:00', ip: '197.0.0.1', status: 'Success' },
+];
+
+const MOCK_KYC_REQUESTS: DbKYCRequest[] = [
+  { id: 'KYC-001', entity_name: 'Kwame Trading Ent.', entity_type: 'Organization', country: 'Ghana', document_type: 'Cert. of Incorporation', status: 'Pending', submitted_at: '2024-11-05', risk_level: 'Low' },
+  { id: 'KYC-002', entity_name: 'John Doe Logistics', entity_type: 'Individual', country: 'Nigeria', document_type: 'National ID', status: 'Pending', submitted_at: '2024-11-04', risk_level: 'Medium' },
+  { id: 'KYC-003', entity_name: 'Sankofa Imports', entity_type: 'Organization', country: 'Ghana', document_type: 'Business License', status: 'Approved', submitted_at: '2024-11-01', risk_level: 'Low' },
+];
+
+const MOCK_AML_ALERTS: DbAMLAlert[] = [
+  { id: 'AML-992', trade_id: 'TRD-882', severity: 'High', flag_reason: 'Unusual Volume Spike', detected_at: '2024-11-05 10:00', status: 'Open' },
+  { id: 'AML-993', trade_id: 'TRD-771', severity: 'Critical', flag_reason: 'Sanctioned Entity Match', detected_at: '2024-11-04 14:30', status: 'Investigating' },
+  { id: 'AML-994', trade_id: 'TRD-665', severity: 'Medium', flag_reason: 'Mismatched HS Code Value', detected_at: '2024-11-03 09:15', status: 'Resolved' },
 ];
 
 // --- MOCK DATABASE CLIENT ---
@@ -179,5 +195,17 @@ export const mockDatabase = {
   getAuditLogs: async (): Promise<DbAuditLog[]> => {
     await new Promise(resolve => setTimeout(resolve, 200));
     return MOCK_AUDIT_LOGS;
+  },
+
+  // KYC
+  getKYCRequests: async (): Promise<DbKYCRequest[]> => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return MOCK_KYC_REQUESTS;
+  },
+
+  // AML
+  getAMLAlerts: async (): Promise<DbAMLAlert[]> => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return MOCK_AML_ALERTS;
   }
 };

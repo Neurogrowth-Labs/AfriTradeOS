@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, 
   Navigation, 
@@ -67,12 +67,32 @@ const PROVIDERS = [
 export const Logistics: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'tracking' | 'booking'>('tracking');
   const [selectedShipment, setSelectedShipment] = useState(ACTIVE_SHIPMENTS[0]);
+  const [liveShipments, setLiveShipments] = useState(ACTIVE_SHIPMENTS);
 
   // Booking State
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<{ text: string; maps: any[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const userLocation = { lat: -1.2921, lng: 36.8219 }; // Nairobi
+
+  // Simulate Realtime Tracking Updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setLiveShipments(prev => prev.map(s => {
+            if (s.status === 'on_time' && s.progress < 100) {
+                return { ...s, progress: s.progress + 0.5 }; // Slowly increment
+            }
+            return s;
+        }));
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update selected shipment view when live data changes
+  useEffect(() => {
+      const updated = liveShipments.find(s => s.id === selectedShipment.id);
+      if (updated) setSelectedShipment(updated);
+  }, [liveShipments, selectedShipment.id]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +117,10 @@ export const Logistics: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAction = (action: string) => {
+      alert(`${action} initiated. Awaiting provider confirmation.`);
   };
 
   return (
@@ -133,7 +157,7 @@ export const Logistics: React.FC = () => {
          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
             {/* Shipment List */}
             <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2">
-               {ACTIVE_SHIPMENTS.map(shipment => (
+               {liveShipments.map(shipment => (
                   <div 
                     key={shipment.id}
                     onClick={() => setSelectedShipment(shipment)}
@@ -165,7 +189,7 @@ export const Logistics: React.FC = () => {
                         </div>
                      </div>
                      <div className="w-full bg-gray-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                        <div className="h-full bg-teal-500" style={{ width: `${shipment.progress}%` }} />
+                        <div className="h-full bg-teal-500 transition-all duration-1000 ease-linear" style={{ width: `${shipment.progress}%` }} />
                      </div>
                      <div className="flex justify-between mt-2 text-xs text-gray-500">
                         <span>{shipment.carrier}</span>
@@ -231,10 +255,10 @@ export const Logistics: React.FC = () => {
                                 Shipment is held at Cotonou border control due to missing Certificate of Conformity. Delay impact: +48h.
                             </p>
                             <div className="flex gap-3">
-                                <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
+                                <button onClick={() => handleAction('Agent Contact')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
                                     Contact Agent
                                 </button>
-                                <button className="px-4 py-2 bg-white dark:bg-slate-800 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold rounded-lg transition-colors">
+                                <button onClick={() => handleAction('Document Upload')} className="px-4 py-2 bg-white dark:bg-slate-800 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-bold rounded-lg transition-colors">
                                     Upload Documents
                                 </button>
                             </div>
@@ -320,7 +344,7 @@ export const Logistics: React.FC = () => {
                                </div>
                            </div>
                            
-                           <button className="w-full py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                           <button onClick={() => handleAction('Quote Request')} className="w-full py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
                                Request Quote
                            </button>
                        </div>

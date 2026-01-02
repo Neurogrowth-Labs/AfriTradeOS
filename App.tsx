@@ -17,7 +17,9 @@ import {
   Coins,
   Languages,
   UserCircle,
-  Settings
+  Settings,
+  ShieldAlert,
+  Building
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -32,6 +34,8 @@ import { Marketplace } from './components/Marketplace';
 import { UserProfile } from './components/UserProfile';
 import { CoPilot } from './components/CoPilot';
 import { Onboarding } from './components/Onboarding';
+import { AdminDashboard } from './components/AdminDashboard';
+import { RegulatorDashboard } from './components/RegulatorDashboard';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -74,7 +78,7 @@ export default function App() {
 
   const renderView = () => {
     switch (currentView) {
-      case AppView.DASHBOARD: return <Dashboard userRole={userRole} />;
+      case AppView.DASHBOARD: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
       case AppView.TRADE_LIFECYCLE: return <TradeLifecycle />;
       case AppView.MARKET_INTEL: return <MarketIntel />;
       case AppView.COMPLIANCE: return <Compliance />;
@@ -83,8 +87,10 @@ export default function App() {
       case AppView.MARKETPLACE: return <Marketplace />;
       case AppView.LIVE_ASSISTANT: return <LiveAssistant />;
       case AppView.MARKETING: return <MarketingStudio />;
-      case AppView.PROFILE: return <UserProfile />;
-      default: return <Dashboard userRole={userRole} />;
+      case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
+      case AppView.ADMIN: return <AdminDashboard />;
+      case AppView.REGULATOR: return <RegulatorDashboard />;
+      default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
 
@@ -94,13 +100,13 @@ export default function App() {
         setCurrentView(view);
         if (window.innerWidth < 768) setSidebarOpen(false);
       }}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium border-l-4 ${
+      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-xs font-medium border-l-4 ${
         currentView === view
           ? 'bg-white/10 text-trade-accent border-trade-accent shadow-sm'
           : 'text-slate-400 border-transparent hover:bg-white/5 hover:text-white'
       }`}
     >
-      <Icon className={`w-5 h-5 ${currentView === view ? 'text-trade-accent' : ''}`} />
+      <Icon className={`w-4 h-4 ${currentView === view ? 'text-trade-accent' : ''}`} />
       {label}
     </button>
   );
@@ -113,22 +119,22 @@ export default function App() {
     <div className="flex h-screen bg-trade-bg dark:bg-slate-950 overflow-hidden transition-colors duration-300 font-sans">
       {/* Sidebar */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-trade-primary dark:bg-slate-950 border-r border-slate-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-60 bg-trade-primary dark:bg-slate-950 border-r border-slate-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-lg flex items-center justify-center font-heading font-bold text-white text-xl shadow-lg">A</div>
-            <span className="text-xl font-bold font-heading tracking-tight text-white">AfriTradeOS</span>
+            <div className="w-7 h-7 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-lg flex items-center justify-center font-heading font-bold text-white text-lg shadow-lg">A</div>
+            <span className="text-lg font-bold font-heading tracking-tight text-white">AfriTradeOS</span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="p-4 space-y-1 mt-4 overflow-y-auto max-h-[calc(100vh-180px)] custom-scrollbar pb-32">
-          <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider font-heading">Platform</div>
+        <nav className="p-3 space-y-0.5 mt-2 overflow-y-auto max-h-[calc(100vh-160px)] custom-scrollbar pb-28">
+          <div className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Platform</div>
           <NavItem view={AppView.DASHBOARD} icon={LayoutDashboard} label="Command Center" />
           <NavItem view={AppView.TRADE_LIFECYCLE} icon={Briefcase} label="Trade Workspace" />
           <NavItem view={AppView.TRADE_FINANCE} icon={Landmark} label="Trade Finance" />
@@ -136,34 +142,38 @@ export default function App() {
           <NavItem view={AppView.COMPLIANCE} icon={Scale} label="Trade Compliance" />
           <NavItem view={AppView.LOGISTICS} icon={Truck} label="Logistics Grid" />
           
-          <div className="px-4 py-2 mt-6 text-xs font-bold text-slate-400 uppercase tracking-wider font-heading">Ecosystem</div>
+          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Ecosystem</div>
           <NavItem view={AppView.MARKETPLACE} icon={Users} label="Partner Network" />
           
-          <div className="px-4 py-2 mt-6 text-xs font-bold text-slate-400 uppercase tracking-wider font-heading">AI Tools</div>
+          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Governance</div>
+          <NavItem view={AppView.ADMIN} icon={ShieldAlert} label="Admin Console" />
+          <NavItem view={AppView.REGULATOR} icon={Building} label="Regulator Portal" />
+          
+          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">AI Tools</div>
           <NavItem view={AppView.LIVE_ASSISTANT} icon={Mic} label="Voice Assistant" />
           <NavItem view={AppView.MARKETING} icon={ImageIcon} label="Marketing Studio" />
           
-          <div className="px-4 py-2 mt-6 text-xs font-bold text-slate-400 uppercase tracking-wider font-heading">Account</div>
+          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Account</div>
           <NavItem view={AppView.PROFILE} icon={Settings} label="Profile & Settings" />
         </nav>
         
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
           <div 
-            className="flex items-center gap-3 mb-3 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors"
             onClick={() => setCurrentView(AppView.PROFILE)}
           >
-            <img src="https://picsum.photos/40/40" alt="User" className="w-8 h-8 rounded-full ring-2 ring-trade-accent" />
+            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.userName || 'User')}&background=C9A24D&color=fff`} alt="User" className="w-7 h-7 rounded-full ring-2 ring-trade-accent" />
             <div className="overflow-hidden">
-              <p className="text-sm font-medium text-slate-200 truncate">Kofi Mensah</p>
-              <p className="text-xs text-slate-400 truncate">{userRole}</p>
+              <p className="text-xs font-medium text-slate-200 truncate">{userProfile?.userName || 'User'}</p>
+              <p className="text-[10px] text-slate-400 truncate">{userRole}</p>
             </div>
           </div>
           <div className="relative">
-              <UserCircle className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <UserCircle className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
               <select 
                   value={userRole}
                   onChange={(e) => setUserRole(e.target.value as UserPersona)}
-                  className="w-full bg-slate-800 text-slate-300 text-xs font-medium rounded-lg py-2 pl-9 pr-2 border border-slate-700 outline-none focus:border-trade-accent focus:ring-1 focus:ring-trade-accent appearance-none cursor-pointer hover:bg-slate-750 transition-colors"
+                  className="w-full bg-slate-800 text-slate-300 text-[10px] font-medium rounded-lg py-1.5 pl-8 pr-2 border border-slate-700 outline-none focus:border-trade-accent focus:ring-1 focus:ring-trade-accent appearance-none cursor-pointer hover:bg-slate-750 transition-colors"
               >
                   {Object.values(UserPersona).map(role => (
                       <option key={role} value={role}>{role}</option>
@@ -176,13 +186,13 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Header */}
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-6 lg:px-8 transition-colors duration-300">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-500 dark:text-gray-400">
-              <Menu className="w-6 h-6" />
+        <header className="h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-5 lg:px-6 transition-colors duration-300 shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
+              <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-lg font-heading font-semibold text-trade-primary dark:text-gray-100">
-              {currentView === AppView.DASHBOARD ? 'Dashboard' : 
+            <h1 className="text-base font-heading font-semibold text-trade-primary dark:text-gray-100">
+              {currentView === AppView.DASHBOARD ? 'Command Center' : 
                currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
                currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
                currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
@@ -190,7 +200,10 @@ export default function App() {
                currentView === AppView.LOGISTICS ? 'Logistics' :
                currentView === AppView.MARKETPLACE ? 'Partner Network' :
                currentView === AppView.LIVE_ASSISTANT ? 'Live Assistant' : 
-               currentView === AppView.MARKETING ? 'Marketing Studio' : 'Profile & Settings'}
+               currentView === AppView.MARKETING ? 'Marketing Studio' : 
+               currentView === AppView.ADMIN ? 'Admin Console' :
+               currentView === AppView.REGULATOR ? 'Regulator Oversight' :
+               'Profile & Settings'}
             </h1>
           </div>
           
@@ -198,39 +211,41 @@ export default function App() {
             {/* Localization UI */}
             <div className="hidden md:flex items-center gap-2 mr-4 bg-gray-50 dark:bg-slate-800 rounded-lg p-1 border border-gray-100 dark:border-slate-700">
                <button 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
                   title="Switch Language"
                >
-                   <Languages className="w-3.5 h-3.5 text-trade-accent" />
+                   <Languages className="w-3 h-3 text-trade-accent" />
                    {language}
                </button>
-               <div className="w-px h-4 bg-gray-200 dark:bg-slate-700" />
+               <div className="w-px h-3 bg-gray-200 dark:bg-slate-700" />
                <button 
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
                   title="Switch Currency"
                >
-                   <Coins className="w-3.5 h-3.5 text-trade-accent" />
+                   <Coins className="w-3 h-3 text-trade-accent" />
                    {currency}
                </button>
             </div>
 
             <button 
               onClick={toggleTheme}
-              className="p-2 text-gray-400 hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent transition-colors"
+              className="p-1.5 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent transition-colors"
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className="relative p-2 text-gray-400 hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-trade-error rounded-full border-2 border-white dark:border-slate-900"></span>
+            <button className="relative p-1.5 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-trade-error rounded-full border border-white dark:border-slate-900"></span>
             </button>
           </div>
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6 lg:p-8 relative">
-          {renderView()}
+        <div className="flex-1 overflow-auto p-4 lg:p-5 relative flex flex-col">
+          <div className="flex-1 min-h-0">
+            {renderView()}
+          </div>
         </div>
 
         {/* Global AI Co-Pilot Overlay */}

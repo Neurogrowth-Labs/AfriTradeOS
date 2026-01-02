@@ -16,6 +16,7 @@ export const LiveAssistant: React.FC = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const isMutedRef = useRef(false);
 
   // Status helper
   const updateStatus = (text: string) => setStatus(text);
@@ -31,13 +32,32 @@ export const LiveAssistant: React.FC = () => {
       updateStatus('Disconnected');
       setVolume(0);
       setIsMuted(false);
+      isMutedRef.current = false;
     } else {
       updateStatus('Connecting...');
       const session = await connectLiveSession(
         (event: LiveEvent) => {
+          if (event.type === 'interrupted') {
+             // Stop current playback immediately
+             sourcesRef.current.forEach(source => {
+               try { source.stop(); } catch(e){}
+             });
+             sourcesRef.current.clear();
+             // Reset timing to now to avoid large delay for next chunk
+             if (audioContextRef.current) {
+                nextStartTimeRef.current = audioContextRef.current.currentTime;
+             }
+             updateStatus(isMutedRef.current ? 'Microphone muted' : 'Listening...');
+             return;
+          }
+
+          if (event.type === 'processing') {
+             if (!isMutedRef.current) updateStatus('Processing audio...');
+          }
+
           if (event.type === 'user' && event.text) {
              setTranscript(prev => [...prev.slice(-4), { role: 'user', text: event.text! }]);
-             updateStatus('Processing audio...');
+             if (!isMutedRef.current) updateStatus('Awaiting response...');
           }
           if (event.type === 'model' && event.text) {
              setTranscript(prev => [...prev.slice(-4), { role: 'model', text: event.text! }]);
@@ -63,7 +83,7 @@ export const LiveAssistant: React.FC = () => {
              source.onended = () => {
                 sourcesRef.current.delete(source);
                 if (sourcesRef.current.size === 0) {
-                    updateStatus('Listening...');
+                    updateStatus(isMutedRef.current ? 'Microphone muted' : 'Listening...');
                 }
              };
              sourcesRef.current.add(source);
@@ -98,12 +118,17 @@ export const LiveAssistant: React.FC = () => {
     if (!active || !setMuteRef.current) return;
     const newState = !isMuted;
     setIsMuted(newState);
+    isMutedRef.current = newState; // Keep ref in sync for callbacks
     setMuteRef.current(newState);
     if (newState) {
         updateStatus('Microphone muted');
         setVolume(0);
     } else {
-        updateStatus('Listening...');
+        if (sourcesRef.current.size > 0) {
+            updateStatus('Speaking...');
+        } else {
+            updateStatus('Listening...');
+        }
     }
   };
 
@@ -116,7 +141,7 @@ export const LiveAssistant: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto mt-10">
-        <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${active ? 'bg-slate-900 border-indigo-500 shadow-2xl shadow-indigo-500/20' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg'}`}>
+        <div className={`relative overflow-hidden rounded-3xl border transition-all duration-500 ${active ? 'bg-trade-primary border-indigo-500 shadow-2xl shadow-indigo-500/20' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-lg'}`}>
             
             <div className="p-8 flex flex-col items-center justify-center min-h-[400px]">
                 {/* Visualizer Circle */}
@@ -139,7 +164,7 @@ export const LiveAssistant: React.FC = () => {
                    </div>
                 </div>
 
-                <h2 className={`text-2xl font-bold mb-2 ${active ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                <h2 className={`text-2xl font-bold mb-2 ${active ? 'text-white' : 'text-trade-primary dark:text-white'}`}>
                     {active ? 'AfriTrade Assistant' : 'AfriTrade Voice Assistant'}
                 </h2>
                 
@@ -152,7 +177,7 @@ export const LiveAssistant: React.FC = () => {
                       <select 
                         value={persona}
                         onChange={(e) => setPersona(e.target.value as UserPersona)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-400 outline-none appearance-none cursor-pointer transition-all hover:bg-white dark:hover:bg-slate-800"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-400 outline-none appearance-none cursor-pointer transition-all hover:bg-white dark:hover:bg-slate-800"
                       >
                         {Object.values(UserPersona).map((p) => (
                           <option key={p} value={p}>{p}</option>
@@ -168,15 +193,15 @@ export const LiveAssistant: React.FC = () => {
                         <span className={`px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 transition-all ${
                             status === 'Listening...' ? 'bg-indigo-500/20 text-indigo-300' :
                             status === 'Speaking...' ? 'bg-green-500/20 text-green-300' :
-                            status === 'Processing audio...' ? 'bg-yellow-500/20 text-yellow-300' :
+                            (status === 'Processing audio...' || status === 'Awaiting response...') ? 'bg-yellow-500/20 text-yellow-300' :
                             status === 'Microphone muted' ? 'bg-red-500/20 text-red-300' :
                             'bg-slate-700 text-slate-300'
                         }`}>
-                            {status === 'Processing audio...' && <Loader2 className="w-3 h-3 animate-spin" />}
+                            {(status === 'Processing audio...' || status === 'Awaiting response...') && <Loader2 className="w-3 h-3 animate-spin" />}
                             {status}
                         </span>
                     )}
-                    {!active && <p className="text-gray-500 dark:text-gray-400">{status}</p>}
+                    {!active && <p className="text-trade-primary/60 dark:text-gray-400">{status}</p>}
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -222,7 +247,7 @@ export const LiveAssistant: React.FC = () => {
                 <div className="space-y-2 h-32 overflow-y-auto custom-scrollbar">
                     {transcript.length === 0 && <p className={`text-sm italic ${active ? 'text-slate-500' : 'text-gray-400 dark:text-gray-500'}`}>Transcript will appear here...</p>}
                     {transcript.map((msg, i) => (
-                        <p key={i} className={`text-sm ${msg.role === 'user' ? 'text-slate-500' : (active ? 'text-slate-200' : 'text-gray-800 dark:text-gray-200')}`}>
+                        <p key={i} className={`text-sm ${msg.role === 'user' ? 'text-slate-500' : (active ? 'text-slate-200' : 'text-trade-primary dark:text-gray-200')}`}>
                             <span className="font-bold opacity-50">{msg.role === 'user' ? 'You' : 'AI'}:</span> {msg.text}
                         </p>
                     ))}

@@ -219,7 +219,7 @@ export const generateSpeech = async (text: string) => {
 
 // 8. Live API (Real-time Voice)
 export type LiveEvent = {
-  type: 'user' | 'model' | 'audio';
+  type: 'user' | 'model' | 'audio' | 'interrupted' | 'processing';
   text?: string;
   audio?: AudioBuffer;
 }
@@ -273,6 +273,14 @@ export const connectLiveSession = async (
         scriptProcessor.connect(inputAudioContext.destination);
       },
       onmessage: async (msg: LiveServerMessage) => {
+        if (msg.serverContent?.interrupted) {
+          onEvent({ type: 'interrupted' });
+        }
+
+        if (msg.serverContent?.turnComplete) {
+            onEvent({ type: 'processing' });
+        }
+
         if (msg.serverContent?.inputTranscription?.text) {
           onEvent({ type: 'user', text: msg.serverContent.inputTranscription.text });
         }
