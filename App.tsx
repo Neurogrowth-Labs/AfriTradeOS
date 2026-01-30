@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
@@ -19,7 +20,8 @@ import {
   UserCircle,
   Settings,
   ShieldAlert,
-  Building
+  Building,
+  Activity
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -36,6 +38,7 @@ import { CoPilot } from './components/CoPilot';
 import { Onboarding } from './components/Onboarding';
 import { AdminDashboard } from './components/AdminDashboard';
 import { RegulatorDashboard } from './components/RegulatorDashboard';
+import { SystemDiagnostic } from './components/SystemDiagnostic';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -90,6 +93,7 @@ export default function App() {
       case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
       case AppView.ADMIN: return <AdminDashboard />;
       case AppView.REGULATOR: return <RegulatorDashboard />;
+      case AppView.DIAGNOSTIC: return <SystemDiagnostic />;
       default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
@@ -148,6 +152,7 @@ export default function App() {
           <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Governance</div>
           <NavItem view={AppView.ADMIN} icon={ShieldAlert} label="Admin Console" />
           <NavItem view={AppView.REGULATOR} icon={Building} label="Regulator Portal" />
+          <NavItem view={AppView.DIAGNOSTIC} icon={Activity} label="System Health" />
           
           <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">AI Tools</div>
           <NavItem view={AppView.LIVE_ASSISTANT} icon={Mic} label="Voice Assistant" />
@@ -203,6 +208,7 @@ export default function App() {
                currentView === AppView.MARKETING ? 'Marketing Studio' : 
                currentView === AppView.ADMIN ? 'Admin Console' :
                currentView === AppView.REGULATOR ? 'Regulator Oversight' :
+               currentView === AppView.DIAGNOSTIC ? 'System Diagnostic' :
                'Profile & Settings'}
             </h1>
           </div>

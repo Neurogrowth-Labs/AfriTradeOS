@@ -1,3 +1,4 @@
+
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
   TRADE_LIFECYCLE = 'TRADE_LIFECYCLE', // New Workspace
@@ -12,6 +13,7 @@ export enum AppView {
   PROFILE = 'PROFILE', // New User Settings
   ADMIN = 'ADMIN', // New Platform Admin
   REGULATOR = 'REGULATOR', // New Regulator Oversight
+  DIAGNOSTIC = 'DIAGNOSTIC', // New System Health Assessment
 }
 
 export interface ChartData {
