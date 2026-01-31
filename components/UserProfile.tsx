@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   User, 
@@ -18,10 +19,12 @@ import {
   Download,
   HelpCircle,
   Loader2,
-  Key
+  Key,
+  Save
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbAuditLog, UserPersona } from '../types';
+import { supabase } from '../services/supabase';
 
 type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit';
 
@@ -34,15 +37,17 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   const [activeTab, setActiveTab] = useState<Tab>('general');
   const [logs, setLogs] = useState<DbAuditLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Initialize state from props or defaults
   const [personalInfo, setPersonalInfo] = useState({
-    name: profileData?.userName || 'Kofi Mensah',
-    email: profileData?.email || 'kofi.m@afrotrade.com',
-    phone: profileData?.phone || '+233 54 123 4567',
+    name: profileData?.userName || 'User',
+    email: profileData?.email || '',
+    phone: profileData?.phone || '',
     role: userRole || UserPersona.EXPORTER_SME,
     country: profileData?.country || 'Ghana',
-    companyName: profileData?.companyName || 'Golden Cocoa Ltd.',
+    companyName: profileData?.companyName || 'AfriTrade User',
     language: 'English',
     timezone: 'GMT (Accra)'
   });
@@ -81,6 +86,37 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
       fetchLogs();
     }
   }, [activeTab]);
+
+  const handleSignOut = async () => {
+      await supabase.auth.signOut();
+      window.location.reload();
+  };
+
+  const handleSaveProfile = async () => {
+    if (!profileData?.id) return;
+    setIsSaving(true);
+    setSaveSuccess(false);
+    
+    try {
+        const success = await mockDatabase.updateUserProfile(profileData.id, {
+            full_name: personalInfo.name,
+            phone: personalInfo.phone,
+            company_name: personalInfo.companyName,
+            country: personalInfo.country
+        });
+        if (success) {
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } else {
+            alert("Failed to save profile. Please try again.");
+        }
+    } catch(e) {
+        console.error(e);
+        alert("An unexpected error occurred while saving.");
+    } finally {
+        setIsSaving(false);
+    }
+  };
 
   const toggle = (key: keyof typeof toggles) => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }));
@@ -152,7 +188,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                      </button>
                  ))}
                  <div className="p-5 mt-4 border-t border-gray-100 dark:border-slate-700">
-                     <button className="flex items-center gap-2 text-red-500 hover:text-red-700 text-sm font-bold w-full">
+                     <button onClick={handleSignOut} className="flex items-center gap-2 text-red-500 hover:text-red-700 text-sm font-bold w-full">
                          <LogOut className="w-4 h-4" /> Sign Out
                      </button>
                  </div>
@@ -175,24 +211,45 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
              {/* --- GENERAL TAB --- */}
              {activeTab === 'general' && (
                  <div className="space-y-8 animate-fade-in">
-                     <div>
-                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Identity & Personal Information</h2>
-                         <p className="text-sm text-gray-500">Your profile represents your trade credibility across the AfriTradeOS network.</p>
+                     <div className="flex justify-between items-center">
+                         <div>
+                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Identity & Personal Information</h2>
+                             <p className="text-sm text-gray-500">Your profile represents your trade credibility across the AfriTradeOS network.</p>
+                         </div>
+                         <button 
+                            onClick={handleSaveProfile}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 bg-trade-primary hover:bg-trade-secondary text-white px-4 py-2 rounded-lg font-bold text-sm transition-all"
+                         >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            {saveSuccess ? 'Saved!' : 'Save Changes'}
+                         </button>
                      </div>
 
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          <div className="space-y-1">
                              <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Full Legal Name</label>
-                             <input type="text" value={personalInfo.name} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
+                             <input 
+                                type="text" 
+                                value={personalInfo.name} 
+                                onChange={e => setPersonalInfo({...personalInfo, name: e.target.value})}
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white outline-none focus:ring-2 focus:ring-trade-primary/10 transition-all" 
+                             />
                              <p className="text-[10px] text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Verified by Govt ID</p>
                          </div>
                          <div className="space-y-1">
                              <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Email Address</label>
                              <input type="email" value={personalInfo.email} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
+                             <p className="text-[10px] text-gray-400">Email cannot be changed.</p>
                          </div>
                          <div className="space-y-1">
                              <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Phone Number</label>
-                             <input type="tel" value={personalInfo.phone} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
+                             <input 
+                                type="tel" 
+                                value={personalInfo.phone} 
+                                onChange={e => setPersonalInfo({...personalInfo, phone: e.target.value})}
+                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white outline-none focus:ring-2 focus:ring-trade-primary/10 transition-all" 
+                             />
                          </div>
                          <div className="space-y-1">
                              <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Primary Language</label>
@@ -245,8 +302,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                              <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Organization Profile</h2>
                              <p className="text-sm text-gray-500">Manage business details and team permissions.</p>
                          </div>
-                         <button className="text-xs font-bold bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-trade-primary dark:text-white px-3 py-2 rounded-lg flex items-center gap-2">
-                             <LayoutGrid className="w-4 h-4" /> View Public Profile
+                         <button 
+                            onClick={handleSaveProfile}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 bg-trade-primary hover:bg-trade-secondary text-white px-4 py-2 rounded-lg font-bold text-sm transition-all"
+                         >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            {saveSuccess ? 'Saved!' : 'Save Changes'}
                          </button>
                      </div>
 
@@ -255,8 +317,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                              <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center border border-gray-200 dark:border-slate-700">
                                  <Building2 className="w-8 h-8 text-trade-primary" />
                              </div>
-                             <div>
-                                 <h3 className="text-lg font-bold text-trade-primary dark:text-white">{personalInfo.companyName}</h3>
+                             <div className="flex-1">
+                                 <input 
+                                    type="text" 
+                                    value={personalInfo.companyName}
+                                    onChange={e => setPersonalInfo({...personalInfo, companyName: e.target.value})}
+                                    className="text-lg font-bold text-trade-primary dark:text-white bg-transparent border-b border-dashed border-gray-300 focus:border-trade-primary outline-none w-full mb-1"
+                                 />
                                  <p className="text-sm text-gray-500 mb-2">Registration No: GH-2023-88291 • Tax ID: C00088219</p>
                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">KYB Verified</span>
                              </div>

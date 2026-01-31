@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, 
   Globe, 
@@ -21,7 +21,11 @@ import {
   Settings,
   ShieldAlert,
   Building,
-  Activity
+  Activity,
+  Key,
+  CheckCircle,
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -39,6 +43,85 @@ import { Onboarding } from './components/Onboarding';
 import { AdminDashboard } from './components/AdminDashboard';
 import { RegulatorDashboard } from './components/RegulatorDashboard';
 import { SystemDiagnostic } from './components/SystemDiagnostic';
+import { supabase } from './services/supabase';
+import { mockDatabase } from './services/mockDatabase';
+
+// Internal Component: Password Reset Modal
+const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { error } = await supabase.auth.updateUser({ password: password });
+      if (error) throw error;
+      setSuccess(true);
+      setTimeout(onClose, 2000);
+    } catch (err: any) {
+      setError(err.message || "Failed to update password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-slate-700 animate-in zoom-in-95 duration-200">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+            <Key className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Set New Password</h3>
+            <p className="text-sm text-gray-500">Secure your account with a new credential.</p>
+          </div>
+        </div>
+
+        {success ? (
+          <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 p-4 rounded-lg flex items-center gap-2 mb-4">
+            <CheckCircle className="w-5 h-5" /> Password updated successfully!
+          </div>
+        ) : (
+          <form onSubmit={handleUpdate} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> {error}
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">New Password</label>
+              <input 
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="••••••••"
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Password'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
@@ -48,6 +131,10 @@ export default function App() {
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [userRole, setUserRole] = useState<UserPersona>(UserPersona.EXPORTER_SME);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  
+  // Track if current session is a simulation (bypass Auth listeners)
+  const isSimulatedRef = useRef(false);
 
   // Localization State
   const [language, setLanguage] = useState('EN');
@@ -60,6 +147,86 @@ export default function App() {
     }
     return false;
   });
+
+  const fetchProfile = async (session: any) => {
+      try {
+        // 1. Try to get profile from DB (Single Source of Truth)
+        const dbProfile = await mockDatabase.getUserProfile(session.user.id);
+        
+        // 2. Fallback to Auth Metadata if DB is empty (First login race condition)
+        const meta = session.user.user_metadata || {};
+        
+        // Check if profile is complete (Has Company Name)
+        // The Safe Mode SQL trigger creates profiles with empty company_name. 
+        // We use this to detect if the user needs to finish onboarding.
+        if (dbProfile && dbProfile.company_name) {
+            setUserRole(dbProfile.role);
+            setUserProfile({
+              userName: dbProfile.full_name,
+              companyName: dbProfile.company_name,
+              email: dbProfile.email,
+              country: dbProfile.country,
+              phone: dbProfile.phone || meta.phone || '',
+              id: dbProfile.id,
+              ...meta
+            });
+            setIsOnboarded(true);
+        } else {
+            // Profile exists but is incomplete (Skeleton from trigger) OR doesn't exist yet
+            console.log("Profile incomplete, redirecting to onboarding...");
+            
+            // Pre-fill what we know for the Onboarding component
+            setUserProfile({
+              userName: dbProfile?.full_name || meta.full_name || '',
+              email: session.user.email,
+              id: session.user.id
+            });
+            setIsOnboarded(false);
+        }
+      } catch (error) {
+        console.error("Profile fetch error:", error);
+        // If critical error, force logout to reset state
+        // await supabase.auth.signOut(); 
+        setIsOnboarded(false);
+      }
+  };
+
+  // Check for Supabase Session
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.warn("Session check error:", error.message);
+        setIsOnboarded(false);
+        setUserProfile(null);
+        return;
+      }
+      if (session) {
+        await fetchProfile(session);
+      }
+    };
+    checkSession();
+
+    // Listen for auth changes (Login, Logout, Password Recovery)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setShowPasswordReset(true);
+        }
+
+        if (session) {
+            fetchProfile(session);
+        } else {
+            // CRITICAL: If we are in Simulation Mode, IGNORE the "signed out" event
+            // because there is no real session, but the app should remain logged in.
+            if (isSimulatedRef.current) return;
+
+            setIsOnboarded(false);
+            setUserProfile(null);
+        }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (isDark) {
@@ -74,6 +241,10 @@ export default function App() {
   const toggleTheme = () => setIsDark(!isDark);
 
   const handleOnboardingComplete = (role: UserPersona, profile: any) => {
+      // Mark as simulated if ID starts with mock_
+      if (profile.id && profile.id.startsWith('mock_')) {
+          isSimulatedRef.current = true;
+      }
       setUserRole(role);
       setUserProfile(profile);
       setIsOnboarded(true);
@@ -83,10 +254,10 @@ export default function App() {
     switch (currentView) {
       case AppView.DASHBOARD: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
       case AppView.TRADE_LIFECYCLE: return <TradeLifecycle />;
+      case AppView.TRADE_FINANCE: return <TradeFinance />;
       case AppView.MARKET_INTEL: return <MarketIntel />;
       case AppView.COMPLIANCE: return <Compliance />;
       case AppView.LOGISTICS: return <Logistics />;
-      case AppView.TRADE_FINANCE: return <TradeFinance />;
       case AppView.MARKETPLACE: return <Marketplace />;
       case AppView.LIVE_ASSISTANT: return <LiveAssistant />;
       case AppView.MARKETING: return <MarketingStudio />;
@@ -121,6 +292,9 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-trade-bg dark:bg-slate-950 overflow-hidden transition-colors duration-300 font-sans">
+      {/* Password Reset Overlay */}
+      {showPasswordReset && <PasswordResetModal onClose={() => setShowPasswordReset(false)} />}
+
       {/* Sidebar */}
       <aside 
         className={`fixed inset-y-0 left-0 z-50 w-60 bg-trade-primary dark:bg-slate-950 border-r border-slate-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${

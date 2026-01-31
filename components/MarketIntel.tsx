@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   TrendingUp, 
@@ -57,6 +58,15 @@ export const MarketIntel: React.FC = () => {
   const [aiReport, setAiReport] = useState<{text: string, sources: any[]} | null>(null);
   const [priceData, setPriceData] = useState(generatePriceData());
 
+  // Ref to track if component is mounted
+  const isMounted = React.useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query) return;
@@ -66,22 +76,27 @@ export const MarketIntel: React.FC = () => {
     
     try {
         const result = await getMarketIntelligence(`Analyze current market demand, pricing trends, and risks for ${query} in African markets. Provide a strategic outlook.`);
-        setAiReport({
-            text: result.text || "No report available.",
-            sources: result.groundingChunks?.map((c: any) => ({
-                title: c.web?.title,
-                uri: c.web?.uri
-            })).filter((s: any) => s.uri) || []
-        });
+        
+        if (isMounted.current) {
+            setAiReport({
+                text: result.text || "No report available.",
+                sources: result.groundingChunks?.map((c: any) => ({
+                    title: c.web?.title,
+                    uri: c.web?.uri
+                })).filter((s: any) => s.uri) || []
+            });
+        }
     } catch (e) {
-        setAiReport({ text: "Market intelligence unavailable at this moment.", sources: [] });
+        if (isMounted.current) {
+            setAiReport({ text: "Market intelligence unavailable at this moment.", sources: [] });
+        }
     } finally {
-        setLoading(false);
+        if (isMounted.current) setLoading(false);
     }
   };
 
   // Initial load
-  React.useEffect(() => {
+  useEffect(() => {
       handleSearch({ preventDefault: () => {} } as any);
   }, []);
 

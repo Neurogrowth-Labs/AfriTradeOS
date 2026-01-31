@@ -1,21 +1,27 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { UserPersona } from '../types';
+import { supabase } from '../services/supabase';
 import { 
   ArrowRight, 
   Briefcase, 
-  Building2, 
-  Globe, 
+  Truck, 
   ShieldCheck, 
   TrendingUp, 
-  Truck, 
-  CheckCircle,
-  Loader2,
-  Lock,
-  Landmark,
-  User,
-  Mail,
-  Phone,
-  Key
+  CheckCircle, 
+  Loader2, 
+  Lock, 
+  Landmark, 
+  User, 
+  Mail, 
+  Key, 
+  AlertCircle,
+  ArrowLeft,
+  Inbox,
+  Globe,
+  Eye,
+  EyeOff,
+  Zap
 } from 'lucide-react';
 
 interface OnboardingProps {
@@ -33,12 +39,14 @@ const AFRICAN_COUNTRIES = [
   "Tunisia", "Uganda", "Zambia", "Zimbabwe"
 ];
 
-type AuthView = 'LOGIN' | 'SIGNUP' | 'ROLE_SELECT' | 'PROFILE_SETUP';
+type AuthView = 'LOGIN' | 'SIGNUP' | 'ROLE_SELECT' | 'PROFILE_SETUP' | 'FORGOT_PASSWORD' | 'EMAIL_VERIFICATION';
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [view, setView] = useState<AuthView>('LOGIN');
   const [selectedRole, setSelectedRole] = useState<UserPersona | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
@@ -48,6 +56,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // Forgot Password State
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(false);
 
   // Profile State
   const [profile, setProfile] = useState({
@@ -60,35 +75,156 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     size: 'SME'
   });
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  // Check if session already exists (e.g. from SQL Trigger creating a skeleton user)
+  useEffect(() => {
+    const checkExistingSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && (view === 'LOGIN' || view === 'SIGNUP')) {
+            // User is authenticated but incomplete (App.tsx passed them here)
+            // Skip auth screens
+            setProfile(prev => ({
+                ...prev,
+                email: session.user.email || '',
+                userName: session.user.user_metadata?.full_name || ''
+            }));
+            setView('ROLE_SELECT');
+        }
+    };
+    checkExistingSession();
+  }, []);
+
+  // Password Strength Calculator
+  useEffect(() => {
+    if (!signupPassword) {
+      setPasswordStrength(0);
+      return;
+    }
+    let score = 0;
+    if (signupPassword.length > 5) score += 1;
+    if (signupPassword.length > 8) score += 1;
+    if (/[0-9]/.test(signupPassword)) score += 1;
+    if (/[^A-Za-z0-9]/.test(signupPassword)) score += 1;
+    setPasswordStrength(score);
+  }, [signupPassword]);
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate Login API
-    setTimeout(() => {
-        setLoading(false);
-        // Existing user bypasses onboarding
-        onComplete(UserPersona.EXPORTER_SME, {
-            userName: 'Kofi Mensah',
-            companyName: 'Golden Cocoa Ltd',
-            email: loginEmail || 'kofi@example.com',
-            country: 'Ghana',
-            role: UserPersona.EXPORTER_SME,
-            phone: '+233 54 123 4567'
-        });
-    }, 1500);
+    setErrorMsg(null);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+              throw new Error("Incorrect email or password. Please try again.");
+          }
+          throw error;
+      }
+
+      // Extract profile from metadata
+      const meta = data.user?.user_metadata || {};
+      
+      onComplete(meta.role || UserPersona.EXPORTER_SME, {
+          userName: meta.full_name || 'User',
+          companyName: meta.companyName || 'My Company',
+          email: data.user?.email || loginEmail,
+          country: meta.country || 'Ghana',
+          role: meta.role || UserPersona.EXPORTER_SME,
+          phone: meta.phone || ''
+      });
+
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to login");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupName || !signupEmail || !signupPassword) return;
+    setErrorMsg(null);
+
+    // Enhanced Validation
+    if (!signupName || !signupEmail || !signupPassword) {
+        setErrorMsg("Please fill in all fields.");
+        return;
+    }
+    if (signupPassword !== signupConfirmPassword) {
+        setErrorMsg("Passwords do not match.");
+        return;
+    }
+    if (passwordStrength < 2) {
+        setErrorMsg("Password is too weak. Please use a stronger password.");
+        return;
+    }
+    if (!termsAccepted) {
+        setErrorMsg("You must accept the Terms of Service to continue.");
+        return;
+    }
     
     setLoading(true);
-    // Simulate Signup API
-    setTimeout(() => {
-        setLoading(false);
-        setProfile(prev => ({ ...prev, userName: signupName, email: signupEmail }));
-        setView('ROLE_SELECT');
-    }, 1000);
+
+    try {
+      // --- SIMULATION MODE ---
+      // Instead of calling Supabase, we simulate a successful signup delay.
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      // 1. Prepare simulated profile data
+      setProfile(prev => ({ ...prev, userName: signupName, email: signupEmail }));
+      
+      // 2. Route to Email Verification (Simulation of "Welcome Email Sent")
+      setView('EMAIL_VERIFICATION');
+      
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Failed to create account");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // New Helper: Simulate clicking the link in the email
+  const handleSimulatedVerification = () => {
+      setLoading(true);
+      setTimeout(() => {
+          setLoading(false);
+          setView('ROLE_SELECT');
+      }, 1000);
+  };
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    
+    setLoading(true);
+    setErrorMsg(null);
+    setForgotSuccess(false);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: window.location.origin, 
+      });
+
+      if (error) {
+        console.error("Reset Password Error:", error);
+        if (error.status === 429) {
+             setErrorMsg("Too many requests. Please try again in a few minutes.");
+             setLoading(false);
+             return;
+        }
+        throw error;
+      }
+      
+      setForgotSuccess(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRoleSelect = (role: UserPersona) => {
@@ -99,14 +235,54 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       if (selectedRole) setView('PROFILE_SETUP');
   };
 
-  const handleFinalize = () => {
+  const handleFinalize = async () => {
       if (!selectedRole) return;
       setLoading(true);
-      // Simulate Profile Update API
-      setTimeout(() => {
-          setLoading(false);
-          onComplete(selectedRole, profile);
-      }, 1500);
+      setErrorMsg(null);
+      
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        
+        // --- SIMULATION CHECK ---
+        // If there is no real Supabase session, create a mock profile
+        if (!userData.user) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+            onComplete(selectedRole, {
+                ...profile,
+                id: `mock_user_${Date.now()}`, // Identifiable mock ID
+                role: selectedRole,
+                email: profile.email || 'simulation@afritrade.os',
+                isSimulated: true
+            });
+            return;
+        }
+
+        // Real Session Sync
+        // Using UPSERT to ensure row exists even if the initial trigger failed silently
+        const { error: dbError } = await supabase
+            .from('profiles')
+            .upsert({
+                id: userData.user.id,
+                email: userData.user.email,
+                full_name: profile.userName, 
+                role: selectedRole,
+                company_name: profile.companyName,
+                country: profile.country,
+                phone: profile.phone,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' });
+
+        if (dbError) {
+            console.error("DB Profile Sync Failed:", dbError);
+        }
+
+        onComplete(selectedRole, profile);
+      } catch (err: any) {
+        console.error(err);
+        setErrorMsg(err.message || "Failed to update profile");
+      } finally {
+        setLoading(false);
+      }
   };
 
   const roles = [
@@ -116,6 +292,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       { id: UserPersona.CUSTOMS, icon: ShieldCheck, label: 'Customs / Gov', desc: 'Regulatory oversight' },
       { id: UserPersona.ANALYST, icon: TrendingUp, label: 'Trade Analyst', desc: 'Market data & insights' },
   ];
+
+  const getStrengthColor = (score: number) => {
+      if (score === 0) return 'bg-gray-200 dark:bg-gray-700';
+      if (score < 2) return 'bg-red-500';
+      if (score < 4) return 'bg-yellow-500';
+      return 'bg-green-500';
+  };
+
+  const getStrengthLabel = (score: number) => {
+      if (score === 0) return '';
+      if (score < 2) return 'Weak';
+      if (score < 4) return 'Medium';
+      return 'Strong';
+  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-trade-bg dark:bg-slate-950 flex items-center justify-center p-4 transition-colors duration-500 font-sans">
@@ -137,12 +327,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <span className="text-xl font-bold font-heading tracking-tight">AfriTradeOS</span>
                     </div>
                     <h1 className="text-3xl font-bold font-heading leading-tight mb-3">
-                        {view === 'LOGIN' ? 'Welcome Back.' : 'Join the Network.'}
+                        {view === 'LOGIN' ? 'Welcome Back.' : 
+                         view === 'FORGOT_PASSWORD' ? 'Secure Reset.' : 
+                         view === 'EMAIL_VERIFICATION' ? 'Verify Email.' :
+                         view === 'SIGNUP' ? 'Simulation Mode.' :
+                         'Setup Profile.'}
                     </h1>
                     <p className="text-gray-300 text-sm leading-relaxed">
-                        {view === 'LOGIN' 
+                        {view === 'LOGIN' || view === 'FORGOT_PASSWORD'
                             ? 'Securely access your trade dashboard, monitor live shipments, and manage compliance from one unified operating system.'
-                            : 'Powering the AfCFTA with AI-driven compliance, logistics, and market intelligence. Start your journey today.'
+                            : view === 'EMAIL_VERIFICATION' 
+                            ? 'We’ve sent a welcome email to your registered address. Please verify your account to continue.'
+                            : 'Experience the power of AfriTradeOS with our instant simulation mode. No backend required.'
                         }
                     </p>
                 </div>
@@ -166,6 +362,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             {/* Right Panel: Interactive Flow */}
             <div className="w-full md:w-7/12 p-8 flex flex-col justify-center relative bg-white dark:bg-slate-900 transition-all">
                 
+                {errorMsg && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" /> <span className="flex-1">{errorMsg}</span>
+                    </div>
+                )}
+
                 {/* 1. LOGIN VIEW */}
                 {view === 'LOGIN' && (
                     <form onSubmit={handleLoginSubmit} className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
@@ -177,8 +379,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Email Address</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <div className="relative group">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="email" 
                                         required
@@ -192,18 +394,25 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             <div>
                                 <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5 flex justify-between">
                                     Password
-                                    <a href="#" className="text-trade-secondary dark:text-blue-400 hover:underline normal-case font-medium">Forgot?</a>
+                                    <button type="button" onClick={() => setView('FORGOT_PASSWORD')} className="text-trade-secondary dark:text-blue-400 hover:underline normal-case font-medium">Forgot?</button>
                                 </label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <div className="relative group">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
-                                        type="password" 
+                                        type={showPassword ? "text" : "password"}
                                         required
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
                                         placeholder="••••••••"
                                         value={loginPassword}
                                         onChange={e => setLoginPassword(e.target.value)}
                                     />
+                                    <button 
+                                      type="button"
+                                      onClick={() => setShowPassword(!showPassword)}
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    >
+                                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -238,19 +447,137 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     </form>
                 )}
 
-                {/* 2. SIGN UP VIEW */}
+                {/* 2. FORGOT PASSWORD VIEW */}
+                {view === 'FORGOT_PASSWORD' && (
+                    <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
+                        <div className="flex items-center justify-between">
+                            <button 
+                                onClick={() => setView('LOGIN')}
+                                className="group flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-trade-primary dark:hover:text-white transition-colors"
+                            >
+                                <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-gray-200 dark:group-hover:bg-slate-700 flex items-center justify-center transition-colors">
+                                    <ArrowLeft className="w-3 h-3" />
+                                </div>
+                                <span>Back to Login</span>
+                            </button>
+                        </div>
+
+                        <div>
+                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center mb-4 border border-blue-100 dark:border-blue-800">
+                                <ShieldCheck className="w-6 h-6 text-trade-primary dark:text-blue-400" />
+                            </div>
+                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-2">Forgot Password?</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                                Enter the email address associated with your account and we'll send you a secure link to reset your password.
+                            </p>
+                        </div>
+
+                        {forgotSuccess ? (
+                            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-6 text-center animate-fade-in">
+                                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                    <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                <h3 className="text-green-800 dark:text-green-300 font-bold mb-2">Check your email</h3>
+                                <p className="text-sm text-green-700 dark:text-green-400 mb-6">
+                                    If an account exists for <span className="font-bold block mt-1">{forgotEmail}</span>, you will receive a reset link shortly.
+                                </p>
+                                <button 
+                                    type="button"
+                                    onClick={() => setView('LOGIN')}
+                                    className="w-full py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    Back to Sign In
+                                </button>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5 ml-1">Work Email</label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
+                                        <input 
+                                            type="email" 
+                                            required
+                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all placeholder:text-gray-400"
+                                            placeholder="name@company.com"
+                                            value={forgotEmail}
+                                            onChange={e => setForgotEmail(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button 
+                                    type="submit"
+                                    disabled={loading || !forgotEmail}
+                                    className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                        <>
+                                            Send Reset Link <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                )}
+
+                {/* 3. EMAIL VERIFICATION VIEW */}
+                {view === 'EMAIL_VERIFICATION' && (
+                    <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full text-center">
+                        <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto border border-blue-100 dark:border-blue-800 shadow-sm relative">
+                            <Inbox className="w-8 h-8 text-trade-primary dark:text-blue-400" />
+                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-trade-accent rounded-full flex items-center justify-center shadow-md animate-bounce">
+                                <Mail className="w-3 h-3 text-white" />
+                            </div>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-2">Check your inbox</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                                We've sent a welcome email to <span className="font-bold text-trade-primary dark:text-white">{signupEmail}</span> with a verification link.
+                            </p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+                                Please click the link in the email to activate your account and access the platform.
+                            </p>
+                        </div>
+                        <div className="pt-4 space-y-3">
+                            {/* Simulation Button */}
+                            <button 
+                                onClick={handleSimulatedVerification}
+                                disabled={loading}
+                                className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2"
+                            >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>
+                                    <Zap className="w-4 h-4 text-yellow-400 fill-yellow-400" /> Simulate Email Click
+                                </>}
+                            </button>
+                            
+                            <button 
+                                onClick={() => setView('LOGIN')}
+                                className="text-xs text-gray-400 hover:text-trade-primary dark:hover:text-white mt-2 block w-full"
+                            >
+                                Back to Sign In
+                            </button>
+                            <p className="text-xs text-gray-400 mt-2">
+                                Didn't receive it? Check spam or <button className="text-trade-primary hover:underline" onClick={() => setView('SIGNUP')}>try another email</button>.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* 4. SIGN UP VIEW (Enhanced) */}
                 {view === 'SIGNUP' && (
                     <form onSubmit={handleSignupSubmit} className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
                         <div>
                             <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">Create Account</h2>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">Start your AfCFTA journey today.</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm">Start your AfCFTA journey securely.</p>
                         </div>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Full Name</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <div className="relative group">
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="text" 
                                         required
@@ -263,8 +590,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Work Email</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <div className="relative group">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="email" 
                                         required
@@ -275,28 +602,81 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                     />
                                 </div>
                             </div>
+                            
+                            {/* Password Field */}
                             <div>
                                 <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Password</label>
-                                <div className="relative">
-                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <div className="relative group">
+                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
-                                        type="password" 
+                                        type={showPassword ? "text" : "password"}
                                         required
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
                                         placeholder="Create a strong password"
                                         value={signupPassword}
                                         onChange={e => setSignupPassword(e.target.value)}
                                     />
+                                    <button 
+                                      type="button"
+                                      onClick={() => setShowPassword(!showPassword)}
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                    >
+                                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
+                                {/* Strength Meter */}
+                                {signupPassword && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                        <div className="flex-1 h-1 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all duration-300 ${getStrengthColor(passwordStrength)}`} 
+                                                style={{ width: `${(passwordStrength / 4) * 100}%` }} 
+                                            />
+                                        </div>
+                                        <span className="text-[10px] font-bold text-gray-500">{getStrengthLabel(passwordStrength)}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Confirm Password Field */}
+                            <div>
+                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Confirm Password</label>
+                                <div className="relative group">
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
+                                    <input 
+                                        type="password" 
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        placeholder="Repeat your password"
+                                        value={signupConfirmPassword}
+                                        onChange={e => setSignupConfirmPassword(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Terms Checkbox */}
+                            <div className="flex items-start gap-2 pt-2">
+                                <div className="relative flex items-center h-5">
+                                    <input
+                                        id="terms"
+                                        type="checkbox"
+                                        className="w-4 h-4 rounded border-gray-300 text-trade-primary focus:ring-trade-primary/20"
+                                        checked={termsAccepted}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                    />
+                                </div>
+                                <label htmlFor="terms" className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                    I agree to the <a href="#" className="text-trade-primary dark:text-white font-bold hover:underline">Terms of Service</a> and <a href="#" className="text-trade-primary dark:text-white font-bold hover:underline">Privacy Policy</a>.
+                                </label>
                             </div>
                         </div>
 
                         <button 
                             type="submit"
-                            disabled={loading}
-                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70"
+                            disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword}
+                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Account'}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start Simulation'}
                         </button>
 
                         <p className="text-center text-sm text-gray-500 mt-6">
@@ -305,7 +685,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     </form>
                 )}
 
-                {/* 3. ROLE SELECTION (Onboarding Step 1) */}
+                {/* 5. ROLE SELECTION (Onboarding Step 1) */}
                 {view === 'ROLE_SELECT' && (
                     <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
                         <div>
@@ -345,7 +725,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     </div>
                 )}
 
-                {/* 4. PROFILE SETUP (Onboarding Step 2) */}
+                {/* 6. PROFILE SETUP (Onboarding Step 2) */}
                 {view === 'PROFILE_SETUP' && (
                      <div className="space-y-5 animate-fade-in max-w-sm mx-auto w-full">
                          <div>
@@ -424,7 +804,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                      </div>
                 )}
                 
-                {/* Global Loading Overlay (if needed) */}
+                {/* Global Loading Overlay */}
                 {loading && (
                     <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center z-50">
                         <Loader2 className="w-10 h-10 text-trade-primary animate-spin" />

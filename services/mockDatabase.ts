@@ -1,18 +1,17 @@
+
 import { 
   DbUser, 
   DbOrganization, 
   DbTrade, 
-  DbComplianceCheck, 
-  DbShipment, 
   DbFinanceRequest, 
   DbMarketIntelligence,
   DbAuditLog,
   DbKYCRequest,
-  DbAMLAlert,
-  UserPersona 
+  DbAMLAlert
 } from '../types';
+import { supabase } from './supabase';
 
-// --- MOCK DATA ---
+// --- MOCK DATA FALLBACKS ---
 
 const MOCK_ORGANIZATIONS: DbOrganization[] = [
   {
@@ -40,30 +39,6 @@ const MOCK_ORGANIZATIONS: DbOrganization[] = [
     logo_initial: 'N'
   },
   {
-    id: 'org_3',
-    name: 'SwiftTrans Logistics',
-    type: 'logistics',
-    location: 'Lagos, Nigeria',
-    verification_status: false,
-    rating: 4.2,
-    reviews_count: 45,
-    tags: ['Road Freight', 'Warehousing', 'Last Mile'],
-    description: 'Cross-border trucking specialist covering the Lagos-Abidjan corridor.',
-    logo_initial: 'S'
-  },
-  {
-    id: 'org_4',
-    name: 'AfriLaw Partners',
-    type: 'legal',
-    location: 'Johannesburg, SA',
-    verification_status: true,
-    rating: 5.0,
-    reviews_count: 210,
-    tags: ['Trade Law', 'Contracts', 'Dispute Resolution'],
-    description: 'Specialized legal firm for AfCFTA compliance and cross-border trade agreements.',
-    logo_initial: 'A'
-  },
-  {
     id: 'org_bank_1',
     name: 'Ecobank',
     type: 'finance',
@@ -74,24 +49,12 @@ const MOCK_ORGANIZATIONS: DbOrganization[] = [
     tags: ['Trade Finance', 'Letters of Credit'],
     description: 'Pan-African banking conglomerate.',
     logo_initial: 'E'
-  },
-  {
-    id: 'org_bank_2',
-    name: 'Afreximbank',
-    type: 'finance',
-    location: 'Cairo, Egypt',
-    verification_status: true,
-    rating: 5.0,
-    reviews_count: 320,
-    tags: ['Export Factoring', 'Trade Guarantees'],
-    description: 'African Export-Import Bank.',
-    logo_initial: 'A'
   }
 ];
 
 const MOCK_TRADES: DbTrade[] = [
   {
-    id: 'TRD-882',
+    id: 'TRD-MOCK-1',
     exporter_id: 'user_current',
     importer_id: 'org_1',
     origin_country: 'Nigeria',
@@ -117,17 +80,6 @@ const MOCK_FINANCE_REQUESTS: DbFinanceRequest[] = [
     risk_score: 25, 
     date_requested: '2024-10-20',
     provider_name: 'Ecobank'
-  },
-  { 
-    id: 'FIN-2024-003', 
-    trade_id: 'TRD-901', 
-    financier_id: 'org_bank_2', 
-    status: 'under_review', 
-    product_type: 'Export Factoring', 
-    amount: 120000, 
-    risk_score: 45, 
-    date_requested: '2024-11-02',
-    provider_name: 'Afreximbank'
   }
 ];
 
@@ -138,74 +90,170 @@ const MOCK_MARKET_INTELLIGENCE: DbMarketIntelligence[] = [
 ];
 
 const MOCK_AUDIT_LOGS: DbAuditLog[] = [
-  { id: 'log_1', action: 'Login Success', user: 'Kofi Mensah', timestamp: '2024-11-04 09:15:22', ip: '102.12.33.1', status: 'Success' },
-  { id: 'log_2', action: 'Trade Created #TRD-882', user: 'Kofi Mensah', timestamp: '2024-11-04 10:30:00', ip: '102.12.33.1', status: 'Success' },
-  { id: 'log_3', action: 'Password Change Attempt', user: 'Kofi Mensah', timestamp: '2024-11-03 14:22:10', ip: '102.12.33.1', status: 'Failed' },
-  { id: 'log_4', action: 'API Key Generated', user: 'Admin', timestamp: '2024-11-01 16:45:00', ip: '197.23.11.5', status: 'Warning' },
-  { id: 'log_5', action: 'User Profile Updated', user: 'Sarah Osei', timestamp: '2024-11-05 08:00:00', ip: '154.11.22.9', status: 'Success' },
-  { id: 'log_6', action: 'AML Alert Review', user: 'System Admin', timestamp: '2024-11-05 09:10:00', ip: '197.0.0.1', status: 'Success' },
+  { id: 'log_1', action: 'Login Success', user: 'System', timestamp: 'Just now', ip: '102.12.33.1', status: 'Success' },
 ];
 
-const MOCK_KYC_REQUESTS: DbKYCRequest[] = [
-  { id: 'KYC-001', entity_name: 'Kwame Trading Ent.', entity_type: 'Organization', country: 'Ghana', document_type: 'Cert. of Incorporation', status: 'Pending', submitted_at: '2024-11-05', risk_level: 'Low' },
-  { id: 'KYC-002', entity_name: 'John Doe Logistics', entity_type: 'Individual', country: 'Nigeria', document_type: 'National ID', status: 'Pending', submitted_at: '2024-11-04', risk_level: 'Medium' },
-  { id: 'KYC-003', entity_name: 'Sankofa Imports', entity_type: 'Organization', country: 'Ghana', document_type: 'Business License', status: 'Approved', submitted_at: '2024-11-01', risk_level: 'Low' },
-];
+const MOCK_KYC_REQUESTS: DbKYCRequest[] = [];
+const MOCK_AML_ALERTS: DbAMLAlert[] = [];
 
-const MOCK_AML_ALERTS: DbAMLAlert[] = [
-  { id: 'AML-992', trade_id: 'TRD-882', severity: 'High', flag_reason: 'Unusual Volume Spike', detected_at: '2024-11-05 10:00', status: 'Open' },
-  { id: 'AML-993', trade_id: 'TRD-771', severity: 'Critical', flag_reason: 'Sanctioned Entity Match', detected_at: '2024-11-04 14:30', status: 'Investigating' },
-  { id: 'AML-994', trade_id: 'TRD-665', severity: 'Medium', flag_reason: 'Mismatched HS Code Value', detected_at: '2024-11-03 09:15', status: 'Resolved' },
-];
-
-// --- MOCK DATABASE CLIENT ---
+// --- DATABASE CLIENT WRAPPER ---
 
 export const mockDatabase = {
-  // Organizations
-  getOrganizations: async (typeFilter?: string): Promise<DbOrganization[]> => {
-    // Simulate network latency
-    await new Promise(resolve => setTimeout(resolve, 500));
-    if (typeFilter && typeFilter !== 'all') {
-      return MOCK_ORGANIZATIONS.filter(org => org.type === typeFilter);
+  
+  // --- USER PROFILE ---
+  getUserProfile: async (userId: string): Promise<DbUser | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      return data as DbUser;
+    } catch (e) {
+      console.warn("Using fallback profile (DB unreachable or record missing)");
+      return null;
     }
-    return MOCK_ORGANIZATIONS;
   },
 
-  // Trades
-  getTrades: async (userId: string): Promise<DbTrade[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_TRADES.filter(t => t.exporter_id === userId);
+  updateUserProfile: async (userId: string, updates: Partial<DbUser>): Promise<boolean> => {
+    try {
+      // Use UPDATE instead of UPSERT to strictly adhere to RLS 'UPDATE' policy
+      // and ensure we are modifying an existing profile created by the Auth trigger.
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+      
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error("Failed to update profile", e);
+      return false;
+    }
   },
 
-  // Finance Requests
+  // --- READ METHODS ---
+
+  getOrganizations: async (typeFilter?: string): Promise<DbOrganization[]> => {
+    try {
+      let query = supabase.from('organizations').select('*');
+      if (typeFilter && typeFilter !== 'all') {
+        query = query.eq('type', typeFilter);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data && data.length > 0) ? data as DbOrganization[] : MOCK_ORGANIZATIONS.filter(o => typeFilter === 'all' || !typeFilter || o.type === typeFilter);
+    } catch (e) {
+      return MOCK_ORGANIZATIONS.filter(o => typeFilter === 'all' || !typeFilter || o.type === typeFilter);
+    }
+  },
+
+  getTrades: async (): Promise<DbTrade[]> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return MOCK_TRADES;
+
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('exporter_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      return (data && data.length > 0) ? data as DbTrade[] : MOCK_TRADES;
+    } catch (e) {
+      return MOCK_TRADES; 
+    }
+  },
+
   getFinanceRequests: async (userId: string): Promise<DbFinanceRequest[]> => {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    // In a real DB, we'd join with trades to filter by user. 
-    // Here we assume these requests belong to the current user context.
-    return MOCK_FINANCE_REQUESTS;
+    try {
+        const { data, error } = await supabase.from('finance_requests').select('*');
+        if(error) throw error;
+        return (data && data.length > 0) ? data as DbFinanceRequest[] : MOCK_FINANCE_REQUESTS;
+    } catch(e) {
+        return MOCK_FINANCE_REQUESTS;
+    }
   },
 
-  // Market Intel
   getMarketIntelligence: async (): Promise<DbMarketIntelligence[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_MARKET_INTELLIGENCE;
+    try {
+        const { data, error } = await supabase.from('market_intelligence').select('*');
+        if (error) throw error;
+        return (data && data.length > 0) ? data as DbMarketIntelligence[] : MOCK_MARKET_INTELLIGENCE;
+    } catch (e) {
+        return MOCK_MARKET_INTELLIGENCE;
+    }
   },
 
-  // Audit Logs
   getAuditLogs: async (): Promise<DbAuditLog[]> => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return MOCK_AUDIT_LOGS;
+    try {
+      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(20);
+      if (error) throw error;
+      
+      // Map DB fields to UI expected fields if necessary (DB uses created_at, UI uses timestamp)
+      return (data || []).map((log: any) => ({
+        ...log,
+        timestamp: new Date(log.created_at).toLocaleString(),
+        user: log.user_id ? 'User' : 'System' // In real app, join with profiles
+      }));
+    } catch (e) {
+      return MOCK_AUDIT_LOGS;
+    }
   },
 
-  // KYC
   getKYCRequests: async (): Promise<DbKYCRequest[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_KYC_REQUESTS;
+    try {
+      const { data, error } = await supabase.from('kyc_requests').select('*');
+      if (error) throw error;
+      return (data || []) as DbKYCRequest[];
+    } catch(e) {
+      return MOCK_KYC_REQUESTS;
+    }
   },
 
-  // AML
   getAMLAlerts: async (): Promise<DbAMLAlert[]> => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return MOCK_AML_ALERTS;
+    try {
+      const { data, error } = await supabase.from('aml_alerts').select('*');
+      if (error) throw error;
+      return (data || []) as DbAMLAlert[];
+    } catch(e) {
+      return MOCK_AML_ALERTS;
+    }
+  },
+
+  // --- WRITE METHODS ---
+
+  createTrade: async (tradeData: Partial<DbTrade>): Promise<DbTrade | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const payload = {
+        ...tradeData,
+        exporter_id: user.id,
+        status: tradeData.status || 'draft'
+      };
+
+      const { data, error } = await supabase
+        .from('trades')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as DbTrade;
+    } catch (e) {
+      console.error("Create Trade Error (Falling back to local mock):", e);
+      // Fallback for demo purposes if table doesn't exist yet
+      return { 
+        id: `TRD-${Math.floor(Math.random() * 1000)}`, 
+        exporter_id: 'mock_user', 
+        created_at: new Date().toISOString(),
+        ...tradeData 
+      } as DbTrade;
+    }
   }
 };

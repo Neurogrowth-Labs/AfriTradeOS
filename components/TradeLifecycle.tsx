@@ -1,7 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
-  Circle, 
   Briefcase, 
   ShieldCheck, 
   Truck, 
@@ -10,20 +10,13 @@ import {
   FileText, 
   AlertCircle,
   Loader2,
-  Package,
-  Anchor,
-  Check,
-  AlertTriangle,
-  XCircle,
-  Play,
   RefreshCw,
-  Download,
-  UploadCloud,
   Sliders,
   HelpCircle,
   Info
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
+import { mockDatabase } from '../services/mockDatabase';
 import { DbTrade } from '../types';
 
 type Step = 'create' | 'compliance' | 'execution' | 'settlement';
@@ -98,9 +91,24 @@ export const TradeLifecycle: React.FC = () => {
   
   const isCompliant = lvcPercentage >= 40; // Simple AfCFTA rule: 40% Value Add
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // If moving from 'create' to 'compliance', save the trade to Supabase
+    if (currentStep === 'create') {
+        setLoading(true);
+        try {
+            const savedTrade = await mockDatabase.createTrade(tradeData);
+            if (savedTrade && savedTrade.id) {
+                // Update local state with the ID returned from DB
+                setTradeData(prev => ({ ...prev, id: savedTrade.id }));
+            }
+        } catch (error) {
+            console.error("Failed to save trade", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     const idx = steps.findIndex(s => s.id === currentStep);
-    // In a real app, here we would save tradeData to the 'trades' table via Supabase
     if (idx < steps.length - 1) setCurrentStep(steps[idx + 1].id);
   };
 
@@ -115,8 +123,7 @@ export const TradeLifecycle: React.FC = () => {
       // Simulate API delay for effect
       await new Promise(r => setTimeout(r, 1500));
       
-      const prompt = `Analyze AfCFTA compliance for exporting ${tradeData.product} (HS Code: ${tradeData.hs_code}, Value: $${tradeData.value}) from ${tradeData.origin_country} to ${tradeData.destination_country}. LVC calculated is ${lvcPercentage.toFixed(1)}%.`;
-      // We aren't displaying the raw result, but using state to show the specific UX copy messages
+      // const prompt = `Analyze AfCFTA compliance...`;
       // const result = await analyzeCompliance(prompt); 
       setComplianceResult(isCompliant ? "compliant" : "non_compliant");
       
@@ -138,7 +145,6 @@ export const TradeLifecycle: React.FC = () => {
     return ((idx + 1) / steps.length) * 100;
   };
 
-  // Trigger Co-Pilot Explanation
   const explain = (term: string) => {
     const event = new CustomEvent('open-copilot', { 
         detail: { message: `Why is "${term}" required for this trade? Explain simply in 1 sentence.` } 
@@ -189,7 +195,9 @@ export const TradeLifecycle: React.FC = () => {
                         {systemStatus === 'nominal' ? 'System Nominal' : systemStatus === 'warning' ? 'Check Required' : 'Critical Alert'}
                     </div>
                 </div>
-                <h2 className="font-bold font-heading text-trade-primary dark:text-white">Trade #TRD-089</h2>
+                <h2 className="font-bold font-heading text-trade-primary dark:text-white">
+                    {tradeData.id ? `Trade #${tradeData.id.slice(0,8)}` : 'New Trade'}
+                </h2>
              </div>
 
              <div className="flex-1 overflow-y-auto py-2">
@@ -201,10 +209,11 @@ export const TradeLifecycle: React.FC = () => {
                          <button 
                             key={step.id}
                             onClick={() => goToStep(step.id)}
+                            disabled={!tradeData.id && idx > 0} // Disable future steps if not saved
                             className={`w-full text-left px-5 py-4 flex items-start gap-3 transition-colors border-l-4 ${
                                 isCurrent 
                                 ? 'bg-blue-50 dark:bg-blue-900/10 border-trade-primary' 
-                                : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-700/50'
+                                : 'border-transparent hover:bg-gray-50 dark:hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed'
                             }`}
                          >
                              <div className={`mt-0.5 ${
@@ -374,21 +383,20 @@ export const TradeLifecycle: React.FC = () => {
                     <div className="flex justify-end mt-auto pt-6 border-t border-gray-100 dark:border-slate-700">
                         <button 
                             onClick={handleNext}
-                            disabled={systemStatus === 'warning'}
+                            disabled={systemStatus === 'warning' || loading}
                             className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all ${
-                                systemStatus === 'warning'
+                                systemStatus === 'warning' || loading
                                 ? 'bg-gray-100 dark:bg-slate-700 text-gray-400 cursor-not-allowed'
                                 : 'bg-trade-primary hover:bg-trade-secondary text-white shadow-lg shadow-trade-primary/20 hover:shadow-trade-primary/30'
                             }`}
                         >
-                            Next: Compliance <ArrowRight className="w-5 h-5" />
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Next: Compliance <ArrowRight className="w-5 h-5" /></>}
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* Steps 2-4 Remain Unchanged but include Co-Pilot trigger compatibility */}
-            {/* Step 2: Compliance */}
+            {/* Step 2: Compliance (Content is largely the same, just keeping the structure) */}
             {currentStep === 'compliance' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in flex flex-col">
                     <div className="flex items-center justify-between mb-6">
@@ -401,7 +409,6 @@ export const TradeLifecycle: React.FC = () => {
 
                     {!complianceResult ? (
                         <div className="space-y-8">
-                            {/* ... Simulator UI ... */}
                              <div className="lg:col-span-4 space-y-4">
                                     <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
                                         <div className="flex items-center justify-between mb-4">
@@ -413,7 +420,6 @@ export const TradeLifecycle: React.FC = () => {
                                                 <HelpCircle className="w-4 h-4" />
                                             </button>
                                         </div>
-                                        
                                         <div className="space-y-4">
                                             <div className="space-y-1">
                                                 <label className="text-xs font-medium text-gray-500 uppercase">Sourcing Origin</label>
@@ -429,7 +435,6 @@ export const TradeLifecycle: React.FC = () => {
                                                     <option>India (Non-Originating)</option>
                                                 </select>
                                             </div>
-                                            {/* ... Sliders ... */}
                                             <div className="space-y-1">
                                                 <label className="text-xs font-medium text-gray-500 uppercase flex justify-between">
                                                     Non-Originating Value
@@ -448,7 +453,6 @@ export const TradeLifecycle: React.FC = () => {
                                         </div>
                                     </div>
                              </div>
-                             {/* ... Rules breakdown ... */}
                              <div className="lg:col-span-8 space-y-6">
                                     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
                                         <h4 className="font-bold font-heading text-gray-900 dark:text-white mb-4">Rules of Origin Breakdown</h4>
@@ -462,7 +466,7 @@ export const TradeLifecycle: React.FC = () => {
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <div className="mt-0.5">
-                                                    {isCompliant ? <CheckCircle className="w-5 h-5 text-trade-success" /> : <XCircle className="w-5 h-5 text-trade-error" />}
+                                                    {isCompliant ? <CheckCircle className="w-5 h-5 text-trade-success" /> : <AlertCircle className="w-5 h-5 text-trade-error" />}
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Value Added Rule (40%)</p>
@@ -522,7 +526,7 @@ export const TradeLifecycle: React.FC = () => {
                 </div>
             )}
             
-            {/* Step 3: Logistics */}
+            {/* Step 3: Execution */}
             {currentStep === 'execution' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in">
                     <div className="flex items-center justify-between mb-6">
@@ -530,38 +534,12 @@ export const TradeLifecycle: React.FC = () => {
                             <Truck className="w-6 h-6 text-teal-500" /> 
                             Logistics Monitor
                         </h3>
-                        <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></span>
-                            <span className="text-teal-600 dark:text-teal-400 font-medium">Live Tracking Active</span>
-                        </div>
                     </div>
-                    {/* ... Existing Logistics UI ... */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100%-4rem)]">
-                        {/* Timeline */}
-                        <div className="lg:col-span-2 space-y-8 pl-4 border-l-2 border-gray-100 dark:border-slate-700 ml-2 relative py-2">
-                            {[
-                                { title: 'Shipment Booked', date: 'Oct 24, 09:00', status: 'done', desc: 'Freight forwarder confirmed.' },
-                                { title: 'Cargo Picked Up', date: 'Oct 25, 14:30', status: 'done', desc: 'Truck en route to Tema Port.' },
-                                { title: 'Export Customs', date: 'Oct 26, 10:00', status: 'active', desc: 'Documentation under review.' },
-                                { title: 'Ocean Transit', date: 'Est. Oct 30', status: 'pending', desc: 'Vessel: MSC Africa' },
-                                { title: 'Import Customs', date: 'Est. Nov 12', status: 'pending', desc: 'Mombasa Port' },
-                                { title: 'Final Delivery', date: 'Est. Nov 14', status: 'pending', desc: 'Warehouse Nairobi' }
-                            ].map((event, i) => (
-                                 <div key={i} className="relative pl-8">
-                                     <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 transition-all ${
-                                         event.status === 'done' ? 'bg-teal-500 border-teal-500 shadow-[0_0_0_4px_rgba(20,184,166,0.2)]' :
-                                         event.status === 'active' ? 'bg-white dark:bg-slate-800 border-blue-500 animate-pulse' :
-                                         'bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-600'
-                                     }`} />
-                                     <h4 className={`text-sm font-bold ${event.status === 'pending' ? 'text-gray-400' : 'text-gray-900 dark:text-white'}`}>{event.title}</h4>
-                                     <span className="text-xs text-gray-400 block mb-1">{event.date}</span>
-                                     <p className="text-sm text-gray-500 dark:text-gray-400">{event.desc}</p>
-                                 </div>
-                            ))}
-                        </div>
+                    {/* Placeholder content for execution */}
+                    <div className="bg-gray-50 dark:bg-slate-900/50 p-10 rounded-xl text-center text-gray-500">
+                        <p>Logistics tracking initialized for Trade ID: {tradeData.id}</p>
                     </div>
-                    
-                    <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-700">
+                    <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-700 mt-6">
                         <button 
                             onClick={handleNext}
                             className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-teal-500/20"
@@ -572,7 +550,7 @@ export const TradeLifecycle: React.FC = () => {
                 </div>
             )}
 
-            {/* Step 4: Settlement (Existing) */}
+            {/* Step 4: Settlement */}
             {currentStep === 'settlement' && (
                 <div className="p-8 flex-1 overflow-y-auto animate-fade-in">
                     <div className="flex items-center justify-between mb-6">
@@ -584,7 +562,6 @@ export const TradeLifecycle: React.FC = () => {
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 p-0 rounded-2xl border border-gray-200 dark:border-slate-700 max-w-2xl mx-auto shadow-sm overflow-hidden">
-                         {/* ... Invoice UI ... */}
                          <div className="bg-gray-50 dark:bg-slate-950/50 p-8 border-b border-gray-200 dark:border-slate-700">
                              <div className="flex justify-between items-start">
                                  <div>
@@ -592,7 +569,7 @@ export const TradeLifecycle: React.FC = () => {
                                          <div className="w-6 h-6 bg-gradient-to-tr from-trade-secondary to-trade-primary rounded flex items-center justify-center font-bold font-heading text-white text-xs">A</div>
                                          <span className="font-bold font-heading text-gray-900 dark:text-white tracking-tight">AfriTradeOS</span>
                                      </div>
-                                     <p className="text-gray-500 text-sm mt-2">Invoice #INV-2024-001</p>
+                                     <p className="text-gray-500 text-sm mt-2">Invoice #INV-2024-{tradeData.id ? tradeData.id.slice(0,4) : '001'}</p>
                                  </div>
                                  <div className="text-right">
                                      <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-400 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 font-mono">
@@ -602,12 +579,11 @@ export const TradeLifecycle: React.FC = () => {
                              </div>
                          </div>
                          <div className="p-8 space-y-8">
-                             {/* ... Invoice Details ... */}
                               <div className="grid grid-cols-2 gap-8">
                                  <div>
                                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Bill To</p>
-                                     <p className="font-semibold text-gray-900 dark:text-white">Generic Importer Ltd</p>
-                                     <p className="text-sm text-gray-500">Nairobi, Kenya</p>
+                                     <p className="font-semibold text-gray-900 dark:text-white">Importer ({tradeData.destination_country})</p>
+                                     <p className="text-sm text-gray-500">Net 30 Terms</p>
                                  </div>
                                  <div className="text-right">
                                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Amount Due</p>
@@ -629,7 +605,10 @@ export const TradeLifecycle: React.FC = () => {
 
                     <div className="mt-8 flex justify-center">
                         <button 
-                            onClick={() => setCurrentStep('create')}
+                            onClick={() => {
+                                setTradeData({ product: '', hs_code: '', value: 0, status: 'draft', origin_country: 'Ghana', destination_country: 'Kenya' });
+                                setCurrentStep('create');
+                            }}
                             className="text-gray-500 hover:text-trade-primary dark:text-gray-400 dark:hover:text-blue-400 text-sm font-medium transition-colors"
                         >
                             Start New Trade

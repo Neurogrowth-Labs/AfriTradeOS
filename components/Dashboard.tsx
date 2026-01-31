@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   ArrowUpRight, 
@@ -31,7 +32,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { fastChatResponse } from '../services/geminiService';
-import { UserPersona, AppView } from '../types';
+import { mockDatabase } from '../services/mockDatabase'; // Import DB
+import { UserPersona, AppView, DbTrade } from '../types';
 
 // --- Types & Mock Data ---
 
@@ -102,6 +104,7 @@ const DECLARATIONS = [
 export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) => {
   const [insight, setInsight] = useState("Loading AI strategic brief...");
   const [selectedLane, setSelectedLane] = useState<TradeLane | null>(null);
+  const [myTrades, setMyTrades] = useState<DbTrade[]>([]);
   
   // -- REAL-TIME STATE --
   const [lanes, setLanes] = useState<TradeLane[]>(INITIAL_LANES);
@@ -130,16 +133,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
   ]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchInsight = async () => {
       try {
         const prompt = `Provide a 1-sentence executive summary for a ${userRole} in the AfCFTA zone today.`;
         const text = await fastChatResponse(prompt);
-        setInsight(text);
+        if (isMounted && text) {
+            setInsight(text);
+        }
       } catch (e) {
-        setInsight("System operational. AI strategic brief currently unavailable.");
+        if (isMounted) setInsight("System operational. AI strategic brief currently unavailable.");
       }
     };
+    
+    const fetchTrades = async () => {
+        if (userRole === UserPersona.EXPORTER_SME) {
+            const data = await mockDatabase.getTrades();
+            if (isMounted) {
+                setMyTrades(data);
+                setMetrics(prev => ({ ...prev, activeShipments: data.length }));
+            }
+        }
+    };
+
     fetchInsight();
+    fetchTrades();
+
+    return () => {
+        isMounted = false;
+    };
   }, [userRole]);
 
   // --- REAL-TIME SIMULATION ENGINE ---
@@ -155,7 +178,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
       // 2. Update Metrics (KPIs) - Random Walk
       setMetrics(prev => ({
         ...prev,
-        activeShipments: Math.max(0, prev.activeShipments + (Math.random() > 0.8 ? (Math.random() > 0.5 ? 1 : -1) : 0)),
+        activeShipments: prev.activeShipments, // Don't randomize real count
         dailyRevenue: +(prev.dailyRevenue + (Math.random() - 0.5) * 0.05).toFixed(2),
         pendingDeclarations: Math.max(400, prev.pendingDeclarations + Math.floor((Math.random() - 0.5) * 5)),
         complianceScore: Math.min(100, Math.max(80, prev.complianceScore + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 1 : -1) : 0))),
@@ -290,29 +313,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
            
            <div className="flex-1">
               <h3 className="text-base font-heading font-bold text-trade-primary dark:text-white mb-3 flex items-center justify-between">
-                  My Active Shipments
+                  My Active Trades
                   <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Live
                   </span>
               </h3>
-              <div className="space-y-2.5">
-                 {[
-                   { id: '#TRD-882', dest: 'Lagos, NG', status: 'In Transit', eta: '2 Days' },
-                   { id: '#TRD-889', dest: 'Accra, GH', status: 'Customs Hold', eta: 'Delayed' },
-                 ].map(ship => (
+              <div className="space-y-2.5 max-h-[250px] overflow-y-auto">
+                 {myTrades.length === 0 ? (
+                     <div className="text-center py-4 text-gray-400 text-sm">No active trades found. Start a new one.</div>
+                 ) : myTrades.map(ship => (
                     <div key={ship.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700">
                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${ship.status === 'In Transit' ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
+                          <div className={`p-2 rounded-lg ${ship.status === 'active' || ship.status === 'draft' ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
                              <Truck className="w-4 h-4" />
                           </div>
                           <div>
-                             <p className="font-bold font-heading text-trade-primary dark:text-white text-sm">{ship.dest}</p>
+                             <p className="font-bold font-heading text-trade-primary dark:text-white text-sm">To: {ship.destination_country || 'Pending'}</p>
                              <p className="text-[10px] font-mono text-gray-500">{ship.id}</p>
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className={`text-xs font-bold ${ship.status === 'In Transit' ? 'text-trade-success' : 'text-trade-error'}`}>{ship.status}</p>
-                          <p className="text-[10px] text-gray-500">ETA: {ship.eta}</p>
+                          <p className={`text-xs font-bold uppercase ${ship.status === 'active' ? 'text-trade-success' : 'text-trade-warning'}`}>{ship.status}</p>
+                          <p className="text-[10px] text-gray-500">{ship.product || 'General Cargo'}</p>
                        </div>
                     </div>
                  ))}

@@ -6,13 +6,24 @@ import {
   Loader2, 
   AlertTriangle, 
   CheckCircle, 
-  XCircle,
-  ChevronRight,
-  ShieldCheck,
-  RefreshCw,
+  XCircle, 
+  ChevronRight, 
+  ShieldCheck, 
+  RefreshCw, 
   Search
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
+
+const AFRICAN_COUNTRIES = [
+  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde", 
+  "Cameroon", "Central African Republic", "Chad", "Comoros", "DR Congo", "Republic of Congo", 
+  "Cote d'Ivoire", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", 
+  "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", 
+  "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", 
+  "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", 
+  "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", 
+  "Tunisia", "Uganda", "Zambia", "Zimbabwe"
+];
 
 export const Compliance: React.FC = () => {
   const [product, setProduct] = useState('Cotton T-Shirts');
@@ -120,12 +131,15 @@ export const Compliance: React.FC = () => {
                          </div>
                          <div>
                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Destination</label>
-                             <input 
-                                type="text" 
+                             <select 
                                 value={dest}
                                 onChange={e => setDest(e.target.value)}
-                                className="w-full mt-1 p-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white text-xs focus:border-trade-primary focus:ring-1 focus:ring-trade-primary/50 outline-none"
-                             />
+                                className="w-full mt-1 p-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white text-xs focus:border-trade-primary focus:ring-1 focus:ring-trade-primary/50 outline-none appearance-none cursor-pointer"
+                             >
+                                {AFRICAN_COUNTRIES.map(country => (
+                                    <option key={country} value={country}>{country}</option>
+                                ))}
+                             </select>
                          </div>
                      </div>
                      <div>
@@ -165,7 +179,7 @@ export const Compliance: React.FC = () => {
                              <h4 className="font-bold text-trade-primary dark:text-white text-xs">Wholly Obtained Status</h4>
                              <p className="text-[10px] text-gray-500 mt-0.5">Product must be grown, harvested, or extracted entirely within the member state.</p>
                              <div className="mt-1 flex items-center gap-2 text-[10px] font-medium text-trade-success bg-green-50 dark:bg-green-900/10 px-2 py-0.5 rounded w-fit font-mono">
-                                 PASSED: Cotton harvested in Benin
+                                 PASSED: Cotton harvested in {origin}
                              </div>
                          </div>
                      </div>
@@ -234,7 +248,7 @@ export const Compliance: React.FC = () => {
                                  <ul className="space-y-1">
                                      <li className="flex items-start gap-2 text-[10px] text-gray-300">
                                          <ChevronRight className="w-2.5 h-2.5 mt-0.5 text-trade-accent" />
-                                         Obtain Supplier Declaration to prove local origin.
+                                         Obtain Supplier Declaration to prove local origin in {origin}.
                                      </li>
                                      <li className="flex items-start gap-2 text-[10px] text-gray-300">
                                          <ChevronRight className="w-2.5 h-2.5 mt-0.5 text-trade-accent" />
@@ -253,7 +267,7 @@ export const Compliance: React.FC = () => {
                  <div className="mt-3 p-2.5 bg-trade-accent/20 rounded-lg flex items-start gap-2 border border-trade-accent/30">
                      <AlertTriangle className="w-3.5 h-3.5 text-trade-accent mt-0.5" />
                      <p className="text-[10px] text-trade-accent leading-tight">
-                         <strong>AI Strategic Insight:</strong> Changing your sourcing country could reduce tariffs by 6%.
+                         <strong>AI Strategic Insight:</strong> Changing your sourcing country could reduce tariffs by 6% when exporting to {dest}.
                      </p>
                  </div>
              </div>

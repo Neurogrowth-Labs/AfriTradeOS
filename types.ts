@@ -50,12 +50,15 @@ export interface DbUser {
   organization_id?: string;
   full_name: string;
   email: string;
+  phone?: string;
+  company_name?: string;
+  is_super_admin?: boolean;
 }
 
 export interface DbOrganization {
   id: string;
   name: string;
-  type: 'buyer' | 'seller' | 'logistics' | 'legal' | 'finance';
+  type: 'buyer' | 'seller' | 'logistics' | 'legal' | 'finance' | 'government';
   verification_status: boolean;
   location: string;
   rating: number; // 0-5
@@ -134,6 +137,8 @@ export interface DbAuditLog {
   id: string;
   action: string;
   user: string;
+  user_id?: string;
+  details?: any;
   timestamp: string;
   ip: string;
   status: 'Success' | 'Failed' | 'Warning';
@@ -145,8 +150,9 @@ export interface DbKYCRequest {
   entity_type: 'Individual' | 'Organization';
   country: string;
   document_type: string;
+  document_url?: string;
   status: 'Pending' | 'Approved' | 'Rejected';
-  submitted_at: string;
+  submitted_at?: string;
   risk_level: 'Low' | 'Medium' | 'High';
 }
 

@@ -76,6 +76,27 @@ export const SystemDiagnostic: React.FC = () => {
          </div>
       </div>
 
+      {/* Critical Alerts Section */}
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-start gap-3 shadow-sm animate-in slide-in-from-top-2 duration-500">
+          <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-full shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          </div>
+          <div>
+              <h3 className="text-sm font-bold text-red-800 dark:text-red-300 uppercase tracking-wide">Critical Security Vulnerability Detected</h3>
+              <p className="text-xs text-red-700 dark:text-red-400 mt-1 leading-relaxed">
+                  <strong>Issue:</strong> The Gemini API Key is currently exposed in the client-side bundle via `process.env`. This allows potential attackers to scrape the key from browser network traffic.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                  <span className="text-[10px] font-bold bg-white dark:bg-red-950 text-red-700 dark:text-red-300 px-3 py-1 rounded border border-red-200 dark:border-red-800 shadow-sm">
+                      Severity: CRITICAL
+                  </span>
+                  <p className="text-xs font-bold text-red-800 dark:text-red-200 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" /> Recommendation: Move to Backend Proxy / Edge Function immediately.
+                  </p>
+              </div>
+          </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Radar Chart: Dimension Overview */}
@@ -191,7 +212,7 @@ export const SystemDiagnostic: React.FC = () => {
                       <div className="w-full bg-gray-100 dark:bg-slate-700 h-1.5 rounded-full mt-2 overflow-hidden">
                           <div className="bg-red-500 h-full w-[76%]"></div>
                       </div>
-                      <p className="text-[10px] text-gray-400 mt-1">Critical: Move API key handling to a secure backend proxy immediately.</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Critical: See security alert above regarding API key handling.</p>
                   </div>
               </div>
 
@@ -266,11 +287,15 @@ export const SystemDiagnostic: React.FC = () => {
                       <ul className="mt-2 space-y-2">
                           <li className="text-xs text-gray-600 dark:text-slate-300 flex gap-2">
                               <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" />
-                              <span>Migrate API Key management to secure backend proxy/edge function.</span>
+                              <span className="font-bold text-red-600 dark:text-red-400">Migrate API Key management to secure backend proxy/edge function.</span>
                           </li>
                           <li className="text-xs text-gray-600 dark:text-slate-300 flex gap-2">
                               <CheckCircle className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
-                              <span>Implement aggressive caching for Market Intelligence queries to reduce token costs.</span>
+                              <span>Transition to live Supabase cluster with RLS. (SQL Applied)</span>
+                          </li>
+                          <li className="text-xs text-gray-600 dark:text-slate-300 flex gap-2">
+                              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+                              <span>Update Client Config: Set VITE_SUPABASE_URL & ANON_KEY.</span>
                           </li>
                       </ul>
                   </div>
@@ -280,8 +305,8 @@ export const SystemDiagnostic: React.FC = () => {
                       <h4 className="text-sm font-bold text-trade-primary dark:text-slate-50">Phase 2: Scale & Integration (3-6 Months)</h4>
                       <ul className="mt-2 space-y-2">
                           <li className="text-xs text-gray-600 dark:text-slate-300 flex gap-2">
-                              <Database className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
-                              <span>Transition from mock data to live Supabase/PostgreSQL clusters with Row Level Security (RLS).</span>
+                              <CheckCircle className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />
+                              <span>Implement aggressive caching for Market Intelligence queries.</span>
                           </li>
                           <li className="text-xs text-gray-600 dark:text-slate-300 flex gap-2">
                               <Users className="w-3 h-3 text-blue-500 shrink-0 mt-0.5" />

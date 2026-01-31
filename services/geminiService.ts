@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Modality, Type, LiveServerMessage } from "@google/genai";
 import { createBlob, decode, decodeAudioData } from "./audioUtils";
 
@@ -5,6 +6,12 @@ import { createBlob, decode, decodeAudioData } from "./audioUtils";
 // NOTE: In a real environment, verify API_KEY exists.
 const apiKey = process.env.API_KEY || ''; 
 const ai = new GoogleGenAI({ apiKey });
+
+const isAbortError = (error: any) => {
+  return error.name === 'AbortError' || 
+         error.message?.includes('signal is aborted') ||
+         error.message?.includes('The user aborted a request');
+};
 
 // 1. Market Intelligence (Search Grounding)
 export const getMarketIntelligence = async (query: string) => {
@@ -22,6 +29,9 @@ export const getMarketIntelligence = async (query: string) => {
       groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
     };
   } catch (error: any) {
+    if (isAbortError(error)) {
+        return { text: "", groundingChunks: [] };
+    }
     // Graceful degradation for quota limits
     if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
         console.warn("Market Intel Quota Exceeded");
@@ -58,7 +68,8 @@ export const getLogisticsInfo = async (query: string, location?: { lat: number; 
       text: response.text,
       groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
     };
-  } catch (error) {
+  } catch (error: any) {
+    if (isAbortError(error)) return { text: "", groundingChunks: [] };
     console.error("Logistics Error:", error);
     throw error;
   }
@@ -79,6 +90,8 @@ export const analyzeCompliance = async (scenario: string) => {
     });
     return response.text;
   } catch (error: any) {
+    if (isAbortError(error)) return "";
+    
     // Handle Quota limits for Thinking Model (429)
     if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
          console.warn("Compliance Thinking Quota Exceeded. Falling back to standard model.");
@@ -118,6 +131,8 @@ export const fastChatResponse = async (message: string, context?: string) => {
     });
     return response.text;
   } catch (error: any) {
+    if (isAbortError(error)) return "";
+
     // Handle quota exhaustion gracefully
     if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
         return "AfriTradeOS Strategic Brief: Market stability is currently being monitored. Real-time insights are paused due to high traffic volume.";
@@ -161,7 +176,8 @@ export const generateMarketingImage = async (prompt: string, aspectRatio: string
       }
     }
     return null;
-  } catch (error) {
+  } catch (error: any) {
+    if (isAbortError(error)) return null;
     console.error("Image Gen Error:", error);
     throw error;
   }
@@ -185,7 +201,8 @@ export const analyzeDocument = async (base64Data: string, mimeType: string, prom
       }
     });
     return response.text;
-  } catch (error) {
+  } catch (error: any) {
+    if (isAbortError(error)) return "";
     console.error("Doc Analysis Error:", error);
     throw error;
   }
@@ -211,7 +228,8 @@ export const generateSpeech = async (text: string) => {
     if (!base64Audio) throw new Error("No audio generated");
     
     return base64Audio;
-  } catch (error) {
+  } catch (error: any) {
+    if (isAbortError(error)) return "";
     console.error("TTS Error:", error);
     throw error;
   }
@@ -266,6 +284,9 @@ export const connectLiveSession = async (
           const pcmBlob = createBlob(inputData);
           sessionPromise.then(session => {
             session.sendRealtimeInput({ media: pcmBlob });
+          }).catch(e => {
+             // Suppress aborts during connection/teardown
+             if(!isAbortError(e)) console.warn("Live Input Error:", e);
           });
         };
         
@@ -305,20 +326,26 @@ export const connectLiveSession = async (
         onClose();
         try {
           stream?.getTracks().forEach(track => track.stop());
-          inputAudioContext.close();
-          outputAudioContext.close();
+          if(inputAudioContext.state !== 'closed') inputAudioContext.close();
+          if(outputAudioContext.state !== 'closed') outputAudioContext.close();
         } catch(e) { console.error("Cleanup error", e); }
       },
       onerror: (err) => {
-        console.error("Live Session Error:", err);
+        if (!isAbortError(err)) {
+            console.error("Live Session Error:", err);
+        }
       }
     }
   });
 
   return {
     disconnect: async () => {
-      const session = await sessionPromise;
-      session.close();
+      try {
+          const session = await sessionPromise;
+          session.close();
+      } catch (e) {
+          if (!isAbortError(e)) console.warn("Disconnect Error:", e);
+      }
     },
     setMute: (mute: boolean) => {
       isMuted = mute;
