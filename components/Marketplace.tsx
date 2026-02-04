@@ -48,7 +48,7 @@ export const Marketplace: React.FC = () => {
 
   const filteredPartners = partners.filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) || 
-    p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
+    (p.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleConnect = (partner: string) => {
@@ -109,4 +109,80 @@ export const Marketplace: React.FC = () => {
            {filteredPartners.map(partner => (
               <div key={partner.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col group">
                  <div className="p-6 flex-1">
-                    
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-slate-700/60 flex items-center justify-center border border-blue-100 dark:border-slate-600 text-blue-700 dark:text-blue-200 font-bold shrink-0">
+                          {partner.logo_initial}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-gray-900 dark:text-white truncate">{partner.name}</h3>
+                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            <MapPin className="w-3.5 h-3.5" />
+                            <span className="truncate">{partner.location}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {partner.verification_status && (
+                        <div className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-900/40 shrink-0">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          Verified
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3 mb-4">
+                      {partner.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {(partner.tags || []).slice(0, 4).map(tag => (
+                        <span
+                          key={tag}
+                          className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {(partner.tags?.length || 0) > 4 && (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700">
+                          +{partner.tags.length - 4}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                        <Star className="w-4 h-4 text-amber-500" />
+                        <span className="font-bold">{partner.rating.toFixed(1)}</span>
+                        <span className="text-gray-400">({partner.reviews_count})</span>
+                      </div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                        {partner.type}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleMessage(partner.name)}
+                      className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Message
+                    </button>
+                    <button
+                      onClick={() => handleConnect(partner.name)}
+                      className="flex items-center justify-center gap-2 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Connect
+                    </button>
+                  </div>
+              </div>
+           ))}
+        </div>
+      )}
+    </div>
+  );
+};

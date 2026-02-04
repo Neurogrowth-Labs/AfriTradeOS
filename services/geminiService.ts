@@ -4,7 +4,12 @@ import { createBlob, decode, decodeAudioData } from "./audioUtils";
 
 // Initialize the client. 
 // NOTE: In a real environment, verify API_KEY exists.
-const apiKey = process.env.API_KEY || ''; 
+const apiKey =
+  (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+  (import.meta as any).env?.VITE_API_KEY ||
+  (process as any).env?.GEMINI_API_KEY ||
+  (process as any).env?.API_KEY ||
+  '';
 const ai = new GoogleGenAI({ apiKey });
 
 const isAbortError = (error: any) => {
@@ -16,9 +21,9 @@ const isAbortError = (error: any) => {
 // 1. Market Intelligence (Search Grounding)
 export const getMarketIntelligence = async (query: string) => {
   try {
-    // Switch to gemini-2.0-flash-exp for better quota handling
+    // Use stable gemini-1.5-flash model
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash',
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
@@ -97,7 +102,7 @@ export const analyzeCompliance = async (scenario: string) => {
          console.warn("Compliance Thinking Quota Exceeded. Falling back to standard model.");
          try {
              const fallbackResponse = await ai.models.generateContent({
-                model: 'gemini-2.0-flash-exp', // Fallback to faster, cheaper model
+                model: 'gemini-1.5-flash', // Fallback to stable model
                 contents: `You are an expert AfCFTA trade lawyer. Analyze the following trade scenario strictly according to Rules of Origin and compliance protocols.
                 
                 Scenario: ${scenario}
@@ -121,9 +126,9 @@ export const fastChatResponse = async (message: string, context?: string) => {
       ? `You are an AI Trade Co-Pilot embedded in the AfriTradeOS platform. The user is currently viewing: ${context}. Keep answers concise, actionable, and relevant to this context.` 
       : `You are an AI Trade Co-Pilot. Keep answers concise.`;
 
-    // Switch to gemini-2.0-flash-exp to resolve 429 quota errors
+    // Use stable gemini-1.5-flash model
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash',
       contents: message,
       config: {
         systemInstruction: systemInstruction

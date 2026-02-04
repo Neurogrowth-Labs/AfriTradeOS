@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Globe, 
@@ -123,9 +124,54 @@ const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+// Map routes to AppView
+const routeToView: Record<string, AppView> = {
+  '/': AppView.DASHBOARD,
+  '/dashboard': AppView.DASHBOARD,
+  '/trade': AppView.TRADE_LIFECYCLE,
+  '/finance': AppView.TRADE_FINANCE,
+  '/market': AppView.MARKET_INTEL,
+  '/compliance': AppView.COMPLIANCE,
+  '/logistics': AppView.LOGISTICS,
+  '/marketplace': AppView.MARKETPLACE,
+  '/assistant': AppView.LIVE_ASSISTANT,
+  '/marketing': AppView.MARKETING,
+  '/profile': AppView.PROFILE,
+  '/admin': AppView.ADMIN,
+  '/regulator': AppView.REGULATOR,
+  '/diagnostic': AppView.DIAGNOSTIC,
+};
+
+const viewToRoute: Record<AppView, string> = {
+  [AppView.DASHBOARD]: '/dashboard',
+  [AppView.TRADE_LIFECYCLE]: '/trade',
+  [AppView.TRADE_FINANCE]: '/finance',
+  [AppView.MARKET_INTEL]: '/market',
+  [AppView.COMPLIANCE]: '/compliance',
+  [AppView.LOGISTICS]: '/logistics',
+  [AppView.MARKETPLACE]: '/marketplace',
+  [AppView.LIVE_ASSISTANT]: '/assistant',
+  [AppView.MARKETING]: '/marketing',
+  [AppView.PROFILE]: '/profile',
+  [AppView.ADMIN]: '/admin',
+  [AppView.REGULATOR]: '/regulator',
+  [AppView.DIAGNOSTIC]: '/diagnostic',
+  [AppView.READINESS]: '/dashboard',
+};
+
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>(AppView.DASHBOARD);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Derive currentView from URL
+  const currentView = routeToView[location.pathname] || AppView.DASHBOARD;
+  
+  // Navigation helper that uses router
+  const setCurrentView = (view: AppView) => {
+    navigate(viewToRoute[view] || '/dashboard');
+  };
   
   // Auth & Onboarding State
   const [isOnboarded, setIsOnboarded] = useState(false);
