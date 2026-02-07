@@ -92,20 +92,39 @@ export const TradeLifecycle: React.FC = () => {
   const isCompliant = lvcPercentage >= 40; // Simple AfCFTA rule: 40% Value Add
 
   const handleNext = async () => {
-    // If moving from 'create' to 'compliance', save the trade to Supabase
-    if (currentStep === 'create') {
-        setLoading(true);
-        try {
-            const savedTrade = await mockDatabase.createTrade(tradeData);
-            if (savedTrade && savedTrade.id) {
-                // Update local state with the ID returned from DB
-                setTradeData(prev => ({ ...prev, id: savedTrade.id }));
-            }
-        } catch (error) {
-            console.error("Failed to save trade", error);
-        } finally {
-            setLoading(false);
+    setLoading(true);
+    try {
+      if (currentStep === 'create') {
+        const savedTrade = await mockDatabase.createTrade({
+          ...tradeData,
+          status: 'pending_compliance'
+        });
+        if (savedTrade && savedTrade.id) {
+          setTradeData(prev => ({ ...prev, id: savedTrade.id, status: 'pending_compliance' }));
         }
+      } else if (currentStep === 'compliance' && tradeData.id) {
+        await mockDatabase.updateTrade(tradeData.id, {
+          status: 'pending_execution',
+          compliance_status: complianceResult || 'pending'
+        });
+        setTradeData(prev => ({ ...prev, status: 'pending_execution' }));
+      } else if (currentStep === 'execution' && tradeData.id) {
+        await mockDatabase.updateTrade(tradeData.id, {
+          status: 'pending_settlement',
+          logistics_status: 'completed'
+        });
+        setTradeData(prev => ({ ...prev, status: 'pending_settlement' }));
+      } else if (currentStep === 'settlement' && tradeData.id) {
+        await mockDatabase.updateTrade(tradeData.id, {
+          status: 'completed',
+          settlement_status: 'paid'
+        });
+        setTradeData(prev => ({ ...prev, status: 'completed' }));
+      }
+    } catch (error) {
+      console.error("Failed to save trade", error);
+    } finally {
+      setLoading(false);
     }
 
     const idx = steps.findIndex(s => s.id === currentStep);

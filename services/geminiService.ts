@@ -21,9 +21,9 @@ const isAbortError = (error: any) => {
 // 1. Market Intelligence (Search Grounding)
 export const getMarketIntelligence = async (query: string) => {
   try {
-    // Use stable gemini-1.5-flash model
+    // Use stable gemini-2.0-flash model
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
@@ -102,7 +102,7 @@ export const analyzeCompliance = async (scenario: string) => {
          console.warn("Compliance Thinking Quota Exceeded. Falling back to standard model.");
          try {
              const fallbackResponse = await ai.models.generateContent({
-                model: 'gemini-1.5-flash', // Fallback to stable model
+                model: 'gemini-2.0-flash', // Fallback to stable model
                 contents: `You are an expert AfCFTA trade lawyer. Analyze the following trade scenario strictly according to Rules of Origin and compliance protocols.
                 
                 Scenario: ${scenario}
@@ -126,9 +126,9 @@ export const fastChatResponse = async (message: string, context?: string) => {
       ? `You are an AI Trade Co-Pilot embedded in the AfriTradeOS platform. The user is currently viewing: ${context}. Keep answers concise, actionable, and relevant to this context.` 
       : `You are an AI Trade Co-Pilot. Keep answers concise.`;
 
-    // Use stable gemini-1.5-flash model
+    // Use stable gemini-2.0-flash model
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       contents: message,
       config: {
         systemInstruction: systemInstruction

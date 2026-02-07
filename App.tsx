@@ -26,7 +26,8 @@ import {
   Key,
   CheckCircle,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  FileText
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -44,6 +45,8 @@ import { Onboarding } from './components/Onboarding';
 import { AdminDashboard } from './components/AdminDashboard';
 import { RegulatorDashboard } from './components/RegulatorDashboard';
 import { SystemDiagnostic } from './components/SystemDiagnostic';
+import { KYCVerification } from './components/KYCVerification';
+import { TenderManagement } from './components/TenderManagement';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 
@@ -140,6 +143,8 @@ const routeToView: Record<string, AppView> = {
   '/admin': AppView.ADMIN,
   '/regulator': AppView.REGULATOR,
   '/diagnostic': AppView.DIAGNOSTIC,
+  '/kyc': AppView.KYC_VERIFICATION,
+  '/tenders': AppView.TENDERS,
 };
 
 const viewToRoute: Record<AppView, string> = {
@@ -157,6 +162,8 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.REGULATOR]: '/regulator',
   [AppView.DIAGNOSTIC]: '/diagnostic',
   [AppView.READINESS]: '/dashboard',
+  [AppView.KYC_VERIFICATION]: '/kyc',
+  [AppView.TENDERS]: '/tenders',
 };
 
 export default function App() {
@@ -165,15 +172,12 @@ export default function App() {
   
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
-  // Derive currentView from URL
   const currentView = routeToView[location.pathname] || AppView.DASHBOARD;
   
-  // Navigation helper that uses router
   const setCurrentView = (view: AppView) => {
     navigate(viewToRoute[view] || '/dashboard');
   };
   
-  // Auth & Onboarding State
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [userRole, setUserRole] = useState<UserPersona>(UserPersona.EXPORTER_SME);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -202,28 +206,38 @@ export default function App() {
         // 2. Fallback to Auth Metadata if DB is empty (First login race condition)
         const meta = session.user.user_metadata || {};
         
-        // Check if profile is complete (Has Company Name)
-        // The Safe Mode SQL trigger creates profiles with empty company_name. 
-        // We use this to detect if the user needs to finish onboarding.
-        if (dbProfile && dbProfile.company_name) {
+        // Check if profile exists and has basic info (role is set)
+        // Allow access if user has a profile with role, even without company_name
+        if (dbProfile && dbProfile.role) {
             setUserRole(dbProfile.role);
             setUserProfile({
-              userName: dbProfile.full_name,
-              companyName: dbProfile.company_name,
-              email: dbProfile.email,
-              country: dbProfile.country,
+              userName: dbProfile.full_name || meta.full_name || '',
+              companyName: dbProfile.company_name || '',
+              email: dbProfile.email || session.user.email,
+              country: dbProfile.country || 'Ghana',
+              phone: dbProfile.phone || meta.phone || '',
+              id: dbProfile.id,
+              ...meta
+            });
+            setIsOnboarded(true);
+        } else if (dbProfile) {
+            // Profile exists but role not set - still allow access with default role
+            setUserRole(UserPersona.EXPORTER_SME);
+            setUserProfile({
+              userName: dbProfile.full_name || meta.full_name || '',
+              companyName: dbProfile.company_name || '',
+              email: dbProfile.email || session.user.email,
+              country: dbProfile.country || 'Ghana',
               phone: dbProfile.phone || meta.phone || '',
               id: dbProfile.id,
               ...meta
             });
             setIsOnboarded(true);
         } else {
-            // Profile exists but is incomplete (Skeleton from trigger) OR doesn't exist yet
-            console.log("Profile incomplete, redirecting to onboarding...");
-            
-            // Pre-fill what we know for the Onboarding component
+            // No profile at all - redirect to onboarding
+            console.log("No profile found, redirecting to onboarding...");
             setUserProfile({
-              userName: dbProfile?.full_name || meta.full_name || '',
+              userName: meta.full_name || '',
               email: session.user.email,
               id: session.user.id
             });
@@ -311,6 +325,8 @@ export default function App() {
       case AppView.ADMIN: return <AdminDashboard />;
       case AppView.REGULATOR: return <RegulatorDashboard />;
       case AppView.DIAGNOSTIC: return <SystemDiagnostic />;
+      case AppView.KYC_VERIFICATION: return <KYCVerification />;
+      case AppView.TENDERS: return <TenderManagement />;
       default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
@@ -368,6 +384,7 @@ export default function App() {
           
           <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Ecosystem</div>
           <NavItem view={AppView.MARKETPLACE} icon={Users} label="Partner Network" />
+          <NavItem view={AppView.TENDERS} icon={FileText} label="Tenders & RFQ" />
           
           <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Governance</div>
           <NavItem view={AppView.ADMIN} icon={ShieldAlert} label="Admin Console" />
@@ -380,6 +397,7 @@ export default function App() {
           
           <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Account</div>
           <NavItem view={AppView.PROFILE} icon={Settings} label="Profile & Settings" />
+          <NavItem view={AppView.KYC_VERIFICATION} icon={Key} label="KYC Verification" />
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">

@@ -114,12 +114,12 @@ export const AdminDashboard: React.FC = () => {
                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">Suspended Trades</p>
                    <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">2</p>
                 </div>
-                <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
+                {/* <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
                    <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase">System Health</p>
                    <p className="text-xl font-bold text-trade-primary dark:text-white mt-2 flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div> Nominal
                    </p>
-                </div>
+                </div> */}
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

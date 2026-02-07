@@ -148,12 +148,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
     };
     
     const fetchTrades = async () => {
-        if (userRole === UserPersona.EXPORTER_SME) {
-            const data = await mockDatabase.getTrades();
-            if (isMounted) {
-                setMyTrades(data);
-                setMetrics(prev => ({ ...prev, activeShipments: data.length }));
-            }
+        const data = await mockDatabase.getTrades();
+        if (isMounted) {
+            setMyTrades(data);
+            setMetrics(prev => ({ ...prev, activeShipments: data.length }));
         }
     };
 
@@ -324,7 +322,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
                  ) : myTrades.map(ship => (
                     <div key={ship.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700">
                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${ship.status === 'active' || ship.status === 'draft' ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
+                          <div className={`p-2 rounded-lg ${ship.status === 'pending_execution' || ship.status === 'draft' || ship.status === 'pending_compliance' ? 'bg-blue-100 text-blue-600' : ship.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
                              <Truck className="w-4 h-4" />
                           </div>
                           <div>
@@ -333,7 +331,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
                           </div>
                        </div>
                        <div className="text-right">
-                          <p className={`text-xs font-bold uppercase ${ship.status === 'active' ? 'text-trade-success' : 'text-trade-warning'}`}>{ship.status}</p>
+                          <p className={`text-xs font-bold uppercase ${ship.status === 'completed' ? 'text-trade-success' : ship.status === 'paused' ? 'text-trade-warning' : 'text-blue-600'}`}>{ship.status}</p>
                           <p className="text-[10px] text-gray-500">{ship.product || 'General Cargo'}</p>
                        </div>
                     </div>
@@ -601,6 +599,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
                        <span className="text-[10px] text-trade-accent flex items-center gap-1 animate-pulse"><Clock className="w-3 h-3" /> Live</span>
                     </div>
                     <p className="text-sm font-medium leading-relaxed opacity-90">{insight}</p>
+                 </div>
+             </div>
+
+             {/* Recent Trades - Visible for all roles */}
+             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-5">
+                 <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-base font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-trade-primary" /> Recent Trades
+                    </h3>
+                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Live
+                    </span>
+                 </div>
+                 <div className="space-y-2.5 max-h-[180px] overflow-y-auto">
+                    {myTrades.length === 0 ? (
+                        <div className="text-center py-4 text-gray-400 text-sm">No trades found. <button onClick={() => navigateTo(AppView.TRADE_LIFECYCLE)} className="text-trade-primary hover:underline">Create one</button></div>
+                    ) : myTrades.slice(0, 5).map(trade => (
+                       <div key={trade.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 hover:border-trade-primary/30 transition-colors cursor-pointer" onClick={() => navigateTo(AppView.TRADE_LIFECYCLE)}>
+                          <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-lg ${trade.status === 'completed' ? 'bg-green-100 text-green-600' : trade.status === 'paused' ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'}`}>
+                                <Truck className="w-4 h-4" />
+                             </div>
+                             <div>
+                                <p className="font-bold font-heading text-trade-primary dark:text-white text-sm">{trade.product || 'Trade'} → {trade.destination_country || 'Pending'}</p>
+                                <p className="text-[10px] font-mono text-gray-500">{trade.id}</p>
+                             </div>
+                          </div>
+                          <div className="text-right">
+                             <p className={`text-xs font-bold uppercase ${trade.status === 'completed' ? 'text-trade-success' : trade.status === 'paused' ? 'text-trade-warning' : 'text-blue-600'}`}>{trade.status?.replace('_', ' ')}</p>
+                             <p className="text-[10px] text-gray-500">${trade.value?.toLocaleString() || '0'}</p>
+                          </div>
+                       </div>
+                    ))}
                  </div>
              </div>
 

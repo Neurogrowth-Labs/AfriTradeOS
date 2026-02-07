@@ -14,6 +14,8 @@ export enum AppView {
   ADMIN = 'ADMIN', // New Platform Admin
   REGULATOR = 'REGULATOR', // New Regulator Oversight
   DIAGNOSTIC = 'DIAGNOSTIC', // New System Health Assessment
+  KYC_VERIFICATION = 'KYC_VERIFICATION', // KYC/KYB Document Upload
+  TENDERS = 'TENDERS', // Tender/RFQ Management
 }
 
 export interface ChartData {
@@ -78,9 +80,14 @@ export interface DbTrade {
   hs_code: string;
   value: number;
   currency: string;
-  status: 'draft' | 'compliance_check' | 'active' | 'completed' | 'paused';
+  status: 'draft' | 'pending_compliance' | 'pending_execution' | 'pending_settlement' | 'completed' | 'paused';
   incoterm?: string;
-  created_at: string;
+  compliance_status?: string;
+  compliance_result?: any;
+  logistics_status?: string;
+  settlement_status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DbComplianceCheck {
