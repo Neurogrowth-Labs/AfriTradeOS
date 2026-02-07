@@ -197,19 +197,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       console.log(error);
 
       if (error) {
-        // If Supabase signup fails, use simulation mode
-        console.warn('Supabase signup failed, using simulation mode:', error.message);
+        // Check for specific error types
+        if (error.message.includes('already registered') || error.status === 422) {
+          setErrorMsg('This email is already registered. Please sign in instead.');
+          setLoading(false);
+          return;
+        }
         
-        // Create mock user data
-        const mockUser = {
-          id: `mock_user_${Date.now()}`,
-          email: signupEmail,
-          user_metadata: { full_name: signupName }
-        };
-        
-        // Prepare profile and proceed to role selection
-        setProfile(prev => ({ ...prev, userName: signupName, email: signupEmail }));
-        setView('ROLE_SELECT');
+        // For other errors, show the error message
+        setErrorMsg(error.message || 'Failed to create account. Please try again.');
         setLoading(false);
         return;
       }
