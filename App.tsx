@@ -206,9 +206,11 @@ export default function App() {
         // 2. Fallback to Auth Metadata if DB is empty (First login race condition)
         const meta = session.user.user_metadata || {};
         
-        // Check if profile exists and has basic info (role is set)
-        // Allow access if user has a profile with role, even without company_name
-        if (dbProfile && dbProfile.role) {
+        // Check if profile exists and user has COMPLETED onboarding
+        // User must have: role set AND (company_name OR full_name filled in profile setup)
+        const hasCompletedOnboarding = dbProfile && dbProfile.role && (dbProfile.company_name || dbProfile.phone);
+        
+        if (hasCompletedOnboarding) {
             setUserRole(dbProfile.role);
             setUserProfile({
               userName: dbProfile.full_name || meta.full_name || '',
@@ -221,8 +223,8 @@ export default function App() {
             });
             setIsOnboarded(true);
         } else if (dbProfile) {
-            // Profile exists but role not set - still allow access with default role
-            setUserRole(UserPersona.EXPORTER_SME);
+            // Profile exists but onboarding not completed - redirect to onboarding
+            console.log("Profile exists but onboarding incomplete, redirecting...");
             setUserProfile({
               userName: dbProfile.full_name || meta.full_name || '',
               companyName: dbProfile.company_name || '',
@@ -232,7 +234,7 @@ export default function App() {
               id: dbProfile.id,
               ...meta
             });
-            setIsOnboarded(true);
+            setIsOnboarded(false);
         } else {
             // No profile at all - redirect to onboarding
             console.log("No profile found, redirecting to onboarding...");
