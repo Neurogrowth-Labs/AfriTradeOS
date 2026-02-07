@@ -89,7 +89,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
   const handleSignOut = async () => {
       await supabase.auth.signOut();
-      window.location.reload();
+      window.location.href = '/';
   };
 
   const handleSaveProfile = async () => {
