@@ -16,7 +16,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "electron:dev": "concurrently \"pnpm dev\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build": "pnpm build && electron-builder",
-    "electron:build:win": "pnpm build && electron-builder --win --x64"
+    "electron:build:win": "pnpm build && electron-builder --win --x64",
+    "electron:build:mac": "pnpm build && electron-builder --mac --x64",
+    "electron:build:all": "pnpm build && electron-builder --win --mac --x64"
   },
   "build": {
     "appId": "com.afritradeos.app",
@@ -34,15 +36,23 @@
           "target": "nsis",
           "arch": ["x64"]
         }
-      ],
-      "icon": "public/favicon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerIcon": "public/favicon.ico",
-      "uninstallerIcon": "public/favicon.ico",
-      "installerHeaderIcon": "public/favicon.ico"
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.business"
+    },
+    "dmg": {
+      "title": "AfriTradeOS"
     }
   },
   "dependencies": {
