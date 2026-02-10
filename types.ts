@@ -16,6 +16,7 @@ export enum AppView {
   DIAGNOSTIC = 'DIAGNOSTIC', // New System Health Assessment
   KYC_VERIFICATION = 'KYC_VERIFICATION', // KYC/KYB Document Upload
   TENDERS = 'TENDERS', // Tender/RFQ Management
+  CONTRACTS = 'CONTRACTS', // Smart Contracts Management
 }
 
 export interface ChartData {

@@ -33,6 +33,7 @@ import { RegulatorDashboard } from './components/RegulatorDashboard';
 import { SystemDiagnostic } from './components/SystemDiagnostic';
 import { KYCVerification } from './components/KYCVerification';
 import { TenderManagement } from './components/TenderManagement';
+import { SmartContracts } from './components/SmartContracts';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
@@ -132,6 +133,7 @@ const routeToView: Record<string, AppView> = {
   '/diagnostic': AppView.DIAGNOSTIC,
   '/kyc': AppView.KYC_VERIFICATION,
   '/tenders': AppView.TENDERS,
+  '/contracts': AppView.CONTRACTS,
 };
 
 const viewToRoute: Record<AppView, string> = {
@@ -151,13 +153,32 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.READINESS]: '/dashboard',
   [AppView.KYC_VERIFICATION]: '/kyc',
   [AppView.TENDERS]: '/tenders',
+  [AppView.CONTRACTS]: '/contracts',
 };
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Initialize sidebar based on screen size
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024; // lg breakpoint
+    }
+    return true;
+  });
+
+  // Auto-close sidebar on mobile when resizing
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   const currentView = routeToView[location.pathname] || AppView.DASHBOARD;
   
@@ -328,6 +349,7 @@ export default function App() {
       case AppView.DIAGNOSTIC: return <SystemDiagnostic />;
       case AppView.KYC_VERIFICATION: return <KYCVerification />;
       case AppView.TENDERS: return <TenderManagement />;
+      case AppView.CONTRACTS: return <SmartContracts />;
       default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
@@ -358,8 +380,16 @@ export default function App() {
       {/* Password Reset Overlay */}
       {showPasswordReset && <PasswordResetModal onClose={() => setShowPasswordReset(false)} />}
 
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside 
+      <aside
         className={`fixed inset-y-0 left-0 z-50 w-60 bg-trade-primary dark:bg-slate-950 border-r border-slate-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}

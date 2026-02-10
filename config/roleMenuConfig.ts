@@ -15,6 +15,7 @@ import {
   Activity,
   Key,
   FileText,
+  FileSignature,
   TrendingUp,
   Package,
   ClipboardCheck,
@@ -54,6 +55,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.MARKET_INTEL, icon: Globe, label: 'Market Intelligence' },
         { view: AppView.MARKETPLACE, icon: Users, label: 'Find Partners' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tenders & RFQ' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
       ]
     },
     {
@@ -95,6 +97,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.MARKET_INTEL, icon: Globe, label: 'Market Intelligence' },
         { view: AppView.MARKETPLACE, icon: Users, label: 'Partner Network' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tenders & RFQ' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
       ]
     },
     {
@@ -135,6 +138,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
       items: [
         { view: AppView.MARKETPLACE, icon: Users, label: 'Find Suppliers' },
         { view: AppView.TENDERS, icon: FileText, label: 'My RFQs' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
         { view: AppView.MARKET_INTEL, icon: Globe, label: 'Market Prices' },
       ]
     },
@@ -332,6 +336,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Finance' },
         { view: AppView.MARKETPLACE, icon: Users, label: 'Marketplace' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tenders' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
       ]
     },
     {

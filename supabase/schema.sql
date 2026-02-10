@@ -646,3 +646,397 @@ CREATE POLICY "Anyone can view ratings" ON public.supplier_ratings
 
 CREATE POLICY "Users can create ratings" ON public.supplier_ratings
     FOR INSERT WITH CHECK (auth.uid() = rated_by_user);
+
+-- =============================================================================
+-- PHASE 4: SMART CONTRACTS MODULE
+-- =============================================================================
+
+-- 4.1 Contract Status Enum
+DROP TYPE IF EXISTS public.contract_status CASCADE;
+CREATE TYPE public.contract_status AS ENUM (
+    'draft', 'pending_approval', 'active', 'in_progress',
+    'completed', 'disputed', 'cancelled', 'expired'
+);
+
+-- 4.2 Contract Templates Table
+DROP TABLE IF EXISTS public.contract_templates CASCADE;
+CREATE TABLE public.contract_templates (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL,
+    content JSONB NOT NULL DEFAULT '{}',
+    terms_structure JSONB DEFAULT '[]',
+    is_public BOOLEAN DEFAULT FALSE,
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+    usage_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_contract_templates_category ON contract_templates(category);
+CREATE INDEX idx_contract_templates_org ON contract_templates(organization_id);
+
+-- 4.3 Contracts Table
+DROP TABLE IF EXISTS public.contracts CASCADE;
+CREATE TABLE public.contracts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    contract_number TEXT UNIQUE,
+    title TEXT NOT NULL,
+    description TEXT,
+    template_id UUID REFERENCES public.contract_templates(id) ON DELETE SET NULL,
+
+    -- Parties
+    buyer_org_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
+    seller_org_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
+    buyer_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    seller_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+
+    -- Contract Details
+    status public.contract_status DEFAULT 'draft',
+    category TEXT,
+    commodity TEXT,
+    hs_code TEXT,
+    quantity NUMERIC,
+    unit TEXT,
+
+    -- Pricing
+    unit_price NUMERIC,
+    total_value NUMERIC,
+    currency TEXT DEFAULT 'USD',
+
+    -- Terms
+    payment_terms JSONB DEFAULT '{}',
+    delivery_terms JSONB DEFAULT '{}',
+    incoterms TEXT,
+
+    -- Dates
+    effective_date DATE,
+    expiry_date DATE,
+    delivery_deadline DATE,
+
+    -- Penalties & Conditions
+    late_delivery_penalty NUMERIC,
+    quality_requirements JSONB DEFAULT '{}',
+    dispute_resolution TEXT,
+
+    -- Documents
+    documents UUID[],
+
+    -- Signatures
+    buyer_signed_at TIMESTAMP WITH TIME ZONE,
+    seller_signed_at TIMESTAMP WITH TIME ZONE,
+    buyer_signature TEXT,
+    seller_signature TEXT,
+
+    -- Linked entities
+    trade_id UUID,
+    tender_id UUID REFERENCES public.tenders(id) ON DELETE SET NULL,
+
+    -- Metadata
+    metadata JSONB DEFAULT '{}',
+    created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_contracts_buyer ON contracts(buyer_org_id);
+CREATE INDEX idx_contracts_seller ON contracts(seller_org_id);
+CREATE INDEX idx_contracts_status ON contracts(status);
+CREATE INDEX idx_contracts_number ON contracts(contract_number);
+
+-- 4.4 Contract Milestones Table
+DROP TABLE IF EXISTS public.contract_milestones CASCADE;
+CREATE TABLE public.contract_milestones (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    sequence_order INTEGER NOT NULL,
+
+    -- Milestone Details
+    milestone_type TEXT CHECK (milestone_type IN ('payment', 'delivery', 'inspection', 'documentation', 'customs', 'other')),
+    due_date DATE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+
+    -- Payment milestones
+    payment_amount NUMERIC,
+    payment_percentage NUMERIC,
+
+    -- Status
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'overdue', 'cancelled')),
+
+    -- Verification
+    verified_by UUID REFERENCES auth.users(id),
+    verification_notes TEXT,
+    evidence_documents UUID[],
+
+    -- Automation
+    auto_trigger_conditions JSONB DEFAULT '{}',
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_milestones_contract ON contract_milestones(contract_id);
+CREATE INDEX idx_milestones_status ON contract_milestones(status);
+CREATE INDEX idx_milestones_due ON contract_milestones(due_date);
+
+-- 4.5 Contract Amendments Table
+DROP TABLE IF EXISTS public.contract_amendments CASCADE;
+CREATE TABLE public.contract_amendments (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE,
+    amendment_number INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+
+    -- Changes
+    changes JSONB NOT NULL,
+    reason TEXT,
+
+    -- Approval
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'withdrawn')),
+    proposed_by UUID REFERENCES auth.users(id),
+    buyer_approved_at TIMESTAMP WITH TIME ZONE,
+    seller_approved_at TIMESTAMP WITH TIME ZONE,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_amendments_contract ON contract_amendments(contract_id);
+
+-- 4.6 Contract Disputes Table
+DROP TABLE IF EXISTS public.contract_disputes CASCADE;
+CREATE TABLE public.contract_disputes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE,
+    milestone_id UUID REFERENCES public.contract_milestones(id) ON DELETE SET NULL,
+
+    -- Dispute Details
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    dispute_type TEXT CHECK (dispute_type IN ('quality', 'delivery', 'payment', 'documentation', 'other')),
+
+    -- Parties
+    raised_by UUID REFERENCES auth.users(id),
+    raised_by_org UUID REFERENCES public.organizations(id),
+
+    -- Resolution
+    status TEXT DEFAULT 'open' CHECK (status IN ('open', 'under_review', 'mediation', 'resolved', 'escalated', 'closed')),
+    resolution TEXT,
+    resolved_at TIMESTAMP WITH TIME ZONE,
+    resolved_by UUID REFERENCES auth.users(id),
+
+    -- Evidence
+    evidence_documents UUID[],
+
+    -- Escalation
+    escalation_level INTEGER DEFAULT 0,
+    arbitrator_notes TEXT,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_disputes_contract ON contract_disputes(contract_id);
+CREATE INDEX idx_disputes_status ON contract_disputes(status);
+
+-- 4.7 Contract Activity Log
+DROP TABLE IF EXISTS public.contract_activities CASCADE;
+CREATE TABLE public.contract_activities (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE,
+
+    -- Activity Details
+    activity_type TEXT NOT NULL,
+    description TEXT,
+
+    -- Actor
+    performed_by UUID REFERENCES auth.users(id),
+    performed_by_org UUID REFERENCES public.organizations(id),
+
+    -- Data
+    old_values JSONB,
+    new_values JSONB,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_contract_activities_contract ON contract_activities(contract_id);
+CREATE INDEX idx_contract_activities_type ON contract_activities(activity_type);
+
+-- =============================================================================
+-- RLS POLICIES FOR PHASE 4
+-- =============================================================================
+
+-- Contract Templates RLS
+ALTER TABLE public.contract_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view public templates" ON public.contract_templates
+    FOR SELECT USING (is_public = TRUE);
+
+CREATE POLICY "Org members can view own templates" ON public.contract_templates
+    FOR SELECT USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND organization_id = contract_templates.organization_id)
+    );
+
+CREATE POLICY "Org members can manage own templates" ON public.contract_templates
+    FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND organization_id = contract_templates.organization_id)
+    );
+
+-- Contracts RLS
+ALTER TABLE public.contracts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Contract parties can view contracts" ON public.contracts
+    FOR SELECT USING (
+        buyer_user_id = auth.uid() OR seller_user_id = auth.uid() OR
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (organization_id = contracts.buyer_org_id OR organization_id = contracts.seller_org_id))
+    );
+
+CREATE POLICY "Contract parties can update contracts" ON public.contracts
+    FOR UPDATE USING (
+        buyer_user_id = auth.uid() OR seller_user_id = auth.uid() OR
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (organization_id = contracts.buyer_org_id OR organization_id = contracts.seller_org_id))
+    );
+
+CREATE POLICY "Authenticated users can create contracts" ON public.contracts
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- Contract Milestones RLS
+ALTER TABLE public.contract_milestones ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Contract parties can view milestones" ON public.contract_milestones
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_milestones.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Contract parties can manage milestones" ON public.contract_milestones
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_milestones.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+-- Contract Amendments RLS
+ALTER TABLE public.contract_amendments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Contract parties can view amendments" ON public.contract_amendments
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_amendments.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Contract parties can create amendments" ON public.contract_amendments
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_amendments.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+-- Contract Disputes RLS
+ALTER TABLE public.contract_disputes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Contract parties can view disputes" ON public.contract_disputes
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_disputes.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Contract parties can create disputes" ON public.contract_disputes
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_disputes.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+-- Contract Activities RLS
+ALTER TABLE public.contract_activities ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Contract parties can view activities" ON public.contract_activities
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.contracts c
+            WHERE c.id = contract_activities.contract_id
+            AND (c.buyer_user_id = auth.uid() OR c.seller_user_id = auth.uid())
+        )
+    );
+
+-- =============================================================================
+-- HELPER FUNCTIONS FOR CONTRACTS
+-- =============================================================================
+
+-- Function to generate contract number
+CREATE OR REPLACE FUNCTION generate_contract_number()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.contract_number := 'CTR-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || SUBSTRING(NEW.id::TEXT, 1, 8);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_contract_number ON public.contracts;
+CREATE TRIGGER set_contract_number
+    BEFORE INSERT ON public.contracts
+    FOR EACH ROW
+    WHEN (NEW.contract_number IS NULL)
+    EXECUTE FUNCTION generate_contract_number();
+
+-- Function to log contract activities
+CREATE OR REPLACE FUNCTION log_contract_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' THEN
+        INSERT INTO public.contract_activities (contract_id, activity_type, description, performed_by, old_values, new_values)
+        VALUES (NEW.id, 'update', 'Contract updated', auth.uid(), to_jsonb(OLD), to_jsonb(NEW));
+    ELSIF TG_OP = 'INSERT' THEN
+        INSERT INTO public.contract_activities (contract_id, activity_type, description, performed_by, new_values)
+        VALUES (NEW.id, 'create', 'Contract created', auth.uid(), to_jsonb(NEW));
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS contract_activity_log ON public.contracts;
+CREATE TRIGGER contract_activity_log
+    AFTER INSERT OR UPDATE ON public.contracts
+    FOR EACH ROW
+    EXECUTE FUNCTION log_contract_activity();
+
+-- Insert default contract templates
+INSERT INTO public.contract_templates (name, description, category, content, terms_structure, is_public) VALUES
+('Standard Export Agreement', 'Basic export contract for goods', 'export',
+ '{"sections": ["parties", "goods", "pricing", "delivery", "payment", "warranties", "disputes"]}',
+ '[{"name": "Advance Payment", "percentage": 30}, {"name": "On Shipment", "percentage": 50}, {"name": "On Delivery", "percentage": 20}]',
+ TRUE),
+('Agricultural Commodities Contract', 'Specialized contract for agricultural exports', 'agriculture',
+ '{"sections": ["parties", "goods", "quality_specs", "pricing", "delivery", "inspection", "payment", "force_majeure"]}',
+ '[{"name": "Letter of Credit", "percentage": 100}]',
+ TRUE),
+('Manufacturing Supply Agreement', 'Contract for manufactured goods supply', 'manufacturing',
+ '{"sections": ["parties", "specifications", "pricing", "delivery", "quality_control", "payment", "warranties", "IP_rights"]}',
+ '[{"name": "Deposit", "percentage": 20}, {"name": "Production Complete", "percentage": 40}, {"name": "Delivery", "percentage": 40}]',
+ TRUE),
+('Service Level Agreement', 'Contract for logistics and services', 'services',
+ '{"sections": ["parties", "services", "SLA_metrics", "pricing", "payment", "liability", "termination"]}',
+ '[{"name": "Monthly Payment", "percentage": 100}]',
+ TRUE)
