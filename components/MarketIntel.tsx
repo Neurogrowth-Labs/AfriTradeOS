@@ -10,7 +10,8 @@ import {
   Loader2,
   Globe,
   AlertTriangle,
-  Target
+  Target,
+  BarChart3
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -25,8 +26,10 @@ import {
   Legend
 } from 'recharts';
 import { getMarketIntelligence } from '../services/geminiService';
+import { mockDatabase } from '../services/mockDatabase';
+import { DbMarketIntelligence } from '../types';
 
-// Mock Data Generators
+// Price data will be generated based on search or empty
 const generatePriceData = () => [
   { month: 'Jan', price: 1100 + Math.random()*200, globalAvg: 1150 },
   { month: 'Feb', price: 1150 + Math.random()*200, globalAvg: 1160 },
@@ -36,6 +39,7 @@ const generatePriceData = () => [
   { month: 'Jun', price: 1400 + Math.random()*200, globalAvg: 1200 },
 ];
 
+// Static reference data for competitor analysis (shown after search)
 const COMPETITOR_DATA = [
   { country: 'China', volume: 4500, share: '35%' },
   { country: 'India', volume: 3200, share: '25%' },
@@ -44,6 +48,7 @@ const COMPETITOR_DATA = [
   { country: 'Egypt', volume: 1200, share: '8%' },
 ];
 
+// Static reference data for demand heatmap (shown after search)
 const DEMAND_HEATMAP = [
   { country: 'Nigeria', demand: 'High', trend: '+15%', region: 'West Africa', sentiment: 'Positive' },
   { country: 'Kenya', demand: 'Medium', trend: '+5%', region: 'East Africa', sentiment: 'Neutral' },
@@ -53,10 +58,29 @@ const DEMAND_HEATMAP = [
 ];
 
 export const MarketIntel: React.FC = () => {
-  const [query, setQuery] = useState('Cocoa');
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [aiReport, setAiReport] = useState<{text: string, sources: any[]} | null>(null);
-  const [priceData, setPriceData] = useState(generatePriceData());
+  const [priceData, setPriceData] = useState<{month: string; price: number; globalAvg: number}[]>([]);
+  const [marketData, setMarketData] = useState<DbMarketIntelligence[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // Fetch market intelligence data from database
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingData(true);
+      try {
+        const data = await mockDatabase.getMarketIntelligence();
+        setMarketData(data);
+      } catch (e) {
+        console.error('Failed to fetch market data:', e);
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Ref to track if component is mounted
   const isMounted = React.useRef(true);
@@ -71,7 +95,8 @@ export const MarketIntel: React.FC = () => {
     e.preventDefault();
     if (!query) return;
     setLoading(true);
-    // Simulate data refresh
+    setHasSearched(true);
+    // Generate price data on search
     setPriceData(generatePriceData());
     
     try {
@@ -94,11 +119,6 @@ export const MarketIntel: React.FC = () => {
         if (isMounted.current) setLoading(false);
     }
   };
-
-  // Initial load
-  useEffect(() => {
-      handleSearch({ preventDefault: () => {} } as any);
-  }, []);
 
   return (
       <div className="h-full flex flex-col gap-5 animate-fade-in pb-4">

@@ -30,6 +30,12 @@ This document breaks down the AfriTrade OS implementation into manageable develo
 - [x] Create session management *(Supabase handles)*
 - [x] Implement password reset and account recovery *(PasswordResetModal)*
 
+### 1.4 Role-Based UI Personalization *(NEW)*
+- [x] Create role-based sidebar menu configuration *(config/roleMenuConfig.ts)*
+- [x] Implement dynamic sidebar rendering based on user role *(App.tsx)*
+- [x] Add route protection for unauthorized access *(canAccessView function)*
+- [x] Define menu items per role: SME Exporter, Enterprise, Importer, Customs, Logistics, Bank, Government, Analyst, Admin
+
 ---
 
 ## Phase 2: Digital Identity & Compliance Module
@@ -138,6 +144,17 @@ This document breaks down the AfriTrade OS implementation into manageable develo
 - [ ] Implement real-time payment status
 - [ ] Create payment confirmation system
 - [ ] Build payment receipts
+
+### 5.6 Subscription & Billing *(NEW)*
+- [x] Create subscription plans configuration *(services/subscriptionService.ts)*
+- [x] Build subscription plans UI with pricing tiers *(UserProfile.tsx - Billing tab)*
+- [x] Implement plan comparison and upgrade buttons
+- [x] Create payment methods management UI (placeholder for Stripe)
+- [x] Build billing history section
+- [ ] Integrate Stripe for payment processing
+- [ ] Integrate PayPal as alternative payment method
+- [ ] Implement subscription lifecycle management (active, trial, past_due, cancelled)
+- [ ] Build webhook handlers for payment events
 
 ### 5.3 Escrow & Conditional Payments
 - [ ] Design escrow schema

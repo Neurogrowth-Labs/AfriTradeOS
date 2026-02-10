@@ -11,90 +11,6 @@ import {
 } from '../types';
 import { supabase } from './supabase';
 
-// --- MOCK DATA FALLBACKS ---
-
-const MOCK_ORGANIZATIONS: DbOrganization[] = [
-  {
-    id: 'org_1',
-    name: 'Cocoa Processing Co.',
-    type: 'buyer',
-    location: 'Accra, Ghana',
-    verification_status: true,
-    rating: 4.8,
-    reviews_count: 124,
-    tags: ['Agro-Processing', 'Bulk Buyer', 'Fair Trade'],
-    description: 'Leading processor of high-quality cocoa beans seeking reliable regional suppliers.',
-    logo_initial: 'C'
-  },
-  {
-    id: 'org_2',
-    name: 'Nairobi Fresh Exports',
-    type: 'seller',
-    location: 'Nairobi, Kenya',
-    verification_status: true,
-    rating: 4.5,
-    reviews_count: 89,
-    tags: ['Horticulture', 'Avocados', 'Global GAP'],
-    description: 'Exporter of premium fresh produce with established cold chain logistics.',
-    logo_initial: 'N'
-  },
-  {
-    id: 'org_bank_1',
-    name: 'Ecobank',
-    type: 'finance',
-    location: 'Lome, Togo',
-    verification_status: true,
-    rating: 4.9,
-    reviews_count: 500,
-    tags: ['Trade Finance', 'Letters of Credit'],
-    description: 'Pan-African banking conglomerate.',
-    logo_initial: 'E'
-  }
-];
-
-const MOCK_TRADES: DbTrade[] = [
-  {
-    id: 'TRD-MOCK-1',
-    exporter_id: 'user_current',
-    importer_id: 'org_1',
-    origin_country: 'Nigeria',
-    destination_country: 'Ghana',
-    product: 'Shea Butter',
-    hs_code: '1515.90',
-    value: 50000,
-    currency: 'USD',
-    status: 'pending_execution',
-    incoterm: 'DDP',
-    created_at: '2024-10-24T09:00:00Z'
-  }
-];
-
-const MOCK_FINANCE_REQUESTS: DbFinanceRequest[] = [
-  { 
-    id: 'FIN-2024-001', 
-    trade_id: 'TRD-882', 
-    financier_id: 'org_bank_1', 
-    status: 'approved', 
-    product_type: 'Working Capital', 
-    amount: 50000, 
-    risk_score: 25, 
-    date_requested: '2024-10-20',
-    provider_name: 'Ecobank'
-  }
-];
-
-const MOCK_MARKET_INTELLIGENCE: DbMarketIntelligence[] = [
-  { id: 'mi_1', product_code: 'SHEA', country: 'Nigeria', demand_index: 'High', price_trend: '+15%', sentiment: 'Positive', region: 'West Africa' },
-  { id: 'mi_2', product_code: 'AVO', country: 'Kenya', demand_index: 'Medium', price_trend: '+5%', sentiment: 'Neutral', region: 'East Africa' },
-  { id: 'mi_3', product_code: 'COCOA', country: 'Ghana', demand_index: 'High', price_trend: '+12%', sentiment: 'Positive', region: 'West Africa' },
-];
-
-const MOCK_AUDIT_LOGS: DbAuditLog[] = [
-  { id: 'log_1', action: 'Login Success', user: 'System', timestamp: 'Just now', ip: '102.12.33.1', status: 'Success' },
-];
-
-const MOCK_KYC_REQUESTS: DbKYCRequest[] = [];
-const MOCK_AML_ALERTS: DbAMLAlert[] = [];
 
 // --- DATABASE CLIENT WRAPPER ---
 
@@ -156,9 +72,9 @@ export const mockDatabase = {
       }
       const { data, error } = await query;
       if (error) throw error;
-      return (data && data.length > 0) ? data as DbOrganization[] : MOCK_ORGANIZATIONS.filter(o => typeFilter === 'all' || !typeFilter || o.type === typeFilter);
+      return (data || []) as DbOrganization[];
     } catch (e) {
-      return MOCK_ORGANIZATIONS.filter(o => typeFilter === 'all' || !typeFilter || o.type === typeFilter);
+      return [];
     }
   },
 
@@ -178,14 +94,14 @@ export const mockDatabase = {
       const { data, error } = await query;
         
       if (error) throw error;
-      return (data && data.length > 0) ? data as DbTrade[] : MOCK_TRADES;
+      return (data || []) as DbTrade[];
     } catch (e: unknown) {
       // Ignore AbortError from React StrictMode double-invoke
       if (e instanceof Error && (e.name === 'AbortError' || e.message?.includes('aborted'))) {
-        return MOCK_TRADES;
+        return [];
       }
       console.error("getTrades error:", e);
-      return MOCK_TRADES; 
+      return []; 
     }
   },
 
@@ -200,9 +116,9 @@ export const mockDatabase = {
         
         const { data, error } = await query;
         if(error) throw error;
-        return (data && data.length > 0) ? data as DbFinanceRequest[] : MOCK_FINANCE_REQUESTS;
+        return (data || []) as DbFinanceRequest[];
     } catch(e) {
-        return MOCK_FINANCE_REQUESTS;
+        return [];
     }
   },
 
@@ -388,9 +304,9 @@ export const mockDatabase = {
     try {
         const { data, error } = await supabase.from('market_intelligence').select('*');
         if (error) throw error;
-        return (data && data.length > 0) ? data as DbMarketIntelligence[] : MOCK_MARKET_INTELLIGENCE;
+        return (data || []) as DbMarketIntelligence[];
     } catch (e) {
-        return MOCK_MARKET_INTELLIGENCE;
+        return [];
     }
   },
 
@@ -406,7 +322,7 @@ export const mockDatabase = {
         user: log.user_id ? 'User' : 'System' // In real app, join with profiles
       }));
     } catch (e) {
-      return MOCK_AUDIT_LOGS;
+      return [];
     }
   },
 
@@ -416,7 +332,7 @@ export const mockDatabase = {
       if (error) throw error;
       return (data || []) as DbKYCRequest[];
     } catch(e) {
-      return MOCK_KYC_REQUESTS;
+      return [];
     }
   },
 
@@ -426,7 +342,7 @@ export const mockDatabase = {
       if (error) throw error;
       return (data || []) as DbAMLAlert[];
     } catch(e) {
-      return MOCK_AML_ALERTS;
+      return [];
     }
   },
 
@@ -499,7 +415,7 @@ export const mockDatabase = {
       return data as DbTrade;
     } catch (e) {
       console.error("Get Trade Error:", e);
-      return MOCK_TRADES.find(t => t.id === tradeId) || null;
+      return null;
     }
   },
 

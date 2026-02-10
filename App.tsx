@@ -2,32 +2,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
-  Globe, 
-  Scale, 
-  Truck, 
-  Mic, 
-  Image as ImageIcon,
   Menu,
   X,
   Bell,
   Moon,
   Sun,
-  Briefcase,
-  Landmark,
-  Users,
   Coins,
   Languages,
   UserCircle,
-  Settings,
-  ShieldAlert,
-  Building,
-  Activity,
   Key,
   CheckCircle,
   Loader2,
-  AlertTriangle,
-  FileText
+  AlertTriangle
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -49,6 +35,7 @@ import { KYCVerification } from './components/KYCVerification';
 import { TenderManagement } from './components/TenderManagement';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
+import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
 
 // Internal Component: Password Reset Modal
 const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
@@ -174,14 +161,26 @@ export default function App() {
   
   const currentView = routeToView[location.pathname] || AppView.DASHBOARD;
   
-  const setCurrentView = (view: AppView) => {
-    navigate(viewToRoute[view] || '/dashboard');
-  };
-  
   const [isOnboarded, setIsOnboarded] = useState(false);
   const [userRole, setUserRole] = useState<UserPersona>(UserPersona.EXPORTER_SME);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  
+  const setCurrentView = (view: AppView) => {
+    // Check if user can access this view
+    if (!canAccessView(userRole, view)) {
+      navigate('/dashboard');
+      return;
+    }
+    navigate(viewToRoute[view] || '/dashboard');
+  };
+  
+  // Route protection: redirect if user tries to access unauthorized route
+  useEffect(() => {
+    if (isOnboarded && currentView && !canAccessView(userRole, currentView)) {
+      navigate('/dashboard');
+    }
+  }, [location.pathname, userRole, isOnboarded, currentView, navigate]);
   
   // Track if current session is a simulation (bypass Auth listeners)
   const isSimulatedRef = useRef(false);
@@ -376,30 +375,16 @@ export default function App() {
         </div>
 
         <nav className="p-3 space-y-0.5 mt-2 overflow-y-auto max-h-[calc(100vh-160px)] custom-scrollbar pb-28">
-          <div className="px-4 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Platform</div>
-          <NavItem view={AppView.DASHBOARD} icon={LayoutDashboard} label="Command Center" />
-          <NavItem view={AppView.TRADE_LIFECYCLE} icon={Briefcase} label="Trade Workspace" />
-          <NavItem view={AppView.TRADE_FINANCE} icon={Landmark} label="Trade Finance" />
-          <NavItem view={AppView.MARKET_INTEL} icon={Globe} label="Market Intelligence" />
-          <NavItem view={AppView.COMPLIANCE} icon={Scale} label="Trade Compliance" />
-          <NavItem view={AppView.LOGISTICS} icon={Truck} label="Logistics Grid" />
-          
-          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Ecosystem</div>
-          <NavItem view={AppView.MARKETPLACE} icon={Users} label="Partner Network" />
-          <NavItem view={AppView.TENDERS} icon={FileText} label="Tenders & RFQ" />
-          
-          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Governance</div>
-          <NavItem view={AppView.ADMIN} icon={ShieldAlert} label="Admin Console" />
-          <NavItem view={AppView.REGULATOR} icon={Building} label="Regulator Portal" />
-          <NavItem view={AppView.DIAGNOSTIC} icon={Activity} label="System Health" />
-          
-          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">AI Tools</div>
-          <NavItem view={AppView.LIVE_ASSISTANT} icon={Mic} label="Voice Assistant" />
-          <NavItem view={AppView.MARKETING} icon={ImageIcon} label="Marketing Studio" />
-          
-          <div className="px-4 py-1.5 mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading">Account</div>
-          <NavItem view={AppView.PROFILE} icon={Settings} label="Profile & Settings" />
-          <NavItem view={AppView.KYC_VERIFICATION} icon={Key} label="KYC Verification" />
+          {getMenuForRole(userRole).map((section, sectionIdx) => (
+            <div key={section.title}>
+              <div className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading`}>
+                {section.title}
+              </div>
+              {section.items.map((item) => (
+                <NavItem key={item.view} view={item.view} icon={item.icon} label={item.label} />
+              ))}
+            </div>
+          ))}
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
@@ -413,17 +398,10 @@ export default function App() {
               <p className="text-[10px] text-slate-400 truncate">{userRole}</p>
             </div>
           </div>
-          <div className="relative">
-              <UserCircle className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-              <select 
-                  value={userRole}
-                  onChange={(e) => setUserRole(e.target.value as UserPersona)}
-                  className="w-full bg-slate-800 text-slate-300 text-[10px] font-medium rounded-lg py-1.5 pl-8 pr-2 border border-slate-700 outline-none focus:border-trade-accent focus:ring-1 focus:ring-trade-accent appearance-none cursor-pointer hover:bg-slate-750 transition-colors"
-              >
-                  {Object.values(UserPersona).map(role => (
-                      <option key={role} value={role}>{role}</option>
-                  ))}
-              </select>
+          {/* Role is locked after onboarding - displayed as badge, not editable */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+              <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
+              <span className="text-[10px] font-medium text-slate-300">{userRole}</span>
           </div>
         </div>
       </aside>

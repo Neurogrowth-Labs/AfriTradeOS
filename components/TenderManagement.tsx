@@ -48,62 +48,6 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
   const [, setShowCreateModal] = useState(false);
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null);
 
-  const mockTenders: Tender[] = [
-    {
-      id: '1',
-      title: 'Premium Cocoa Beans - 500 Tons',
-      description: 'Looking for high-quality cocoa beans from certified farms. Must meet EU import standards.',
-      category: 'Agricultural Products',
-      quantity: 500,
-      unit: 'tons',
-      budget_min: 1000000,
-      budget_max: 1500000,
-      currency: 'USD',
-      delivery_location: 'Rotterdam, Netherlands',
-      submission_deadline: '2024-12-15T23:59:59Z',
-      status: 'published',
-      bids_count: 8,
-      views_count: 156,
-      organization_name: 'European Chocolate Co.',
-      created_at: '2024-10-01'
-    },
-    {
-      id: '2',
-      title: 'Shea Butter Supply Contract',
-      description: 'Annual supply contract for refined shea butter. Organic certification preferred.',
-      category: 'Cosmetics Raw Materials',
-      quantity: 200,
-      unit: 'tons',
-      budget_min: 300000,
-      budget_max: 400000,
-      currency: 'USD',
-      delivery_location: 'Paris, France',
-      submission_deadline: '2024-11-30T23:59:59Z',
-      status: 'published',
-      bids_count: 12,
-      views_count: 234,
-      organization_name: 'L\'Oreal Africa',
-      created_at: '2024-10-05'
-    },
-    {
-      id: '3',
-      title: 'Cashew Nuts Processing Equipment',
-      description: 'Seeking suppliers for industrial cashew processing machinery.',
-      category: 'Industrial Equipment',
-      quantity: 1,
-      unit: 'set',
-      budget_min: 500000,
-      budget_max: 750000,
-      currency: 'USD',
-      delivery_location: 'Lagos, Nigeria',
-      submission_deadline: '2024-11-15T23:59:59Z',
-      status: 'closed',
-      bids_count: 5,
-      views_count: 89,
-      organization_name: 'Nigerian Agro Industries',
-      created_at: '2024-09-20'
-    },
-  ];
 
   useEffect(() => {
     const loadTenders = async () => {
@@ -121,18 +65,14 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
         const { data, error } = await query;
 
         if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setTenders(data.map((t: Tender & { organizations?: { name: string } }) => ({
-            ...t,
-            organization_name: t.organizations?.name
-          })));
-        } else {
-          setTenders(mockTenders);
-        }
+
+        setTenders((data || []).map((t: Tender & { organizations?: { name: string } }) => ({
+          ...t,
+          organization_name: t.organizations?.name
+        })));
       } catch (e) {
         console.error('Failed to fetch tenders:', e);
-        setTenders(mockTenders);
+        setTenders([]);
       } finally {
         setLoading(false);
       }

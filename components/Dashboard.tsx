@@ -69,8 +69,8 @@ interface Alert {
   severity: 'high' | 'medium' | 'low';
 }
 
-// Maps & Lanes Data
-const INITIAL_HUBS: Hub[] = [
+// Static reference data for African trade hubs (used for map visualization)
+const AFRICAN_HUBS: Hub[] = [
   { id: 'cairo', name: 'Cairo', x: 550, y: 80, status: 'operational' },
   { id: 'lagos', name: 'Lagos', x: 320, y: 350, status: 'operational' },
   { id: 'nairobi', name: 'Nairobi', x: 600, y: 450, status: 'operational' },
@@ -79,48 +79,28 @@ const INITIAL_HUBS: Hub[] = [
   { id: 'dakar', name: 'Dakar', x: 150, y: 280, status: 'operational' },
 ];
 
-const INITIAL_LANES: TradeLane[] = [
-  { id: '1', from: 'Lagos', to: 'Cairo', coords: { x1: 320, y1: 350, x2: 550, y2: 80, cx: 400, cy: 200 }, volume: '450 Tons', value: '$12.5M', status: 'optimal', commodity: 'Processed Foods' },
-  { id: '2', from: 'Nairobi', to: 'Johannesburg', coords: { x1: 600, y1: 450, x2: 500, y2: 700, cx: 650, cy: 600 }, volume: '1,200 Tons', value: '$45.2M', status: 'delayed', commodity: 'Machinery Parts' },
-  { id: '3', from: 'Casablanca', to: 'Lagos', coords: { x1: 280, y1: 60, x2: 320, y2: 350, cx: 200, cy: 200 }, volume: '800 Tons', value: '$8.9M', status: 'optimal', commodity: 'Textiles' },
-  { id: '4', from: 'Lagos', to: 'Nairobi', coords: { x1: 320, y1: 350, x2: 600, y2: 450, cx: 460, cy: 500 }, volume: '320 Tons', value: '$5.4M', status: 'blocked', commodity: 'Pharmaceuticals' },
-];
-
-// Initial Alerts
-const INITIAL_ALERTS: Alert[] = [
-  { id: 1, title: 'Compliance Update', message: 'New AfCFTA Rules of Origin for textiles effective next month.', time: '2h ago', severity: 'medium' },
-  { id: 2, title: 'Port Congestion', message: 'High delays reported at Mombasa Port due to system maintenance.', time: '5h ago', severity: 'high' },
-  { id: 3, title: 'Trade Opportunity', message: 'High demand for Cocoa in Egypt market.', time: '1d ago', severity: 'low' },
-];
-
-// Customs Declarations Mock
-const DECLARATIONS = [
-  { id: 'DEC-001', exporter: 'Global Foods Ltd', origin: 'Ghana', commodity: 'Cocoa Paste', risk: 15, status: 'Cleared' },
-  { id: 'DEC-002', exporter: 'Tech Imports SA', origin: 'China', commodity: 'Electronics', risk: 85, status: 'Flagged' },
-  { id: 'DEC-003', exporter: 'AgriKenya Exp', origin: 'Kenya', commodity: 'Cut Flowers', risk: 10, status: 'Cleared' },
-  { id: 'DEC-004', exporter: 'AutoParts NG', origin: 'India', commodity: 'Brake Pads', risk: 65, status: 'Review' },
-];
-
 export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) => {
   const [insight, setInsight] = useState("Loading AI strategic brief...");
   const [selectedLane, setSelectedLane] = useState<TradeLane | null>(null);
   const [myTrades, setMyTrades] = useState<DbTrade[]>([]);
   
-  // -- REAL-TIME STATE --
-  const [lanes, setLanes] = useState<TradeLane[]>(INITIAL_LANES);
-  const [hubs, setHubs] = useState<Hub[]>(INITIAL_HUBS);
-  const [alerts, setAlerts] = useState<Alert[]>(INITIAL_ALERTS);
+  // -- REAL-TIME STATE (initialized empty, populated from database) --
+  const [lanes, setLanes] = useState<TradeLane[]>([]);
+  const [hubs, setHubs] = useState<Hub[]>(AFRICAN_HUBS);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [declarations, setDeclarations] = useState<{id: string; exporter: string; origin: string; commodity: string; risk: number; status: string}[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [metrics, setMetrics] = useState({
-    activeShipments: 3,
-    complianceScore: 88,
-    pendingDocs: 1,
-    avgClearance: 2.0, // days
-    dailyRevenue: 1.2, // M
-    pendingDeclarations: 452,
-    financeRequests: 24,
-    activeLCs: 4.5, // M
-    totalExports: 4.2, // B
-    tradeBalance: 240, // M
+    activeShipments: 0,
+    complianceScore: 0,
+    pendingDocs: 0,
+    avgClearance: 0,
+    dailyRevenue: 0,
+    pendingDeclarations: 0,
+    financeRequests: 0,
+    activeLCs: 0,
+    totalExports: 0,
+    tradeBalance: 0,
   });
 
   const [govExportData, setGovExportData] = useState([
@@ -147,40 +127,93 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
       }
     };
     
-    const fetchTrades = async () => {
-        const data = await mockDatabase.getTrades();
-        if (isMounted) {
-            setMyTrades(data);
-            setMetrics(prev => ({ ...prev, activeShipments: data.length }));
+    const fetchAllData = async () => {
+        setLoadingData(true);
+        try {
+            // Fetch trades
+            const trades = await mockDatabase.getTrades();
+            if (isMounted) {
+                setMyTrades(trades);
+                
+                // Generate trade lanes from real trades
+                const tradeLanes: TradeLane[] = trades.slice(0, 4).map((t) => ({
+                    id: t.id,
+                    from: t.origin_country || 'Origin',
+                    to: t.destination_country || 'Destination',
+                    coords: { x1: 320, y1: 350, x2: 550, y2: 80, cx: 400, cy: 200 },
+                    volume: `${Math.floor((t.value || 0) / 1000)} Tons`,
+                    value: `$${((t.value || 0) / 1000).toFixed(1)}K`,
+                    status: t.status === 'completed' ? 'optimal' : t.status === 'paused' ? 'blocked' : 'delayed',
+                    commodity: t.product || 'Goods'
+                }));
+                setLanes(tradeLanes);
+            }
+            
+            // Fetch finance requests
+            const financeReqs = await mockDatabase.getFinanceRequests('');
+            
+            // Fetch KYC requests for declarations
+            const kycReqs = await mockDatabase.getKYCRequests();
+            if (isMounted) {
+                const decls = kycReqs.map(k => ({
+                    id: k.id,
+                    exporter: k.entity_name || 'Unknown',
+                    origin: k.country || 'Unknown',
+                    commodity: 'Trade Goods',
+                    risk: k.risk_level === 'High' ? 80 : k.risk_level === 'Medium' ? 50 : 20,
+                    status: k.status === 'Approved' ? 'Cleared' : k.status === 'Rejected' ? 'Flagged' : 'Review'
+                }));
+                setDeclarations(decls);
+            }
+            
+            // Calculate real metrics
+            if (isMounted) {
+                const pendingTrades = trades.filter(t => t.status !== 'completed').length;
+                const completedTrades = trades.filter(t => t.status === 'completed').length;
+                const totalValue = trades.reduce((sum, t) => sum + (t.value || 0), 0);
+                
+                setMetrics({
+                    activeShipments: trades.length,
+                    complianceScore: trades.length > 0 ? Math.min(100, 70 + completedTrades * 5) : 0,
+                    pendingDocs: pendingTrades,
+                    avgClearance: trades.length > 0 ? 2.5 : 0,
+                    dailyRevenue: totalValue / 1000000,
+                    pendingDeclarations: kycReqs.length,
+                    financeRequests: financeReqs.length,
+                    activeLCs: financeReqs.reduce((sum, f) => sum + (f.amount || 0), 0) / 1000000,
+                    totalExports: totalValue / 1000000000,
+                    tradeBalance: totalValue / 1000000,
+                });
+            }
+        } catch (e) {
+            console.error('Failed to fetch dashboard data:', e);
+        } finally {
+            if (isMounted) setLoadingData(false);
         }
     };
 
     fetchInsight();
-    fetchTrades();
+    fetchAllData();
 
     return () => {
         isMounted = false;
     };
   }, [userRole]);
 
-  // --- REAL-TIME SIMULATION ENGINE ---
+  // --- REAL-TIME SIMULATION ENGINE (only runs when there's actual data) ---
   useEffect(() => {
+    // Don't run simulation for new accounts with no data
+    if (myTrades.length === 0) return;
+    
     const interval = setInterval(() => {
-      // 1. Jitter Charts (Gov View)
-      setGovExportData(prev => prev.map(d => ({
-        ...d,
-        exports: Math.max(1000, d.exports + (Math.random() - 0.5) * 200),
-        imports: Math.max(1000, d.imports + (Math.random() - 0.5) * 200)
-      })));
-
-      // 2. Update Metrics (KPIs) - Random Walk
-      setMetrics(prev => ({
-        ...prev,
-        activeShipments: prev.activeShipments, // Don't randomize real count
-        dailyRevenue: +(prev.dailyRevenue + (Math.random() - 0.5) * 0.05).toFixed(2),
-        pendingDeclarations: Math.max(400, prev.pendingDeclarations + Math.floor((Math.random() - 0.5) * 5)),
-        complianceScore: Math.min(100, Math.max(80, prev.complianceScore + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 1 : -1) : 0))),
-      }));
+      // 1. Jitter Charts (Gov View) - only if there's data
+      if (myTrades.length > 0) {
+        setGovExportData(prev => prev.map(d => ({
+          ...d,
+          exports: Math.max(1000, d.exports + (Math.random() - 0.5) * 200),
+          imports: Math.max(1000, d.imports + (Math.random() - 0.5) * 200)
+        })));
+      }
 
       // 3. Dynamic Trade Map (Randomly flip status for lanes and hubs)
       if (Math.random() > 0.7) {
@@ -237,7 +270,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
     }, 2000); // Update every 2 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [myTrades.length]);
 
   // --- Dynamic Content Rendering Based on Role ---
 
@@ -369,7 +402,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                    {DECLARATIONS.map(dec => (
+                    {declarations.length === 0 ? (
+                       <tr>
+                          <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                             No declarations found. Data will appear when trades are processed.
+                          </td>
+                       </tr>
+                    ) : declarations.map(dec => (
                        <tr key={dec.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
                           <td className="px-4 py-3 font-mono">{dec.id}</td>
                           <td className="px-4 py-3 font-medium text-trade-primary dark:text-white">{dec.exporter}</td>
@@ -392,7 +431,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
                              </span>
                           </td>
                           <td className="px-4 py-3">
-                             <button className="text-trade-secondary hover:underline font-medium">Inspect</button>
+                             <button onClick={() => navigateTo(AppView.COMPLIANCE)} className="text-trade-secondary hover:underline font-medium">Inspect</button>
                           </td>
                        </tr>
                     ))}

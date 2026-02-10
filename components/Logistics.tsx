@@ -16,48 +16,26 @@ import {
   DollarSign,
   Star,
   Zap,
-  MoreHorizontal
+  MoreHorizontal,
+  Plus
 } from 'lucide-react';
 import { getLogisticsInfo } from '../services/geminiService';
+import { mockDatabase } from '../services/mockDatabase';
 
-// Mock Data for Tracking
-const ACTIVE_SHIPMENTS = [
-  {
-    id: 'SHP-AFR-001',
-    origin: 'Lagos, NG',
-    destination: 'Accra, GH',
-    status: 'at_risk',
-    eta: 'Nov 14, 2024',
-    progress: 65,
-    mode: 'Road',
-    carrier: 'LogiAfrica',
-    timeline: [
-      { location: 'Lagos Warehouse', date: 'Oct 28', status: 'completed', label: 'Picked Up' },
-      { location: 'Seme Border', date: 'Oct 30', status: 'completed', label: 'Export Customs' },
-      { location: 'Cotonou', date: 'Nov 02', status: 'delayed', label: 'Transit Delay', issue: 'Customs Hold' },
-      { location: 'Lome', date: 'Nov 05 (Est)', status: 'pending', label: 'Border Crossing' },
-      { location: 'Accra', date: 'Nov 08 (Est)', status: 'pending', label: 'Final Delivery' },
-    ]
-  },
-  {
-    id: 'SHP-AFR-002',
-    origin: 'Mombasa, KE',
-    destination: 'Kigali, RW',
-    status: 'on_time',
-    eta: 'Nov 18, 2024',
-    progress: 40,
-    mode: 'Road',
-    carrier: 'EastAfrican Haulage',
-    timeline: [
-      { location: 'Mombasa Port', date: 'Nov 01', status: 'completed', label: 'Gate Out' },
-      { location: 'Nairobi', date: 'Nov 03', status: 'active', label: 'In Transit' },
-      { location: 'Malaba', date: 'Nov 06 (Est)', status: 'pending', label: 'Border Crossing' },
-      { location: 'Kigali', date: 'Nov 08 (Est)', status: 'pending', label: 'Delivery' },
-    ]
-  }
-];
+// Shipment type definition
+interface Shipment {
+  id: string;
+  origin: string;
+  destination: string;
+  status: string;
+  eta: string;
+  progress: number;
+  mode: string;
+  carrier: string;
+  timeline: { location: string; date: string; status: string; label: string; issue?: string }[];
+}
 
-// Mock Data for Provider Comparison
+// Provider data (static reference data)
 const PROVIDERS = [
   { name: 'Maersk Line', type: 'Ocean', cost: '$$', speed: 'Slow', reliability: 'High (98%)', color: '#3b82f6' },
   { name: 'DHL Global', type: 'Air/Road', cost: '$$$$', speed: 'Fast', reliability: 'High (99%)', color: '#eab308' },
@@ -66,8 +44,9 @@ const PROVIDERS = [
 
 export const Logistics: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'tracking' | 'booking'>('tracking');
-  const [selectedShipment, setSelectedShipment] = useState(ACTIVE_SHIPMENTS[0]);
-  const [liveShipments, setLiveShipments] = useState(ACTIVE_SHIPMENTS);
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [liveShipments, setLiveShipments] = useState<Shipment[]>([]);
+  const [loadingShipments, setLoadingShipments] = useState(true);
 
   // Booking State
   const [query, setQuery] = useState('');
@@ -75,8 +54,46 @@ export const Logistics: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const userLocation = { lat: -1.2921, lng: 36.8219 }; // Nairobi
 
+  // Fetch shipments from database on mount
+  useEffect(() => {
+    const fetchShipments = async () => {
+      setLoadingShipments(true);
+      try {
+        // Fetch trades and convert to shipment format
+        const trades = await mockDatabase.getTrades();
+        const shipments: Shipment[] = trades
+          .filter(t => t.status === 'pending_execution' || t.status === 'pending_settlement')
+          .map(t => ({
+            id: t.id,
+            origin: t.origin_country || 'Origin',
+            destination: t.destination_country || 'Destination',
+            status: t.status === 'pending_execution' ? 'on_time' : 'pending',
+            eta: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+            progress: t.status === 'pending_execution' ? 50 : 10,
+            mode: 'Road',
+            carrier: 'Pending Assignment',
+            timeline: [
+              { location: t.origin_country || 'Origin', date: new Date(t.created_at || Date.now()).toLocaleDateString(), status: 'completed', label: 'Picked Up' },
+              { location: 'In Transit', date: 'Current', status: 'active', label: 'In Transit' },
+              { location: t.destination_country || 'Destination', date: 'Est.', status: 'pending', label: 'Delivery' },
+            ]
+          }));
+        setLiveShipments(shipments);
+        if (shipments.length > 0) {
+          setSelectedShipment(shipments[0]);
+        }
+      } catch (e) {
+        console.error('Failed to fetch shipments:', e);
+      } finally {
+        setLoadingShipments(false);
+      }
+    };
+    fetchShipments();
+  }, []);
+
   // Simulate Realtime Tracking Updates
   useEffect(() => {
+    if (liveShipments.length === 0) return;
     const interval = setInterval(() => {
         setLiveShipments(prev => prev.map(s => {
             if (s.status === 'on_time' && s.progress < 100) {
@@ -86,13 +103,14 @@ export const Logistics: React.FC = () => {
         }));
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [liveShipments.length]);
 
   // Update selected shipment view when live data changes
   useEffect(() => {
+      if (!selectedShipment) return;
       const updated = liveShipments.find(s => s.id === selectedShipment.id);
       if (updated) setSelectedShipment(updated);
-  }, [liveShipments, selectedShipment.id]);
+  }, [liveShipments, selectedShipment?.id]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,12 +175,24 @@ export const Logistics: React.FC = () => {
          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
             {/* Shipment List */}
             <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2">
-               {liveShipments.map(shipment => (
+               {loadingShipments ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+                  </div>
+               ) : liveShipments.length === 0 ? (
+                  <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-8 text-center">
+                    <Truck className="w-12 h-12 mx-auto text-gray-300 dark:text-slate-600 mb-4" />
+                    <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-2">No Active Shipments</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      Create a trade with status &quot;In Transit&quot; to track shipments here.
+                    </p>
+                  </div>
+               ) : liveShipments.map(shipment => (
                   <div 
                     key={shipment.id}
                     onClick={() => setSelectedShipment(shipment)}
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                        selectedShipment.id === shipment.id 
+                        selectedShipment?.id === shipment.id 
                         ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-500 ring-1 ring-teal-500' 
                         : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-teal-300'
                     }`}
@@ -201,6 +231,16 @@ export const Logistics: React.FC = () => {
 
             {/* Detail View */}
             <div className="lg:col-span-8 flex flex-col gap-6">
+                {!selectedShipment ? (
+                  <div className="bg-white dark:bg-slate-800 p-12 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm text-center">
+                    <Truck className="w-16 h-16 mx-auto text-gray-300 dark:text-slate-600 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">No Shipment Selected</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Select a shipment from the list or create a new trade to start tracking.
+                    </p>
+                  </div>
+                ) : (
+                <>
                 {/* Status Card & Map Placeholder */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
                     <div className="flex justify-between items-start mb-8 relative z-10">
@@ -286,6 +326,8 @@ export const Logistics: React.FC = () => {
                         </div>
                     </div>
                 )}
+                </>
+              )}
             </div>
          </div>
        )}

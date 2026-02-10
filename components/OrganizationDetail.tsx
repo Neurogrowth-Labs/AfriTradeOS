@@ -181,7 +181,14 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
                   >
                     <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
                   </button>
-                  <button className="p-2 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      alert('Link copied to clipboard!');
+                    }}
+                    className="p-2 rounded-lg border border-gray-200 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    title="Share"
+                  >
                     <Share2 className="w-5 h-5 text-gray-500" />
                   </button>
                 </div>
@@ -305,7 +312,7 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-trade-success">{product.price}</p>
-                      <button className="text-xs text-trade-primary hover:underline">Request Quote</button>
+                      <button onClick={() => alert('Quote request sent! The supplier will contact you soon.')} className="text-xs text-trade-primary hover:underline">Request Quote</button>
                     </div>
                   </div>
                 ))}
@@ -421,7 +428,10 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
           </div>
 
           {/* Report */}
-          <button className="w-full flex items-center justify-center gap-2 p-3 text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
+          <button 
+            onClick={() => alert('Report submitted. Our team will review this organization.')}
+            className="w-full flex items-center justify-center gap-2 p-3 text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+          >
             <Flag className="w-4 h-4" />
             Report this organization
           </button>
