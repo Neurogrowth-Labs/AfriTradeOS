@@ -50,12 +50,12 @@ import { DbMarketIntelligence } from '../types';
 
 // Price data will be generated based on search or empty
 const generatePriceData = () => [
-  { month: 'Jan', price: 1100 + Math.random()*200, globalAvg: 1150 },
-  { month: 'Feb', price: 1150 + Math.random()*200, globalAvg: 1160 },
-  { month: 'Mar', price: 1080 + Math.random()*200, globalAvg: 1170 },
-  { month: 'Apr', price: 1250 + Math.random()*200, globalAvg: 1180 },
-  { month: 'May', price: 1300 + Math.random()*200, globalAvg: 1190 },
-  { month: 'Jun', price: 1400 + Math.random()*200, globalAvg: 1200 },
+  { month: 'Jan', price: 1100 + Math.random()*200, globalAvg: 1150, afcftaPrice: 980 + Math.random()*150 },
+  { month: 'Feb', price: 1150 + Math.random()*200, globalAvg: 1160, afcftaPrice: 1020 + Math.random()*150 },
+  { month: 'Mar', price: 1080 + Math.random()*200, globalAvg: 1170, afcftaPrice: 960 + Math.random()*150 },
+  { month: 'Apr', price: 1250 + Math.random()*200, globalAvg: 1180, afcftaPrice: 1100 + Math.random()*150 },
+  { month: 'May', price: 1300 + Math.random()*200, globalAvg: 1190, afcftaPrice: 1150 + Math.random()*150 },
+  { month: 'Jun', price: 1400 + Math.random()*200, globalAvg: 1200, afcftaPrice: 1230 + Math.random()*150 },
 ];
 
 // Static reference data for competitor analysis (shown after search)
@@ -203,8 +203,8 @@ export const MarketIntel: React.FC = () => {
                       <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                      <h2 className="text-lg font-bold text-trade-primary dark:text-white">Market Intelligence</h2>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Global data • Real-time AI Analysis</p>
+                      <h2 className="text-lg font-bold text-trade-primary dark:text-white">Market Prices & Intelligence</h2>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Real-time commodity pricing • African vs International • AI trend predictions</p>
                   </div>
               </div>
 
@@ -490,7 +490,8 @@ export const MarketIntel: React.FC = () => {
                                       contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                                       itemStyle={{ color: '#fff' }}
                                   />
-                                  <Area type="monotone" dataKey="price" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" name="Local Price" />
+                                  <Area type="monotone" dataKey="price" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorPrice)" name="International Price" />
+                                  <Area type="monotone" dataKey="afcftaPrice" stroke="#C9A24D" strokeWidth={2} fill="none" name="AfCFTA Price" />
                                   <Area type="monotone" dataKey="globalAvg" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" fill="none" name="Global Avg" />
                               </AreaChart>
                           </ResponsiveContainer>

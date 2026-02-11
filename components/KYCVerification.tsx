@@ -52,8 +52,10 @@ const REQUIRED_DOCUMENTS = {
   business: [
     { type: 'business_registration', label: 'Business Registration', description: 'Certificate of Incorporation' },
     { type: 'tax_certificate', label: 'Tax Certificate', description: 'Tax registration or clearance certificate' },
-    { type: 'trade_license', label: 'Trade License', description: 'Valid trade or export license' },
+    { type: 'trade_license', label: 'Import License', description: 'Valid import permit or trade license' },
     { type: 'identity_document', label: 'Director ID', description: 'ID of company director or authorized signatory' },
+    { type: 'afcfta_certificate', label: 'AfCFTA Certificate', description: 'Certificate of Origin for preferential tariff rates' },
+    { type: 'customs_bond', label: 'Customs Bond', description: 'Customs bond or guarantee for import clearance' },
   ],
 };
 
@@ -244,10 +246,10 @@ export const KYCVerification: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
             <Shield className="w-6 h-6 text-trade-secondary" />
-            Identity Verification
+            Documents & Verification
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Complete your KYC/KYB verification to unlock all platform features
+            Central document repository, auto-generation & secure sharing for import operations
           </p>
         </div>
         {kycRequest && getStatusBadge(kycRequest.status)}

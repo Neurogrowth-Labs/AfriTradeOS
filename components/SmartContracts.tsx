@@ -232,7 +232,9 @@ export const SmartContracts: React.FC = () => {
         setTemplates([
           { id: '1', name: 'Standard Export Agreement', description: 'Basic export contract', category: 'export', terms_structure: [{ name: 'Advance', percentage: 30 }, { name: 'On Shipment', percentage: 50 }, { name: 'On Delivery', percentage: 20 }], usage_count: 156 },
           { id: '2', name: 'Agricultural Commodities Contract', description: 'For agricultural exports', category: 'agriculture', terms_structure: [{ name: 'LC', percentage: 100 }], usage_count: 89 },
-          { id: '3', name: 'Manufacturing Supply Agreement', description: 'For manufactured goods', category: 'manufacturing', terms_structure: [{ name: 'Deposit', percentage: 20 }, { name: 'Production', percentage: 40 }, { name: 'Delivery', percentage: 40 }], usage_count: 67 }
+          { id: '3', name: 'Manufacturing Supply Agreement', description: 'For manufactured goods', category: 'manufacturing', terms_structure: [{ name: 'Deposit', percentage: 20 }, { name: 'Production', percentage: 40 }, { name: 'Delivery', percentage: 40 }], usage_count: 67 },
+          { id: '4', name: 'Import Purchase Agreement', description: 'Standard import contract with AfCFTA preferential terms', category: 'import', terms_structure: [{ name: 'LC at Sight', percentage: 70 }, { name: 'On Delivery', percentage: 30 }], usage_count: 112 },
+          { id: '5', name: 'Supplier Framework Agreement', description: 'Long-term supplier contract with AfCFTA clause library', category: 'import', terms_structure: [{ name: 'Quarterly', percentage: 25 }, { name: 'Quarterly', percentage: 25 }, { name: 'Quarterly', percentage: 25 }, { name: 'Quarterly', percentage: 25 }], usage_count: 78 },
         ]);
       }
     } catch (e) {
@@ -601,7 +603,7 @@ Please log in to AfriTradeOS to view the full contract details.
             Smart Contracts
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Create, manage, and track legally compliant digital trade contracts
+            Digital signing, AfCFTA clause library, version control & contract alerts
           </p>
         </div>
         <button

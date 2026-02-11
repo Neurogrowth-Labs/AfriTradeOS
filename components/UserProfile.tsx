@@ -30,7 +30,7 @@ import { mockDatabase } from '../services/mockDatabase';
 import { DbAuditLog, UserPersona } from '../types';
 import { supabase } from '../services/supabase';
 
-type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit';
+type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit' | 'integrations';
 
 interface UserProfileProps {
   profileData?: any;
@@ -299,6 +299,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     { id: 'general', label: 'Identity & Profile', icon: User },
     { id: 'organization', label: 'Organization', icon: Building2 },
     { id: 'security', label: 'Security & Compliance', icon: Shield },
+    { id: 'integrations', label: 'Integrations', icon: Globe },
     { id: 'ai', label: 'AI & Data Control', icon: Zap },
     { id: 'billing', label: 'Billing & Usage', icon: CreditCard },
     { id: 'audit', label: 'Audit Logs', icon: FileText },
@@ -801,6 +802,62 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                          <button className="text-sm font-bold text-blue-600 hover:underline flex items-center justify-center gap-2 mx-auto">
                              <Download className="w-4 h-4" /> Export CSV
                          </button>
+                     </div>
+                 </div>
+             )}
+
+             {/* --- INTEGRATIONS --- */}
+             {activeTab === 'integrations' && (
+                 <div className="space-y-8 animate-fade-in">
+                     <div>
+                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Integration Management</h2>
+                         <p className="text-sm text-gray-500">Connect your import operations with external systems and services.</p>
+                     </div>
+
+                     <div className="space-y-4">
+                       {[
+                         { name: 'Customs Single Window', description: 'Auto-submit import declarations to national customs systems', status: 'connected', icon: '🏛️' },
+                         { name: 'ERP System (SAP/Oracle)', description: 'Sync purchase orders, invoices, and inventory with your ERP', status: 'available', icon: '📊' },
+                         { name: 'Logistics Providers API', description: 'Real-time shipment tracking from Maersk, DHL, and Bolloré', status: 'connected', icon: '🚢' },
+                         { name: 'Banking & Payments', description: 'Connect bank accounts for L/C issuance and payment processing', status: 'available', icon: '🏦' },
+                         { name: 'Warehouse Management', description: 'Sync incoming inventory with your warehouse system', status: 'available', icon: '📦' },
+                         { name: 'AfCFTA Trade Portal', description: 'Direct certificate of origin verification and tariff lookups', status: 'connected', icon: '🌍' },
+                       ].map(integration => (
+                         <div key={integration.name} className="flex items-center justify-between p-5 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                           <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl">
+                               {integration.icon}
+                             </div>
+                             <div>
+                               <h4 className="font-bold text-gray-900 dark:text-white">{integration.name}</h4>
+                               <p className="text-xs text-gray-500">{integration.description}</p>
+                             </div>
+                           </div>
+                           {integration.status === 'connected' ? (
+                             <div className="flex items-center gap-2">
+                               <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/20 px-2 py-1 rounded-full flex items-center gap-1">
+                                 <CheckCircle className="w-3 h-3" /> Connected
+                               </span>
+                               <button className="text-xs text-gray-500 hover:text-red-500 font-medium">Disconnect</button>
+                             </div>
+                           ) : (
+                             <button className="text-xs font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors">
+                               Connect
+                             </button>
+                           )}
+                         </div>
+                       ))}
+                     </div>
+
+                     <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-5">
+                       <div className="flex items-start gap-3">
+                         <Zap className="w-5 h-5 text-indigo-600 mt-0.5" />
+                         <div>
+                           <h4 className="font-bold text-indigo-800 dark:text-indigo-300">API Access</h4>
+                           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">Build custom integrations with the AfriTradeOS API. Available on Pro and Enterprise plans.</p>
+                           <button className="mt-2 text-xs font-bold text-indigo-600 hover:underline">View API Documentation →</button>
+                         </div>
+                       </div>
                      </div>
                  </div>
              )}

@@ -32,6 +32,7 @@ const CATEGORIES = [
   { id: 'logistics', label: 'Logistics', icon: Truck },
   { id: 'legal', label: 'Legal & Compliance', icon: Scale },
   { id: 'finance', label: 'Finance & Insurance', icon: Building2 },
+  { id: 'afcfta', label: 'AfCFTA Eligible', icon: Globe },
 ];
 
 // Network graph node positions (pre-computed for visual layout)
@@ -135,13 +136,13 @@ export const Marketplace: React.FC = () => {
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg">
          <div className="flex items-center justify-between mb-2">
-           <h2 className="text-3xl font-bold">AfriTrade Network</h2>
+           <h2 className="text-3xl font-bold">Find Suppliers & Partners</h2>
            <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
              <Users className="w-4 h-4" />
              <span className="text-sm font-bold">{totalCount} Partners</span>
            </div>
          </div>
-         <p className="text-blue-100 mb-6 max-w-2xl">Connect with verified buyers, suppliers, and service providers across the continent. All onboarded companies automatically appear here.</p>
+         <p className="text-blue-100 mb-6 max-w-2xl">Verified supplier database with AfCFTA eligibility, performance ratings, and AI-powered matching. Connect, message, or send RFQs directly.</p>
          
          <div className="flex gap-2 mb-4">
            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'grid' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}>
@@ -346,6 +347,39 @@ export const Marketplace: React.FC = () => {
                   <div className="flex items-center justify-center gap-1 mb-1"><Award className="w-4 h-4 text-blue-600" /></div>
                   <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{selectedProfile.type}</p>
                   <p className="text-[10px] text-gray-500">Category</p>
+                </div>
+              </div>
+
+              {/* Supplier Performance Dashboard */}
+              <div>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-blue-500" /> Supplier Performance</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <p className="text-[10px] text-gray-500 uppercase mb-0.5">On-Time Delivery</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: '92%' }} />
+                      </div>
+                      <span className="text-xs font-bold text-green-600">92%</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <p className="text-[10px] text-gray-500 uppercase mb-0.5">Quality Score</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: '88%' }} />
+                      </div>
+                      <span className="text-xs font-bold text-blue-600">88%</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <p className="text-[10px] text-gray-500 uppercase mb-0.5">Trade Volume</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">$2.4M</p>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <p className="text-[10px] text-gray-500 uppercase mb-0.5">Response Time</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">&lt;4h avg</p>
+                  </div>
                 </div>
               </div>
 

@@ -36,11 +36,13 @@ const AFRICAN_COUNTRIES = [
 // B10: Compliance dashboard risk data
 const COMPLIANCE_RISKS = [
   { id: 'r1', area: 'Rules of Origin', status: 'compliant', score: 92, details: 'AfCFTA certificate valid until Dec 2026' },
-  { id: 'r2', area: 'Export Licensing', status: 'warning', score: 65, details: 'License renewal due in 30 days' },
-  { id: 'r3', area: 'Customs Documentation', status: 'compliant', score: 88, details: 'All customs forms up to date' },
+  { id: 'r2', area: 'Import Licensing', status: 'warning', score: 65, details: 'Import permit renewal due in 30 days' },
+  { id: 'r3', area: 'Customs Documentation', status: 'compliant', score: 88, details: 'All import declarations up to date' },
   { id: 'r4', area: 'Sanctions Screening', status: 'compliant', score: 100, details: 'No matches found in latest screening' },
-  { id: 'r5', area: 'Tax Compliance', status: 'critical', score: 35, details: 'VAT registration pending for Nigeria' },
-  { id: 'r6', area: 'Product Standards', status: 'warning', score: 70, details: 'ISO certification expiring in 60 days' },
+  { id: 'r5', area: 'Import VAT & Duties', status: 'critical', score: 35, details: 'VAT registration pending for Nigeria imports' },
+  { id: 'r6', area: 'Product Standards', status: 'warning', score: 70, details: 'Conformity certificate expiring in 60 days' },
+  { id: 'r7', area: 'Tariff Classification', status: 'compliant', score: 95, details: 'HS codes verified for AfCFTA preferential rates' },
+  { id: 'r8', area: 'Pre-Shipment Inspection', status: 'warning', score: 72, details: 'PVoC inspection required for next shipment' },
 ];
 
 // B11: Cross-border requirement guides
@@ -68,6 +70,23 @@ const CROSS_BORDER_GUIDES = [
       { step: 2, title: 'NRCS Compliance', description: 'Ensure product meets National Regulator for Compulsory Specifications.', required: true },
       { step: 3, title: 'Letter of Authority', description: 'Obtain import permit from ITAC if product requires one.', required: false },
       { step: 4, title: 'Customs Clearance', description: 'Submit SAD500 form through customs broker. Pay duties via eFiling.', required: true },
+    ]
+  },
+  {
+    id: 'g4', title: 'Importing from Ghana', country: 'Ghana', steps: [
+      { step: 1, title: 'Verify AfCFTA Eligibility', description: 'Confirm product qualifies for AfCFTA preferential tariff rates with Certificate of Origin.', required: true },
+      { step: 2, title: 'Import Permit Application', description: 'Apply for import permit through your country\'s trade regulatory body.', required: true },
+      { step: 3, title: 'Pre-Arrival Declaration', description: 'Submit advance customs declaration at least 48h before shipment arrival.', required: true },
+      { step: 4, title: 'Duty & Tax Calculation', description: 'Calculate applicable AfCFTA reduced duties and local VAT. Use tariff calculator.', required: true },
+      { step: 5, title: 'Customs Inspection', description: 'Schedule inspection at port of entry. Prepare all supporting documents.', required: true },
+    ]
+  },
+  {
+    id: 'g5', title: 'Importing from Egypt', country: 'Egypt', steps: [
+      { step: 1, title: 'Verify Certificate of Origin', description: 'Ensure supplier provides valid AfCFTA or bilateral trade certificate.', required: true },
+      { step: 2, title: 'Quality & Standards Check', description: 'Verify product meets destination country\'s standards (KEBS, SON, SABS).', required: true },
+      { step: 3, title: 'Import Declaration Filing', description: 'File import declaration through your country\'s Single Window system.', required: true },
+      { step: 4, title: 'Payment & Clearance', description: 'Pay applicable duties (check AfCFTA reductions) and clear goods at port.', required: true },
     ]
   },
 ];
@@ -111,8 +130,8 @@ export const Compliance: React.FC = () => {
                   <ShieldCheck className="w-5 h-5 text-trade-primary dark:text-white" />
                </div>
                <div>
-                  <h2 className="text-lg font-bold font-heading text-trade-primary dark:text-white">AfCFTA Compliance Engine</h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Automated Rules of Origin Verification</p>
+                  <h2 className="text-lg font-bold font-heading text-trade-primary dark:text-white">Import Compliance Engine</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">AfCFTA regulatory guidelines, AI compliance checker & policy change alerts</p>
                </div>
            </div>
          </div>

@@ -88,12 +88,12 @@ const ROUTE_RISKS: RouteRisk[] = [
 ];
 
 const MOCK_ETA_TIMELINE: ETAEntry[] = [
-  { id: 'eta1', shipmentId: 'SH-001', milestone: 'Cargo Pickup', planned: 'Jan 15, 08:00', actual: 'Jan 15, 08:30', status: 'completed', delayHours: 0.5 },
-  { id: 'eta2', shipmentId: 'SH-001', milestone: 'Port Arrival', planned: 'Jan 16, 14:00', actual: 'Jan 16, 16:00', status: 'completed', delayHours: 2 },
-  { id: 'eta3', shipmentId: 'SH-001', milestone: 'Customs Clearance', planned: 'Jan 17, 10:00', actual: 'Jan 18, 14:00', status: 'delayed', delayHours: 28 },
-  { id: 'eta4', shipmentId: 'SH-001', milestone: 'Vessel Departure', planned: 'Jan 19, 06:00', status: 'on_time' },
-  { id: 'eta5', shipmentId: 'SH-001', milestone: 'Port of Destination', planned: 'Jan 25, 12:00', status: 'upcoming' },
-  { id: 'eta6', shipmentId: 'SH-001', milestone: 'Last Mile Delivery', planned: 'Jan 27, 09:00', status: 'upcoming' },
+  { id: 'eta1', shipmentId: 'SH-001', milestone: 'Export – Cargo Pickup', planned: 'Jan 15, 08:00', actual: 'Jan 15, 08:30', status: 'completed', delayHours: 0.5 },
+  { id: 'eta2', shipmentId: 'SH-001', milestone: 'Export – Port of Origin', planned: 'Jan 16, 14:00', actual: 'Jan 16, 16:00', status: 'completed', delayHours: 2 },
+  { id: 'eta3', shipmentId: 'SH-001', milestone: 'In Transit – Customs Clearance', planned: 'Jan 17, 10:00', actual: 'Jan 18, 14:00', status: 'delayed', delayHours: 28 },
+  { id: 'eta4', shipmentId: 'SH-001', milestone: 'In Transit – Vessel Departure', planned: 'Jan 19, 06:00', status: 'on_time' },
+  { id: 'eta5', shipmentId: 'SH-001', milestone: 'Import – Port of Destination', planned: 'Jan 25, 12:00', status: 'upcoming' },
+  { id: 'eta6', shipmentId: 'SH-001', milestone: 'Delivery – Last Mile', planned: 'Jan 27, 09:00', status: 'upcoming' },
 ];
 
 // Provider data (static reference data)
@@ -272,8 +272,8 @@ export const Logistics: React.FC = () => {
                 <Truck className="w-6 h-6 text-teal-600 dark:text-teal-400" />
              </div>
              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Supply Chain Control Tower</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">End-to-end visibility & provider selection</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Shipment Tracking & Logistics</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Real-time GPS tracking, multi-leg visualization & AI ETA predictions</p>
              </div>
           </div>
           <div className="flex bg-gray-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto">
@@ -845,6 +845,22 @@ export const Logistics: React.FC = () => {
                      </div>
                    );
                  })}
+               </div>
+             </div>
+           </div>
+
+           {/* AI ETA Prediction */}
+           <div className="bg-gradient-to-r from-teal-600 to-teal-800 rounded-xl p-4 text-white relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-3 opacity-10">
+               <Zap className="w-16 h-16" />
+             </div>
+             <div className="relative z-10 flex items-start gap-3">
+               <div className="p-2 bg-white/20 rounded-lg">
+                 <Zap className="w-4 h-4" />
+               </div>
+               <div>
+                 <h4 className="font-bold text-sm mb-1">AI ETA Prediction</h4>
+                 <p className="text-xs opacity-90">Based on current customs processing times, weather conditions, and port congestion at destination, we estimate a <span className="font-bold">+30h total delay</span> from original schedule. Consider notifying your supplier about adjusted delivery windows.</p>
                </div>
              </div>
            </div>

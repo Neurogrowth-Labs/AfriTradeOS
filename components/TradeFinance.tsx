@@ -100,6 +100,9 @@ const FALLBACK_FUNDING_OPTIONS: Financier[] = [
   { id: 'opt_1', name: 'Ecobank', type: 'Bank', product: 'Letter of Credit', interest_rate: 2.5, term: '90 Days', min_score: 70, logo_initial: 'E' },
   { id: 'opt_2', name: 'Afreximbank', type: 'DFI', product: 'Trade Guarantee', interest_rate: 1.8, term: '180 Days', min_score: 80, logo_initial: 'A' },
   { id: 'opt_3', name: 'Allianz', type: 'Insurer', product: 'Credit Insurance', interest_rate: 0.9, term: 'Annual', min_score: 60, logo_initial: 'AL' },
+  { id: 'opt_4', name: 'Stanbic IBTC', type: 'Bank', product: 'Invoice Factoring', interest_rate: 3.2, term: '60 Days', min_score: 65, logo_initial: 'S' },
+  { id: 'opt_5', name: 'DBSA', type: 'DFI', product: 'Import Guarantee', interest_rate: 2.0, term: '120 Days', min_score: 75, logo_initial: 'D' },
+  { id: 'opt_6', name: 'ATI', type: 'Insurer', product: 'Supplier Credit Insurance', interest_rate: 1.2, term: 'Annual', min_score: 55, logo_initial: 'AT' },
 ];
 
 // Mock FX rates data
@@ -245,7 +248,7 @@ export const TradeFinance: React.FC = () => {
              </div>
              <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">Trade Finance & Risk</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Access capital and mitigate cross-border exposure</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">L/C, invoice financing, guarantees & cross-border risk management</p>
              </div>
          </div>
          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600">

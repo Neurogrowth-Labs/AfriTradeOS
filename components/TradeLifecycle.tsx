@@ -144,6 +144,50 @@ const PROJECT_TEMPLATES: ProjectTemplate[] = [
   },
 ];
 
+// Import-specific order templates
+const IMPORT_TEMPLATES: ProjectTemplate[] = [
+  {
+    id: 'tpl_imp_electronics',
+    name: 'Electronics Import',
+    category: 'goods',
+    icon: Box,
+    description: 'Import consumer electronics with AfCFTA duty reductions and compliance checks',
+    fields: { product: 'Electronics', hs_code: '8471.30', origin_country: 'South Africa', destination_country: 'Kenya', currency: 'USD', incoterm: 'CIF' },
+    documents: ['Import License', 'Certificate of Conformity', 'Commercial Invoice', 'Packing List', 'Bill of Lading'],
+    estimatedDays: 21
+  },
+  {
+    id: 'tpl_imp_rawmaterials',
+    name: 'Raw Materials Import',
+    category: 'goods',
+    icon: Package,
+    description: 'Bulk import of raw materials for manufacturing with preferential tariff rates',
+    fields: { product: 'Raw Materials', hs_code: '2601.11', origin_country: 'Ghana', destination_country: 'Nigeria', currency: 'USD', incoterm: 'FOB' },
+    documents: ['Certificate of Origin', 'Import Permit', 'Quality Inspection Report', 'Commercial Invoice', 'Bill of Lading'],
+    estimatedDays: 28
+  },
+  {
+    id: 'tpl_imp_machinery',
+    name: 'Machinery & Equipment',
+    category: 'goods',
+    icon: Box,
+    description: 'Import industrial machinery with customs clearance and installation coordination',
+    fields: { product: 'Industrial Machinery', hs_code: '8428.90', origin_country: 'Egypt', destination_country: 'Kenya', currency: 'USD', incoterm: 'DDP' },
+    documents: ['Import License', 'Technical Specifications', 'Certificate of Origin', 'Insurance Certificate', 'Commercial Invoice'],
+    estimatedDays: 35
+  },
+  {
+    id: 'tpl_imp_food',
+    name: 'Food & Beverages Import',
+    category: 'produce',
+    icon: Leaf,
+    description: 'Import food products with phytosanitary compliance and cold chain requirements',
+    fields: { product: 'Food Products', hs_code: '2106.90', origin_country: 'Nigeria', destination_country: 'South Africa', currency: 'USD', incoterm: 'CIF' },
+    documents: ['Import Permit', 'Phytosanitary Certificate', 'Health Certificate', 'Certificate of Origin', 'Commercial Invoice'],
+    estimatedDays: 14
+  },
+];
+
 export const TradeLifecycle: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>('create');
   const [loading, setLoading] = useState(false);
@@ -625,7 +669,7 @@ export const TradeLifecycle: React.FC = () => {
             <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-trade-primary dark:text-white flex items-center gap-2">
-                  <Package className="w-5 h-5" /> Export Project Templates
+                  <Package className="w-5 h-5" /> Order Templates
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">Start with a pre-configured template for faster setup</p>
               </div>
@@ -633,7 +677,39 @@ export const TradeLifecycle: React.FC = () => {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh] grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="mb-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Import Templates</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {IMPORT_TEMPLATES.map(tpl => (
+                <button
+                  key={tpl.id}
+                  onClick={() => applyTemplate(tpl)}
+                  className="text-left p-5 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-trade-primary dark:hover:border-trade-primary hover:shadow-lg transition-all group"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`p-2.5 rounded-lg ${
+                      tpl.category === 'produce' ? 'bg-green-100 text-green-600' :
+                      tpl.category === 'textiles' ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'
+                    } group-hover:scale-110 transition-transform`}>
+                      <tpl.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800 dark:text-white">{tpl.name}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">{tpl.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-400 pt-3 border-t border-gray-100 dark:border-slate-700">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> ~{tpl.estimatedDays} days</span>
+                    <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {tpl.documents.length} docs</span>
+                    <ChevronRight className="w-4 h-4 ml-auto text-gray-300 group-hover:text-trade-primary transition-colors" />
+                  </div>
+                </button>
+              ))}
+              </div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Export Templates</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {PROJECT_TEMPLATES.map(tpl => (
                 <button
                   key={tpl.id}
@@ -659,6 +735,7 @@ export const TradeLifecycle: React.FC = () => {
                   </div>
                 </button>
               ))}
+            </div>
             </div>
           </div>
         </div>

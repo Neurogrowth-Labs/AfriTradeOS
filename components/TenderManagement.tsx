@@ -154,10 +154,10 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
         <div>
           <h1 className="text-2xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
             <FileText className="w-6 h-6 text-trade-secondary" />
-            {mode === 'manage' ? 'My Tenders' : 'Tender Opportunities'}
+            {mode === 'manage' ? 'My RFQs' : 'RFQs & Tender Opportunities'}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {mode === 'manage' ? 'Manage your procurement requests' : 'Browse and bid on procurement opportunities'}
+            {mode === 'manage' ? 'Create, track, and manage your requests for quotation' : 'Browse RFQs and procurement opportunities with AI-suggested competitive pricing'}
           </p>
         </div>
         {mode === 'manage' && (
@@ -166,7 +166,7 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
             className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Create Tender
+            Create RFQ
           </button>
         )}
       </div>
@@ -316,6 +316,9 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
                       <Users className="w-4 h-4" />
                       {tender.bids_count} bids
                     </span>
+                  </div>
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold">
+                    <Zap className="w-3 h-3" /> AI Suggested
                   </div>
                   <button className="flex items-center gap-1 text-trade-primary hover:underline font-medium">
                     View Details <ChevronRight className="w-4 h-4" />

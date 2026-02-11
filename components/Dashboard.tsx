@@ -37,7 +37,8 @@ import {
   ZoomIn,
   ZoomOut,
   Layers,
-  CircleDot
+  CircleDot,
+  Package
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -544,6 +545,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
           { label: 'Credit Risk', value: 'Medium', sub: 'Nigeria Exposure', icon: AlertTriangle, color: 'text-trade-warning', bg: 'bg-orange-50' },
           { label: 'FX Rate (NGN)', value: '1,650', sub: '+0.5% Today', icon: TrendingUp, color: 'text-trade-secondary', bg: 'bg-purple-50' },
         ];
+      case UserPersona.IMPORTER:
+        return [
+          { label: 'Active Imports', value: metrics.activeShipments.toString(), sub: 'Orders in Progress', icon: Package, color: 'text-trade-primary', bg: 'bg-blue-50' },
+          { label: 'In Transit', value: Math.max(0, metrics.activeShipments - metrics.pendingDocs).toString(), sub: 'Shipments Moving', icon: Truck, color: 'text-teal-600', bg: 'bg-teal-50' },
+          { label: 'Pending Payments', value: metrics.pendingDocs.toString(), sub: 'Action Required', icon: DollarSign, color: 'text-trade-warning', bg: 'bg-orange-50' },
+          { label: 'Compliance', value: `${metrics.complianceScore}%`, sub: 'Import Health', icon: ShieldCheck, color: 'text-trade-success', bg: 'bg-green-50' },
+        ];
       case UserPersona.GOVERNMENT:
         return [
           { label: 'Total Exports', value: `$${metrics.totalExports}B`, sub: 'YTD 2024', icon: ArrowUpRight, color: 'text-trade-success', bg: 'bg-green-50' },
@@ -608,6 +616,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
           { label: 'Revenue', icon: Landmark, color: 'bg-trade-warning', desc: 'Collections', action: () => navigateTo(AppView.REGULATOR) },
           { label: 'SME Support', icon: Users, color: 'bg-purple-500', desc: 'Programs', action: () => navigateTo(AppView.MARKETPLACE) },
           { label: 'Reports', icon: FileText, color: 'bg-pink-500', desc: 'Generate', action: () => navigateTo(AppView.REGULATOR) },
+        ];
+      case UserPersona.IMPORTER:
+        return [
+          { label: 'New Import', icon: Plus, color: 'bg-trade-primary', desc: 'Create order', action: () => navigateTo(AppView.TRADE_LIFECYCLE) },
+          { label: 'Track Shipment', icon: Truck, color: 'bg-teal-600', desc: 'Live tracking', action: () => navigateTo(AppView.LOGISTICS) },
+          { label: 'Find Supplier', icon: Users, color: 'bg-trade-accent', desc: 'Source goods', action: () => navigateTo(AppView.MARKETPLACE) },
+          { label: 'Trade Finance', icon: Landmark, color: 'bg-purple-500', desc: 'L/C & Payments', action: () => navigateTo(AppView.TRADE_FINANCE) },
+          { label: 'Compliance', icon: ShieldCheck, color: 'bg-trade-success', desc: 'Check imports', action: () => navigateTo(AppView.COMPLIANCE) },
+          { label: 'Market Prices', icon: TrendingUp, color: 'bg-pink-500', desc: 'Live prices', action: () => navigateTo(AppView.MARKET_INTEL) },
         ];
       case UserPersona.LOGISTICS:
         return [
@@ -724,7 +741,108 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
       );
     }
 
-    // 2. Customs View: Quick Actions + Risk Screening Table
+    // 2. Importer View: Import Dashboard with supplier insights and order tracking
+    if (userRole === UserPersona.IMPORTER) {
+      return (
+        <div className="flex-1 flex flex-col gap-4 animate-fade-in">
+           {/* Importer Quick Actions */}
+           {renderQuickActionsGrid()}
+
+           <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
+             {/* Import Trends Chart */}
+             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-base font-heading font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-trade-accent" /> Import Trends
+                   </h3>
+                   <span className="text-[10px] bg-teal-100 text-teal-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" /> Live
+                   </span>
+                </div>
+                <div className="flex-1 min-h-[180px]">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={govExportData}>
+                         <defs>
+                            <linearGradient id="colorImports" x1="0" y1="0" x2="0" y2="1">
+                               <stop offset="5%" stopColor="#0d9488" stopOpacity={0.8}/>
+                               <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorAfcfta" x1="0" y1="0" x2="0" y2="1">
+                               <stop offset="5%" stopColor="#C9A24D" stopOpacity={0.6}/>
+                               <stop offset="95%" stopColor="#C9A24D" stopOpacity={0}/>
+                            </linearGradient>
+                         </defs>
+                         <XAxis dataKey="month" stroke="#94a3b8" fontSize={10} />
+                         <YAxis stroke="#94a3b8" fontSize={10} />
+                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                         <Tooltip contentStyle={{backgroundColor: '#0B1F33', border: 'none', borderRadius: '8px', color: 'white', fontSize: '12px'}} />
+                         <Area type="monotone" dataKey="imports" stroke="#0d9488" fillOpacity={1} fill="url(#colorImports)" name="AfCFTA Imports" />
+                         <Area type="monotone" dataKey="exports" stroke="#C9A24D" fillOpacity={1} fill="url(#colorAfcfta)" name="Int'l Tariff Imports" />
+                      </AreaChart>
+                   </ResponsiveContainer>
+                </div>
+                <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-gray-500">
+                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-500" /> AfCFTA Tariff</span>
+                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-trade-accent" /> International Tariff</span>
+                </div>
+             </div>
+
+             {/* Active Import Orders */}
+             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-5 flex flex-col">
+                <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-base font-heading font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-trade-primary" /> Active Import Orders
+                   </h3>
+                   <button onClick={() => navigateTo(AppView.TRADE_LIFECYCLE)} className="text-[10px] text-trade-primary hover:underline font-bold">View All</button>
+                </div>
+                <div className="space-y-2.5 flex-1 overflow-y-auto max-h-[260px]">
+                   {myTrades.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">
+                         <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                         <p className="text-sm">No import orders yet.</p>
+                         <button onClick={() => navigateTo(AppView.TRADE_LIFECYCLE)} className="text-trade-primary text-xs hover:underline mt-1">Create your first import order</button>
+                      </div>
+                   ) : myTrades.map(order => (
+                      <div key={order.id} onClick={() => navigateTo(AppView.TRADE_LIFECYCLE)} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-slate-700/30 border border-gray-200 dark:border-slate-700 hover:border-trade-primary/30 transition-colors cursor-pointer">
+                         <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${
+                               order.status === 'completed' ? 'bg-green-100 text-green-600' :
+                               order.status === 'pending_execution' ? 'bg-teal-100 text-teal-600' :
+                               order.status === 'paused' ? 'bg-red-100 text-red-600' :
+                               'bg-blue-100 text-blue-600'
+                            }`}>
+                               <Package className="w-4 h-4" />
+                            </div>
+                            <div>
+                               <p className="font-bold font-heading text-trade-primary dark:text-white text-sm">{order.product || 'Import Order'}</p>
+                               <p className="text-[10px] text-gray-500">From: {order.origin_country || 'Supplier'}</p>
+                            </div>
+                         </div>
+                         <div className="text-right">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                               order.status === 'completed' ? 'bg-green-100 text-green-700' :
+                               order.status === 'pending_execution' ? 'bg-teal-100 text-teal-700' :
+                               order.status === 'paused' ? 'bg-red-100 text-red-700' :
+                               order.status === 'pending_compliance' ? 'bg-yellow-100 text-yellow-700' :
+                               'bg-blue-100 text-blue-700'
+                            }`}>
+                               {order.status === 'pending_execution' ? 'in transit' :
+                                order.status === 'pending_compliance' ? 'pending' :
+                                order.status === 'pending_settlement' ? 'clearing' :
+                                order.status?.replace('_', ' ') || 'draft'}
+                            </span>
+                            <p className="text-[10px] text-gray-500 mt-0.5">${order.value?.toLocaleString() || '0'}</p>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             </div>
+           </div>
+        </div>
+      );
+    }
+
+    // 3. Customs View: Quick Actions + Risk Screening Table
     if (userRole === UserPersona.CUSTOMS) {
       return (
         <div className="flex-1 flex flex-col gap-4 animate-fade-in">
