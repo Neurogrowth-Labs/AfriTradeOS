@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   CheckCircle, 
   Briefcase, 
@@ -13,7 +13,25 @@ import {
   RefreshCw,
   Sliders,
   HelpCircle,
-  Info
+  Info,
+  Columns,
+  Upload,
+  Clock,
+  MessageSquare,
+  User,
+  Zap,
+  GripVertical,
+  Plus,
+  X,
+  FolderOpen,
+  Download,
+  Eye,
+  Package,
+  Leaf,
+  Shirt,
+  Box,
+  ChevronRight,
+  History
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
@@ -21,6 +39,58 @@ import { DbTrade } from '../types';
 
 type Step = 'create' | 'compliance' | 'execution' | 'settlement';
 type SystemStatus = 'nominal' | 'warning' | 'critical';
+type WorkspaceTab = 'workflow' | 'kanban' | 'documents' | 'timeline';
+
+// Kanban types
+interface KanbanCard {
+  id: string;
+  title: string;
+  product: string;
+  value: number;
+  destination: string;
+  priority: 'high' | 'medium' | 'low';
+  assignee?: string;
+}
+
+interface KanbanColumn {
+  id: string;
+  title: string;
+  color: string;
+  cards: KanbanCard[];
+}
+
+// Document types
+interface TradeDocument {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  status: 'verified' | 'pending' | 'rejected';
+}
+
+// Activity types
+interface ActivityEvent {
+  id: string;
+  user: string;
+  action: string;
+  detail: string;
+  timestamp: string;
+  type: 'trade' | 'compliance' | 'document' | 'finance' | 'system';
+}
+
+// Template types
+interface ProjectTemplate {
+  id: string;
+  name: string;
+  category: 'produce' | 'textiles' | 'goods';
+  icon: React.ElementType;
+  description: string;
+  fields: Partial<DbTrade>;
+  documents: string[];
+  estimatedDays: number;
+}
 
 // Simulator State
 interface ComplianceSim {
@@ -30,10 +100,161 @@ interface ComplianceSim {
   hsCode: string;
 }
 
+// Project Templates Data
+const PROJECT_TEMPLATES: ProjectTemplate[] = [
+  {
+    id: 'tpl_produce',
+    name: 'Fresh Produce Export',
+    category: 'produce',
+    icon: Leaf,
+    description: 'Pre-configured for perishable agricultural goods with cold chain requirements',
+    fields: { product: 'Fresh Produce', hs_code: '0709.93', origin_country: 'Kenya', destination_country: 'Egypt', currency: 'USD', incoterm: 'CIF' },
+    documents: ['Certificate of Origin', 'Phytosanitary Certificate', 'Cold Chain Log', 'Commercial Invoice', 'Packing List'],
+    estimatedDays: 14
+  },
+  {
+    id: 'tpl_textiles',
+    name: 'Textiles & Apparel',
+    category: 'textiles',
+    icon: Shirt,
+    description: 'Optimized for fabric and garment exports with AfCFTA tariff benefits',
+    fields: { product: 'Textiles', hs_code: '6109.10', origin_country: 'Ghana', destination_country: 'Nigeria', currency: 'USD', incoterm: 'FOB' },
+    documents: ['Certificate of Origin', 'Textile Certificate', 'Commercial Invoice', 'Bill of Lading', 'Insurance Certificate'],
+    estimatedDays: 21
+  },
+  {
+    id: 'tpl_goods',
+    name: 'General Manufactured Goods',
+    category: 'goods',
+    icon: Box,
+    description: 'Standard template for manufactured products and consumer goods',
+    fields: { product: 'Manufactured Goods', hs_code: '8471.30', origin_country: 'South Africa', destination_country: 'Kenya', currency: 'USD', incoterm: 'DDP' },
+    documents: ['Certificate of Origin', 'Commercial Invoice', 'Packing List', 'Bill of Lading', 'Customs Declaration'],
+    estimatedDays: 28
+  },
+  {
+    id: 'tpl_minerals',
+    name: 'Minerals & Raw Materials',
+    category: 'goods',
+    icon: Package,
+    description: 'For bulk mineral and raw material exports with special handling',
+    fields: { product: 'Raw Materials', hs_code: '2601.11', origin_country: 'Nigeria', destination_country: 'South Africa', currency: 'USD', incoterm: 'FOB' },
+    documents: ['Certificate of Origin', 'Mining License', 'Assay Certificate', 'Commercial Invoice', 'Bill of Lading'],
+    estimatedDays: 35
+  },
+];
+
 export const TradeLifecycle: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<Step>('create');
   const [loading, setLoading] = useState(false);
   const [systemStatus, setSystemStatus] = useState<SystemStatus>('nominal');
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('workflow');
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+
+  // Kanban state
+  const [kanbanColumns, setKanbanColumns] = useState<KanbanColumn[]>([
+    { id: 'draft', title: 'Draft', color: 'bg-gray-400', cards: [] },
+    { id: 'compliance', title: 'Compliance Review', color: 'bg-purple-500', cards: [] },
+    { id: 'execution', title: 'In Transit', color: 'bg-teal-500', cards: [] },
+    { id: 'settlement', title: 'Settlement', color: 'bg-amber-500', cards: [] },
+    { id: 'completed', title: 'Completed', color: 'bg-emerald-500', cards: [] },
+  ]);
+  const [draggedCard, setDraggedCard] = useState<{ cardId: string; fromCol: string } | null>(null);
+
+  // Document state
+  const [documents, setDocuments] = useState<TradeDocument[]>([
+    { id: 'doc_1', name: 'Certificate of Origin.pdf', type: 'PDF', size: '245 KB', uploadedBy: 'You', uploadedAt: '2 hours ago', status: 'verified' },
+    { id: 'doc_2', name: 'Commercial Invoice.pdf', type: 'PDF', size: '128 KB', uploadedBy: 'You', uploadedAt: '1 day ago', status: 'pending' },
+    { id: 'doc_3', name: 'Bill of Lading.pdf', type: 'PDF', size: '512 KB', uploadedBy: 'Logistics Partner', uploadedAt: '3 days ago', status: 'verified' },
+  ]);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // Activity timeline state
+  const [activities] = useState<ActivityEvent[]>([
+    { id: 'act_1', user: 'You', action: 'Created trade', detail: 'New Shea Butter export to Kenya initiated', timestamp: '2 hours ago', type: 'trade' },
+    { id: 'act_2', user: 'System', action: 'Compliance check started', detail: 'AfCFTA Rules of Origin analysis in progress', timestamp: '1 hour ago', type: 'compliance' },
+    { id: 'act_3', user: 'You', action: 'Uploaded document', detail: 'Certificate of Origin.pdf added to trade', timestamp: '45 min ago', type: 'document' },
+    { id: 'act_4', user: 'Bank Partner', action: 'Finance approved', detail: 'Letter of Credit issued for $25,000', timestamp: '30 min ago', type: 'finance' },
+    { id: 'act_5', user: 'System', action: 'Compliance passed', detail: 'Trade meets AfCFTA 40% value-add requirement', timestamp: '15 min ago', type: 'compliance' },
+    { id: 'act_6', user: 'Logistics', action: 'Shipment booked', detail: 'Maersk Line booking confirmed for Lagos-Mombasa', timestamp: '5 min ago', type: 'trade' },
+  ]);
+
+  // Load trades into Kanban on mount
+  useEffect(() => {
+    const loadKanban = async () => {
+      try {
+        const trades = await mockDatabase.getTrades();
+        const cols: KanbanColumn[] = [
+          { id: 'draft', title: 'Draft', color: 'bg-gray-400', cards: [] },
+          { id: 'compliance', title: 'Compliance Review', color: 'bg-purple-500', cards: [] },
+          { id: 'execution', title: 'In Transit', color: 'bg-teal-500', cards: [] },
+          { id: 'settlement', title: 'Settlement', color: 'bg-amber-500', cards: [] },
+          { id: 'completed', title: 'Completed', color: 'bg-emerald-500', cards: [] },
+        ];
+        trades.forEach(t => {
+          const card: KanbanCard = {
+            id: t.id,
+            title: `${t.product || 'Trade'} → ${t.destination_country || '?'}`,
+            product: t.product || 'General',
+            value: t.value || 0,
+            destination: t.destination_country || '',
+            priority: (t.value || 0) > 50000 ? 'high' : (t.value || 0) > 10000 ? 'medium' : 'low',
+          };
+          const colMap: Record<string, string> = { draft: 'draft', pending_compliance: 'compliance', pending_execution: 'execution', pending_settlement: 'settlement', completed: 'completed', paused: 'draft' };
+          const colId = colMap[t.status] || 'draft';
+          const col = cols.find(c => c.id === colId);
+          if (col) col.cards.push(card);
+        });
+        setKanbanColumns(cols);
+      } catch (e) { /* use defaults */ }
+    };
+    loadKanban();
+  }, []);
+
+  // Kanban drag handlers
+  const handleDragStart = (cardId: string, fromCol: string) => setDraggedCard({ cardId, fromCol });
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDrop = (toCol: string) => {
+    if (!draggedCard || draggedCard.fromCol === toCol) { setDraggedCard(null); return; }
+    setKanbanColumns(prev => {
+      const updated = prev.map(col => ({ ...col, cards: [...col.cards] }));
+      const fromIdx = updated.findIndex(c => c.id === draggedCard.fromCol);
+      const toIdx = updated.findIndex(c => c.id === toCol);
+      const cardIdx = updated[fromIdx].cards.findIndex(c => c.id === draggedCard.cardId);
+      if (cardIdx === -1) return prev;
+      const [card] = updated[fromIdx].cards.splice(cardIdx, 1);
+      updated[toIdx].cards.push(card);
+      return updated;
+    });
+    setDraggedCard(null);
+  };
+
+  // Document drop handler
+  const handleDocDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const newDocs: TradeDocument[] = Array.from(files).map((f, i) => ({
+        id: `doc_new_${Date.now()}_${i}`,
+        name: f.name,
+        type: f.name.split('.').pop()?.toUpperCase() || 'FILE',
+        size: `${(f.size / 1024).toFixed(0)} KB`,
+        uploadedBy: 'You',
+        uploadedAt: 'Just now',
+        status: 'pending' as const,
+      }));
+      setDocuments(prev => [...newDocs, ...prev]);
+    }
+  }, []);
+
+  // Apply template
+  const applyTemplate = (template: ProjectTemplate) => {
+    setTradeData(prev => ({ ...prev, ...template.fields, status: 'draft' }));
+    setShowTemplateModal(false);
+    setWorkspaceTab('workflow');
+    setCurrentStep('create');
+  };
   
   // Mapping UI State to Supabase DB Trade Structure
   const [tradeData, setTradeData] = useState<Partial<DbTrade>>({
@@ -180,9 +401,250 @@ export const TradeLifecycle: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
+    <div className="h-full flex flex-col gap-4 animate-fade-in pb-6">
       
-      {/* Visual Progress Bar (Top) */}
+      {/* Workspace Tab Bar */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-2 flex items-center justify-between">
+        <div className="flex gap-1">
+          {[
+            { id: 'workflow' as WorkspaceTab, label: 'Workflow', icon: Briefcase },
+            { id: 'kanban' as WorkspaceTab, label: 'Kanban Board', icon: Columns },
+            { id: 'documents' as WorkspaceTab, label: 'Documents', icon: FolderOpen },
+            { id: 'timeline' as WorkspaceTab, label: 'Activity', icon: History },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setWorkspaceTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                workspaceTab === tab.id
+                  ? 'bg-trade-primary text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              <span className="hidden md:inline">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowTemplateModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-trade-accent/10 hover:bg-trade-accent/20 text-trade-accent rounded-lg text-sm font-bold transition-colors"
+        >
+          <Zap className="w-4 h-4" /> Templates
+        </button>
+      </div>
+
+      {/* A5: KANBAN BOARD */}
+      {workspaceTab === 'kanban' && (
+        <div className="flex-1 flex gap-4 overflow-x-auto pb-4 min-h-0">
+          {kanbanColumns.map(col => (
+            <div
+              key={col.id}
+              className="flex-shrink-0 w-64 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col overflow-hidden"
+              onDragOver={handleDragOver}
+              onDrop={() => handleDrop(col.id)}
+            >
+              <div className="p-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
+                  <span className="text-sm font-bold text-gray-800 dark:text-white">{col.title}</span>
+                </div>
+                <span className="text-xs bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-full font-bold">{col.cards.length}</span>
+              </div>
+              <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                {col.cards.map(card => (
+                  <div
+                    key={card.id}
+                    draggable
+                    onDragStart={() => handleDragStart(card.id, col.id)}
+                    className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-white leading-tight">{card.title}</p>
+                      <GripVertical className="w-3.5 h-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500 font-mono">${card.value.toLocaleString()}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                        card.priority === 'high' ? 'bg-red-100 text-red-700' :
+                        card.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                      }`}>{card.priority}</span>
+                    </div>
+                  </div>
+                ))}
+                {col.cards.length === 0 && (
+                  <div className="text-center py-6 text-gray-400 text-xs">
+                    Drop trades here
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* A6: DOCUMENT SHARING */}
+      {workspaceTab === 'documents' && (
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
+          {/* Drop Zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDocDrop}
+            className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+              isDragOver
+                ? 'border-trade-primary bg-trade-primary/5 scale-[1.01]'
+                : 'border-gray-300 dark:border-slate-600 hover:border-trade-primary/50'
+            }`}
+          >
+            <Upload className={`w-10 h-10 mx-auto mb-3 ${isDragOver ? 'text-trade-primary' : 'text-gray-400'}`} />
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
+              {isDragOver ? 'Drop files here!' : 'Drag & drop trade documents here'}
+            </p>
+            <p className="text-xs text-gray-400 mt-1">PDF, DOCX, PNG, JPG up to 10MB</p>
+          </div>
+
+          {/* Document List */}
+          <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-trade-secondary" /> Trade Documents
+              </h3>
+              <span className="text-xs text-gray-500">{documents.length} files</span>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-slate-700 overflow-y-auto max-h-[400px]">
+              {documents.map(doc => (
+                <div key={doc.id} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${
+                      doc.status === 'verified' ? 'bg-green-100 text-green-600' :
+                      doc.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                    }`}>
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800 dark:text-white">{doc.name}</p>
+                      <p className="text-xs text-gray-500">{doc.size} &middot; {doc.uploadedBy} &middot; {doc.uploadedAt}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      doc.status === 'verified' ? 'bg-green-100 text-green-700' :
+                      doc.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                    }`}>{doc.status}</span>
+                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    </button>
+                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                      <Download className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* A7: ACTIVITY TIMELINE */}
+      {workspaceTab === 'timeline' && (
+        <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <h3 className="font-bold text-gray-800 dark:text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-trade-secondary" /> Activity Timeline
+            </h3>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" /> Live
+            </span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5">
+            <div className="relative">
+              <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-slate-700" />
+              {activities.map((event, i) => {
+                const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
+                  trade: { icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-100' },
+                  compliance: { icon: ShieldCheck, color: 'text-purple-600', bg: 'bg-purple-100' },
+                  document: { icon: FileText, color: 'text-amber-600', bg: 'bg-amber-100' },
+                  finance: { icon: CreditCard, color: 'text-green-600', bg: 'bg-green-100' },
+                  system: { icon: Zap, color: 'text-gray-600', bg: 'bg-gray-100' },
+                };
+                const config = typeConfig[event.type] || typeConfig.system;
+                const EventIcon = config.icon;
+                return (
+                  <div key={event.id} className="relative flex items-start gap-4 mb-6 last:mb-0 ml-1">
+                    <div className={`relative z-10 p-2 rounded-full ${config.bg} dark:bg-slate-700 shrink-0`}>
+                      <EventIcon className={`w-4 h-4 ${config.color}`} />
+                    </div>
+                    <div className="flex-1 bg-gray-50 dark:bg-slate-700/30 rounded-lg p-3 border border-gray-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-bold text-gray-800 dark:text-white">{event.action}</span>
+                        <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {event.timestamp}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{event.detail}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <User className="w-3 h-3 text-gray-400" />
+                        <span className="text-[10px] text-gray-400">{event.user}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* A8: TEMPLATE MODAL */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                  <Package className="w-5 h-5" /> Export Project Templates
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">Start with a pre-configured template for faster setup</p>
+              </div>
+              <button onClick={() => setShowTemplateModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh] grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PROJECT_TEMPLATES.map(tpl => (
+                <button
+                  key={tpl.id}
+                  onClick={() => applyTemplate(tpl)}
+                  className="text-left p-5 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-trade-primary dark:hover:border-trade-primary hover:shadow-lg transition-all group"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className={`p-2.5 rounded-lg ${
+                      tpl.category === 'produce' ? 'bg-green-100 text-green-600' :
+                      tpl.category === 'textiles' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                    } group-hover:scale-110 transition-transform`}>
+                      <tpl.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800 dark:text-white">{tpl.name}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">{tpl.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-400 pt-3 border-t border-gray-100 dark:border-slate-700">
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> ~{tpl.estimatedDays} days</span>
+                    <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {tpl.documents.length} docs</span>
+                    <ChevronRight className="w-4 h-4 ml-auto text-gray-300 group-hover:text-trade-primary transition-colors" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WORKFLOW TAB (Original content) */}
+      {workspaceTab === 'workflow' && (<>
+      {/* Visual Progress Bar */}
       <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
         <div 
             className={`h-full transition-all duration-500 ease-out ${
@@ -637,6 +1099,7 @@ export const TradeLifecycle: React.FC = () => {
             )}
         </div>
       </div>
+      </>)}
     </div>
   );
 };

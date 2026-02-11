@@ -9,7 +9,12 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip 
+  Tooltip,
+  LineChart,
+  Line,
+  Legend,
+  Area,
+  AreaChart
 } from 'recharts';
 import { 
   Landmark, 
@@ -22,10 +27,50 @@ import {
   Loader2,
   Plus,
   X,
-  DollarSign
+  DollarSign,
+  Calculator,
+  Shield,
+  AlertTriangle,
+  TrendingDown,
+  Percent,
+  Info,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbFinanceRequest } from '../types';
+
+// FX Rate data types
+interface FXRate {
+  pair: string;
+  rate: number;
+  change: number;
+  changePercent: number;
+  history: { time: string; rate: number }[];
+}
+
+// Tariff calculator types
+interface TariffResult {
+  cif: number;
+  duty: number;
+  dutyRate: number;
+  vat: number;
+  vatRate: number;
+  afcftaDiscount: number;
+  totalTax: number;
+  totalLanded: number;
+}
+
+// Hedging suggestion types
+interface HedgingSuggestion {
+  id: string;
+  type: 'forward' | 'option' | 'swap';
+  pair: string;
+  description: string;
+  savings: string;
+  risk: 'low' | 'medium' | 'high';
+  term: string;
+}
 
 interface ReadinessBreakdown {
   label: string;
@@ -57,8 +102,24 @@ const FALLBACK_FUNDING_OPTIONS: Financier[] = [
   { id: 'opt_3', name: 'Allianz', type: 'Insurer', product: 'Credit Insurance', interest_rate: 0.9, term: 'Annual', min_score: 60, logo_initial: 'AL' },
 ];
 
+// Mock FX rates data
+const MOCK_FX_RATES: FXRate[] = [
+  { pair: 'USD/NGN', rate: 1550.25, change: -12.50, changePercent: -0.80, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 1530 + Math.sin(i * 0.3) * 40 + Math.random() * 20 })) },
+  { pair: 'USD/KES', rate: 129.45, change: 0.85, changePercent: 0.66, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 127 + Math.sin(i * 0.2) * 3 + Math.random() * 2 })) },
+  { pair: 'USD/ZAR', rate: 18.72, change: -0.15, changePercent: -0.80, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 18.2 + Math.sin(i * 0.25) * 0.8 + Math.random() * 0.3 })) },
+  { pair: 'USD/GHS', rate: 15.80, change: 0.22, changePercent: 1.41, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 15.3 + Math.sin(i * 0.15) * 0.6 + Math.random() * 0.2 })) },
+  { pair: 'USD/EGP', rate: 50.85, change: -0.35, changePercent: -0.68, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 49.5 + Math.sin(i * 0.18) * 1.5 + Math.random() * 0.5 })) },
+];
+
+const MOCK_HEDGING: HedgingSuggestion[] = [
+  { id: 'h1', type: 'forward', pair: 'USD/NGN', description: 'Lock in current rate of 1,550.25 for 90 days to protect against Naira depreciation', savings: '$4,200', risk: 'low', term: '90 days' },
+  { id: 'h2', type: 'option', pair: 'USD/KES', description: 'Buy a put option at 130 KES strike for downside protection with upside flexibility', savings: '$1,800', risk: 'medium', term: '60 days' },
+  { id: 'h3', type: 'swap', pair: 'USD/ZAR', description: 'Currency swap arrangement for recurring ZAR payments, reducing transaction costs', savings: '$3,500', risk: 'low', term: '180 days' },
+  { id: 'h4', type: 'forward', pair: 'USD/GHS', description: 'Forward contract to hedge Cedi exposure on pending cocoa export payments', savings: '$2,100', risk: 'medium', term: '120 days' },
+];
+
 export const TradeFinance: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'options' | 'applications'>('options');
+  const [activeTab, setActiveTab] = useState<'options' | 'applications' | 'fx_rates' | 'calculator' | 'hedging'>('options');
   const [applications, setApplications] = useState<DbFinanceRequest[]>([]);
   const [financiers, setFinanciers] = useState<Financier[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +134,27 @@ export const TradeFinance: React.FC = () => {
   const [readinessBreakdown, setReadinessBreakdown] = useState<ReadinessBreakdown[]>([]);
   const [countryRisks, setCountryRisks] = useState<CountryRisk[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
+
+  // FX & Calculator state
+  const [selectedFXPair, setSelectedFXPair] = useState<FXRate>(MOCK_FX_RATES[0]);
+  const [calcForm, setCalcForm] = useState({ cifValue: 10000, hsCode: '0709.93', origin: 'Ghana', destination: 'Kenya', isAfcfta: true });
+  const [calcResult, setCalcResult] = useState<TariffResult | null>(null);
+
+  // Calculate tariff
+  const calculateTariff = () => {
+    const dutyRate = calcForm.isAfcfta ? 0 : 20; // AfCFTA = 0% duty
+    const vatRate = calcForm.destination === 'Kenya' ? 16 : calcForm.destination === 'Nigeria' ? 7.5 : calcForm.destination === 'South Africa' ? 15 : calcForm.destination === 'Egypt' ? 14 : 15;
+    const duty = (calcForm.cifValue * dutyRate) / 100;
+    const vat = ((calcForm.cifValue + duty) * vatRate) / 100;
+    const afcftaDiscount = calcForm.isAfcfta ? (calcForm.cifValue * 20) / 100 : 0;
+    setCalcResult({
+      cif: calcForm.cifValue,
+      duty, dutyRate, vat, vatRate,
+      afcftaDiscount,
+      totalTax: duty + vat,
+      totalLanded: calcForm.cifValue + duty + vat,
+    });
+  };
 
   // Load financiers and metrics on mount
   useEffect(() => {
@@ -303,25 +385,280 @@ export const TradeFinance: React.FC = () => {
            </div>
         </div>
 
-        {/* Right Column: Funding Marketplace */}
+        {/* Right Column: Funding Marketplace + New Tabs */}
         <div className="lg:col-span-8 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-           <div className="flex border-b border-gray-100 dark:border-slate-700">
-              <button 
-                 onClick={() => setActiveTab('options')}
-                 className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === 'options' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-              >
-                 Available Funding
-              </button>
-              <button 
-                 onClick={() => setActiveTab('applications')}
-                 className={`flex-1 py-4 text-sm font-bold transition-colors ${activeTab === 'applications' ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-              >
-                 Application Status
-              </button>
+           <div className="flex border-b border-gray-100 dark:border-slate-700 overflow-x-auto">
+              {[
+                { id: 'options' as const, label: 'Funding', icon: Landmark },
+                { id: 'applications' as const, label: 'Applications', icon: FileCheck },
+                { id: 'fx_rates' as const, label: 'FX Rates', icon: TrendingUp },
+                { id: 'calculator' as const, label: 'Calculator', icon: Calculator },
+                { id: 'hedging' as const, label: 'Hedging', icon: Shield },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold transition-colors whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10'
+                      : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+                </button>
+              ))}
            </div>
 
            <div className="p-6 flex-1 overflow-y-auto">
-              {activeTab === 'options' ? (
+
+              {/* A9: FX RATES CHARTS */}
+              {activeTab === 'fx_rates' && (
+                <div className="space-y-6">
+                  {/* Rate Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {MOCK_FX_RATES.map(fx => (
+                      <button
+                        key={fx.pair}
+                        onClick={() => setSelectedFXPair(fx)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          selectedFXPair.pair === fx.pair
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500'
+                            : 'border-gray-200 dark:border-slate-700 hover:border-indigo-300'
+                        }`}
+                      >
+                        <p className="text-[10px] font-bold text-gray-500 uppercase">{fx.pair}</p>
+                        <p className="text-lg font-black text-gray-900 dark:text-white">{fx.rate.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                        <p className={`text-xs font-bold flex items-center gap-1 ${fx.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {fx.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {fx.change >= 0 ? '+' : ''}{fx.changePercent.toFixed(2)}%
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Selected Chart */}
+                  <div className="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-900 dark:text-white">{selectedFXPair.pair}</h4>
+                        <p className="text-xs text-gray-500">30-Day Historical Chart</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black text-gray-900 dark:text-white">{selectedFXPair.rate.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                        <p className={`text-xs font-bold ${selectedFXPair.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {selectedFXPair.change >= 0 ? '+' : ''}{selectedFXPair.change.toFixed(2)} ({selectedFXPair.changePercent.toFixed(2)}%)
+                        </p>
+                      </div>
+                    </div>
+                    <div className="h-64">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={selectedFXPair.history}>
+                          <defs>
+                            <linearGradient id="fxGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
+                          <XAxis dataKey="time" tick={{fontSize: 9}} stroke="#94a3b8" />
+                          <YAxis tick={{fontSize: 10}} stroke="#94a3b8" domain={['auto', 'auto']} />
+                          <Tooltip contentStyle={{backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px'}} />
+                          <Area type="monotone" dataKey="rate" stroke="#6366f1" fill="url(#fxGrad)" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* A10: TARIFF/VAT/AfCFTA CALCULATOR */}
+              {activeTab === 'calculator' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Calculator Form */}
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Calculator className="w-5 h-5 text-indigo-500" /> Tariff & Tax Calculator
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">CIF Value (USD)</label>
+                        <input
+                          type="number"
+                          value={calcForm.cifValue}
+                          onChange={(e) => setCalcForm(prev => ({ ...prev, cifValue: parseFloat(e.target.value) || 0 }))}
+                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">HS Code</label>
+                        <input
+                          type="text"
+                          value={calcForm.hsCode}
+                          onChange={(e) => setCalcForm(prev => ({ ...prev, hsCode: e.target.value }))}
+                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
+                          placeholder="####.##"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Origin</label>
+                          <select
+                            value={calcForm.origin}
+                            onChange={(e) => setCalcForm(prev => ({ ...prev, origin: e.target.value }))}
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none"
+                          >
+                            {['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'Egypt'].map(c => <option key={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Destination</label>
+                          <select
+                            value={calcForm.destination}
+                            onChange={(e) => setCalcForm(prev => ({ ...prev, destination: e.target.value }))}
+                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none"
+                          >
+                            {['Kenya', 'Nigeria', 'South Africa', 'Egypt', 'Ghana'].map(c => <option key={c}>{c}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-slate-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={calcForm.isAfcfta}
+                          onChange={(e) => setCalcForm(prev => ({ ...prev, isAfcfta: e.target.checked }))}
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <div>
+                          <span className="text-sm font-bold text-gray-800 dark:text-white">AfCFTA Preferential Tariff</span>
+                          <p className="text-[10px] text-gray-500">Apply 0% duty under African Continental Free Trade Area</p>
+                        </div>
+                      </label>
+                      <button
+                        onClick={calculateTariff}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Calculator className="w-4 h-4" /> Calculate
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Results */}
+                  <div>
+                    {calcResult ? (
+                      <div className="space-y-4">
+                        <h3 className="font-bold text-gray-900 dark:text-white">Cost Breakdown</h3>
+                        <div className="space-y-2">
+                          {[
+                            { label: 'CIF Value', value: calcResult.cif, color: 'text-gray-900' },
+                            { label: `Import Duty (${calcResult.dutyRate}%)`, value: calcResult.duty, color: calcResult.duty === 0 ? 'text-green-600' : 'text-red-600' },
+                            { label: `VAT (${calcResult.vatRate}%)`, value: calcResult.vat, color: 'text-amber-600' },
+                          ].map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg">
+                              <span className="text-sm text-gray-600 dark:text-gray-400">{item.label}</span>
+                              <span className={`font-bold font-mono ${item.color} dark:text-white`}>${item.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {calcResult.afcftaDiscount > 0 && (
+                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900/30 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <span className="text-sm font-medium text-green-800 dark:text-green-300">AfCFTA Savings</span>
+                            </div>
+                            <span className="font-bold font-mono text-green-700 dark:text-green-400">-${calcResult.afcftaDiscount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                          </div>
+                        )}
+                        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-900/30">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-indigo-900 dark:text-indigo-300">Total Landed Cost</span>
+                            <span className="text-2xl font-black font-mono text-indigo-700 dark:text-indigo-400">${calcResult.totalLanded.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                          </div>
+                          <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">Total taxes: ${calcResult.totalTax.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-full flex flex-col items-center justify-center text-gray-400 py-12">
+                        <Calculator className="w-16 h-16 mb-4 opacity-20" />
+                        <p className="text-sm">Enter trade details and click Calculate</p>
+                        <p className="text-xs mt-1">to see the full cost breakdown</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* A11: CURRENCY HEDGING SUGGESTIONS */}
+              {activeTab === 'hedging' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-indigo-500" /> AI Hedging Recommendations
+                    </h3>
+                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> AI-Powered
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500">Based on your trade portfolio exposure and current FX volatility</p>
+                  <div className="space-y-3">
+                    {MOCK_HEDGING.map(h => (
+                      <div key={h.id} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 transition-all">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${
+                              h.type === 'forward' ? 'bg-blue-100 text-blue-600' :
+                              h.type === 'option' ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'
+                            }`}>
+                              {h.type === 'forward' ? <ArrowRight className="w-4 h-4" /> :
+                               h.type === 'option' ? <Shield className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900 dark:text-white capitalize">{h.type} Contract</h4>
+                              <span className="text-xs text-gray-500">{h.pair} &middot; {h.term}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-lg font-bold text-green-600">{h.savings}</span>
+                            <p className="text-[10px] text-gray-400">Est. savings</p>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{h.description}</p>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            h.risk === 'low' ? 'bg-green-100 text-green-700' :
+                            h.risk === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                          }`}>Risk: {h.risk}</span>
+                          <button className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
+                            Apply Strategy <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Portfolio Summary */}
+                  <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700">
+                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <Info className="w-4 h-4" /> Portfolio FX Exposure Summary
+                    </h4>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-xs text-gray-500">Total Exposure</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">$124,500</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Hedged</p>
+                        <p className="text-lg font-bold text-green-600">$45,200</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Unhedged</p>
+                        <p className="text-lg font-bold text-red-600">$79,300</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'options' && (
                  <div className="grid grid-cols-1 gap-4">
                     {loadingFinanciers ? (
                       <div className="text-center py-10"><Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" /></div>
@@ -371,7 +708,9 @@ export const TradeFinance: React.FC = () => {
                        </div>
                     ))}
                  </div>
-              ) : (
+              )}
+
+              {activeTab === 'applications' && (
                  <div className="space-y-4">
                     {loading ? (
                         <div className="text-center py-10"><Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" /></div>

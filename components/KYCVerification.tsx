@@ -15,7 +15,12 @@ import {
   Trash2,
   RefreshCw,
   ChevronRight,
-  Info
+  Info,
+  ArrowLeft,
+  ChevronDown,
+  Check,
+  Fingerprint,
+  ScanLine
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -61,6 +66,10 @@ export const KYCVerification: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
+  // B12: Interactive verification flow
+  const [wizardStep, setWizardStep] = useState(0); // 0 = overview, 1-N = document steps, N+1 = review, N+2 = submit
+  const [showWizard, setShowWizard] = useState(false);
+  const [dragOver, setDragOver] = useState<string | null>(null);
 
   useEffect(() => {
     fetchKYCStatus();
@@ -405,16 +414,212 @@ export const KYCVerification: React.FC = () => {
         onChange={handleFileUpload}
       />
 
-      {/* Submit Button */}
-      {canSubmit && (
-        <div className="flex justify-end">
+      {/* Submit Button + Wizard Launch */}
+      <div className="flex justify-between items-center">
+        {!showWizard && (
+          <button onClick={() => { setShowWizard(true); setWizardStep(0); }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors">
+            <ScanLine className="w-5 h-5" /> Start Guided Verification
+          </button>
+        )}
+        {canSubmit && (
           <button
             onClick={handleSubmitForReview}
-            className="flex items-center gap-2 px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+            className="flex items-center gap-2 px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors ml-auto"
           >
             Submit for Verification
             <ChevronRight className="w-5 h-5" />
           </button>
+        )}
+      </div>
+
+      {/* B12: INTERACTIVE VERIFICATION WIZARD */}
+      {showWizard && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Wizard Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                  <Fingerprint className="w-5 h-5 text-indigo-500" /> Verification Wizard
+                </h2>
+                <button onClick={() => setShowWizard(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <XCircle className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              {/* Step Progress */}
+              <div className="flex items-center gap-1">
+                {['Type', ...requiredDocs.map(d => d.label.split(' ')[0]), 'Review'].map((label, idx) => (
+                  <React.Fragment key={idx}>
+                    <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold transition-all ${
+                      wizardStep > idx ? 'bg-green-500 text-white' :
+                      wizardStep === idx ? 'bg-indigo-600 text-white' :
+                      'bg-gray-200 dark:bg-slate-700 text-gray-500'
+                    }`}>
+                      {wizardStep > idx ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                    </div>
+                    {idx < requiredDocs.length + 1 && <div className={`flex-1 h-1 rounded ${wizardStep > idx ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'}`} />}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Wizard Content */}
+            <div className="p-6">
+              {/* Step 0: Choose Verification Type */}
+              {wizardStep === 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-900 dark:text-white">Select Verification Type</h3>
+                  <p className="text-sm text-gray-500">Choose whether you are verifying as an individual or a business entity.</p>
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <button onClick={() => { setVerificationType('individual'); setWizardStep(1); }}
+                      className={`p-5 rounded-xl border-2 text-center transition-all hover:border-indigo-500 ${
+                        verificationType === 'individual' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-slate-700'
+                      }`}>
+                      <User className="w-8 h-8 mx-auto mb-2 text-indigo-600" />
+                      <h4 className="font-bold text-gray-900 dark:text-white">Individual</h4>
+                      <p className="text-[10px] text-gray-500 mt-1">KYC for personal accounts</p>
+                    </button>
+                    <button onClick={() => { setVerificationType('business'); setWizardStep(1); }}
+                      className={`p-5 rounded-xl border-2 text-center transition-all hover:border-indigo-500 ${
+                        verificationType === 'business' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-slate-700'
+                      }`}>
+                      <Building className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                      <h4 className="font-bold text-gray-900 dark:text-white">Business</h4>
+                      <p className="text-[10px] text-gray-500 mt-1">KYB for registered companies</p>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Steps 1-N: Document Upload for each required doc */}
+              {wizardStep > 0 && wizardStep <= requiredDocs.length && (() => {
+                const docIdx = wizardStep - 1;
+                const doc = requiredDocs[docIdx];
+                const uploadedDoc = getDocumentForType(doc.type);
+                const isUploading = uploading === doc.type;
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                        <FileText className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 dark:text-white">{doc.label}</h3>
+                        <p className="text-sm text-gray-500">{doc.description}</p>
+                      </div>
+                    </div>
+
+                    {uploadedDoc ? (
+                      <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-900/30">
+                        <div className="flex items-center gap-3">
+                          <CheckCircle className="w-6 h-6 text-green-600" />
+                          <div>
+                            <p className="font-bold text-green-800 dark:text-green-300">Document Uploaded</p>
+                            <p className="text-xs text-green-600">{uploadedDoc.file_name}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(doc.type); }}
+                        onDragLeave={() => setDragOver(null)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setDragOver(null);
+                          const file = e.dataTransfer.files[0];
+                          if (file) {
+                            setSelectedDocType(doc.type);
+                            const dt = new DataTransfer();
+                            dt.items.add(file);
+                            if (fileInputRef.current) {
+                              fileInputRef.current.files = dt.files;
+                              fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                          }
+                        }}
+                        className={`p-8 border-2 border-dashed rounded-xl text-center transition-all cursor-pointer ${
+                          dragOver === doc.type ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-300 dark:border-slate-600 hover:border-indigo-400'
+                        }`}
+                        onClick={() => handleFileSelect(doc.type)}
+                      >
+                        {isUploading ? (
+                          <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto" />
+                        ) : (
+                          <>
+                            <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                            <p className="font-bold text-gray-700 dark:text-gray-300">Drag & drop or click to upload</p>
+                            <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG (max 10MB)</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg flex items-start gap-2">
+                      <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Ensure the document is clear, unedited, and matches your registered details. Blurry or expired documents will be rejected.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Final Step: Review */}
+              {wizardStep === requiredDocs.length + 1 && (
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" /> Review & Submit
+                  </h3>
+                  <p className="text-sm text-gray-500">Review your uploaded documents before submitting for verification.</p>
+                  <div className="space-y-3 mt-4">
+                    {requiredDocs.map(doc => {
+                      const uploaded = getDocumentForType(doc.type);
+                      return (
+                        <div key={doc.type} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${uploaded ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                              {uploaded ? <Check className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900 dark:text-white">{doc.label}</p>
+                              <p className="text-[10px] text-gray-500">{uploaded ? uploaded.file_name : 'Not uploaded'}</p>
+                            </div>
+                          </div>
+                          {uploaded ? (
+                            <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Ready</span>
+                          ) : (
+                            <button onClick={() => setWizardStep(requiredDocs.indexOf(doc) + 1)}
+                              className="text-xs text-indigo-600 font-bold hover:underline">Upload</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {allDocsUploaded && (
+                    <button onClick={() => { handleSubmitForReview(); setShowWizard(false); }}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors mt-4">
+                      <Shield className="w-5 h-5" /> Submit for Verification
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Wizard Footer */}
+            <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-between">
+              <button onClick={() => wizardStep > 0 ? setWizardStep(wizardStep - 1) : setShowWizard(false)}
+                className="flex items-center gap-1 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium">
+                <ArrowLeft className="w-4 h-4" /> {wizardStep > 0 ? 'Back' : 'Close'}
+              </button>
+              {wizardStep < requiredDocs.length + 1 && wizardStep > 0 && (
+                <button onClick={() => setWizardStep(wizardStep + 1)}
+                  className="flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">
+                  {getDocumentForType(requiredDocs[wizardStep - 1]?.type) ? 'Next' : 'Skip'} <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

@@ -37,6 +37,7 @@ import {
   FileDown
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 
 // Types
 interface Contract {
@@ -104,6 +105,8 @@ interface ContractFormData {
   late_delivery_penalty: number;
   buyer_org_id: string;
   seller_org_id: string;
+  buyer_org_name: string;
+  seller_org_name: string;
 }
 
 const INCOTERMS = ['EXW', 'FCA', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP', 'FAS', 'FOB', 'CFR', 'CIF'];
@@ -120,14 +123,17 @@ export const SmartContracts: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [selectedMilestones, setSelectedMilestones] = useState<Milestone[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'milestones' | 'documents' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'milestones' | 'documents' | 'activity' | 'versions' | 'analytics'>('overview');
   const [createStep, setCreateStep] = useState(1);
   const [showSignModal, setShowSignModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [signatureData, setSignatureData] = useState({ name: '', title: '', agreed: false });
   const [shareData, setShareData] = useState({ email: '', method: 'email' as 'email' | 'platform' });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [formData, setFormData] = useState<ContractFormData>({
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingContractId, setEditingContractId] = useState<string | null>(null);
+
+  const defaultFormData: ContractFormData = {
     title: '',
     description: '',
     template_id: '',
@@ -144,146 +150,35 @@ export const SmartContracts: React.FC = () => {
     delivery_deadline: '',
     late_delivery_penalty: 0,
     buyer_org_id: '',
-    seller_org_id: ''
-  });
+    seller_org_id: '',
+    buyer_org_name: '',
+    seller_org_name: ''
+  };
+  const [formData, setFormData] = useState<ContractFormData>(defaultFormData);
 
-  // Mock data for demo
-  const mockContracts: Contract[] = [
-    {
-      id: '1',
-      contract_number: 'CTR-20241201-abc12345',
-      title: 'Cocoa Beans Export Agreement',
-      description: 'Annual supply contract for premium cocoa beans from Ghana to Netherlands',
-      status: 'active',
-      category: 'agriculture',
-      commodity: 'Cocoa Beans',
-      quantity: 500,
-      unit: 'tons',
-      unit_price: 2800,
-      total_value: 1400000,
-      currency: 'USD',
-      incoterms: 'FOB',
-      effective_date: '2024-01-01',
-      expiry_date: '2024-12-31',
-      delivery_deadline: '2024-06-30',
-      buyer_org_name: 'European Chocolate Co.',
-      seller_org_name: 'Ghana Cocoa Board',
-      buyer_signed_at: '2024-01-05T10:00:00Z',
-      seller_signed_at: '2024-01-03T14:30:00Z',
-      milestones_count: 5,
-      completed_milestones: 3,
-      created_at: '2024-01-01'
-    },
-    {
-      id: '2',
-      contract_number: 'CTR-20241115-def67890',
-      title: 'Shea Butter Supply Contract',
-      description: 'Organic shea butter supply for cosmetics manufacturing',
-      status: 'pending_approval',
-      category: 'agriculture',
-      commodity: 'Shea Butter',
-      quantity: 200,
-      unit: 'tons',
-      unit_price: 1500,
-      total_value: 300000,
-      currency: 'USD',
-      incoterms: 'CIF',
-      effective_date: '2024-02-01',
-      expiry_date: '2024-08-31',
-      delivery_deadline: '2024-04-30',
-      buyer_org_name: 'L\'Oreal Africa',
-      seller_org_name: 'Burkina Shea Cooperative',
-      buyer_signed_at: null,
-      seller_signed_at: '2024-01-20T09:00:00Z',
-      milestones_count: 4,
-      completed_milestones: 0,
-      created_at: '2024-01-15'
-    },
-    {
-      id: '3',
-      contract_number: 'CTR-20241010-ghi11223',
-      title: 'Coffee Export Agreement - Kenya',
-      description: 'Premium Arabica coffee beans export to UAE',
-      status: 'in_progress',
-      category: 'agriculture',
-      commodity: 'Coffee Beans',
-      quantity: 100,
-      unit: 'tons',
-      unit_price: 4500,
-      total_value: 450000,
-      currency: 'USD',
-      incoterms: 'FOB',
-      effective_date: '2024-01-15',
-      expiry_date: '2024-07-15',
-      delivery_deadline: '2024-05-15',
-      buyer_org_name: 'Dubai Coffee Trading',
-      seller_org_name: 'Kenya Coffee Exporters',
-      buyer_signed_at: '2024-01-18T11:00:00Z',
-      seller_signed_at: '2024-01-16T16:00:00Z',
-      milestones_count: 6,
-      completed_milestones: 4,
-      created_at: '2024-01-10'
-    },
-    {
-      id: '4',
-      contract_number: 'CTR-20240905-jkl44556',
-      title: 'Textile Manufacturing Agreement',
-      description: 'Cotton textile supply for garment manufacturing',
-      status: 'completed',
-      category: 'manufacturing',
-      commodity: 'Cotton Textiles',
-      quantity: 50000,
-      unit: 'units',
-      unit_price: 12,
-      total_value: 600000,
-      currency: 'USD',
-      incoterms: 'DAP',
-      effective_date: '2024-09-01',
-      expiry_date: '2024-11-30',
-      delivery_deadline: '2024-11-15',
-      buyer_org_name: 'Ethiopian Garments Ltd',
-      seller_org_name: 'Nigeria Textile Mills',
-      buyer_signed_at: '2024-09-03T10:00:00Z',
-      seller_signed_at: '2024-09-02T14:00:00Z',
-      milestones_count: 4,
-      completed_milestones: 4,
-      created_at: '2024-09-01'
-    },
-    {
-      id: '5',
-      contract_number: 'CTR-20241120-mno77889',
-      title: 'Cashew Nuts Export Contract',
-      description: 'Raw cashew nuts for processing in India',
-      status: 'disputed',
-      category: 'agriculture',
-      commodity: 'Cashew Nuts',
-      quantity: 300,
-      unit: 'tons',
-      unit_price: 1200,
-      total_value: 360000,
-      currency: 'USD',
-      incoterms: 'FOB',
-      effective_date: '2024-11-01',
-      expiry_date: '2025-04-30',
-      delivery_deadline: '2025-02-28',
-      buyer_org_name: 'Mumbai Cashew Processors',
-      seller_org_name: 'Tanzania Cashew Board',
-      buyer_signed_at: '2024-11-05T09:00:00Z',
-      seller_signed_at: '2024-11-03T15:00:00Z',
-      milestones_count: 5,
-      completed_milestones: 2,
-      created_at: '2024-11-01'
-    }
+  // B8: Version history mock data
+  const mockVersions = [
+    { id: 'v4', version: '4.0', date: '2024-03-15', author: 'System', changes: 'Payment milestone #3 completed', type: 'auto' as const },
+    { id: 'v3', version: '3.0', date: '2024-02-20', author: 'Jane Doe', changes: 'Updated delivery deadline from April 15 to April 30', type: 'amendment' as const },
+    { id: 'v2', version: '2.0', date: '2024-01-15', author: 'John Smith', changes: 'Added late delivery penalty clause (2%/day)', type: 'amendment' as const },
+    { id: 'v1', version: '1.0', date: '2024-01-03', author: 'System', changes: 'Contract created and signed by both parties', type: 'creation' as const },
   ];
 
-  const mockMilestones: Milestone[] = [
-    { id: '1', title: 'Advance Payment (30%)', description: 'Initial payment upon contract signing', milestone_type: 'payment', due_date: '2024-01-10', status: 'completed', payment_amount: 420000, payment_percentage: 30, completed_at: '2024-01-08T10:00:00Z' },
-    { id: '2', title: 'Quality Inspection', description: 'Pre-shipment quality verification', milestone_type: 'inspection', due_date: '2024-03-15', status: 'completed', payment_amount: 0, payment_percentage: 0, completed_at: '2024-03-14T14:00:00Z' },
-    { id: '3', title: 'Shipment Payment (50%)', description: 'Payment upon shipment confirmation', milestone_type: 'payment', due_date: '2024-04-01', status: 'completed', payment_amount: 700000, payment_percentage: 50, completed_at: '2024-03-30T16:00:00Z' },
-    { id: '4', title: 'Customs Clearance', description: 'Export customs documentation and clearance', milestone_type: 'customs', due_date: '2024-04-15', status: 'in_progress', payment_amount: 0, payment_percentage: 0, completed_at: null },
-    { id: '5', title: 'Final Payment (20%)', description: 'Payment upon delivery confirmation', milestone_type: 'payment', due_date: '2024-06-30', status: 'pending', payment_amount: 280000, payment_percentage: 20, completed_at: null }
+  // B9: Performance analytics data
+  const performanceData = [
+    { metric: 'On-Time Delivery', value: 78 },
+    { metric: 'Payment Compliance', value: 92 },
+    { metric: 'Quality Score', value: 85 },
+    { metric: 'Dispute Rate', value: 12 },
   ];
-
+  const contractValueTrend = [
+    { month: 'Jul', value: 280000 },
+    { month: 'Aug', value: 350000 },
+    { month: 'Sep', value: 420000 },
+    { month: 'Oct', value: 510000 },
+    { month: 'Nov', value: 480000 },
+    { month: 'Dec', value: 620000 },
+  ];
   useEffect(() => {
     loadContracts();
     loadTemplates();
@@ -301,7 +196,6 @@ export const SmartContracts: React.FC = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // Apply proper status filtering
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
       }
@@ -310,24 +204,14 @@ export const SmartContracts: React.FC = () => {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setContracts(data.map((c: any) => ({
-          ...c,
-          buyer_org_name: c.buyer_org?.name,
-          seller_org_name: c.seller_org?.name
-        })));
-      } else {
-        const filteredMockContracts = statusFilter === 'all'
-          ? mockContracts
-          : mockContracts.filter(c => c.status === statusFilter);
-        setContracts(filteredMockContracts);
-      }
+      setContracts((data || []).map((c: any) => ({
+        ...c,
+        buyer_org_name: c.buyer_org?.name || c.metadata?.buyer_org_name || '',
+        seller_org_name: c.seller_org?.name || c.metadata?.seller_org_name || ''
+      })));
     } catch (e) {
       console.error('Failed to fetch contracts:', e);
-      const filteredMockContracts = statusFilter === 'all'
-        ? mockContracts
-        : mockContracts.filter(c => c.status === statusFilter);
-      setContracts(filteredMockContracts);
+      setContracts([]);
     } finally {
       setLoading(false);
     }
@@ -366,14 +250,10 @@ export const SmartContracts: React.FC = () => {
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        setSelectedMilestones(data);
-      } else {
-        setSelectedMilestones(mockMilestones);
-      }
+      setSelectedMilestones(data || []);
     } catch (e) {
       console.error('Failed to fetch milestones:', e);
-      setSelectedMilestones(mockMilestones);
+      setSelectedMilestones([]);
     }
   };
 
@@ -429,6 +309,13 @@ export const SmartContracts: React.FC = () => {
     totalValue: contracts.reduce((sum, c) => sum + (c.total_value || 0), 0)
   };
 
+  const statusDistribution = [
+    { name: 'Active', value: stats.active, color: '#10b981' },
+    { name: 'Pending', value: stats.pending, color: '#f59e0b' },
+    { name: 'Completed', value: stats.completed, color: '#3b82f6' },
+    { name: 'Disputed', value: stats.disputed, color: '#ef4444' },
+  ];
+
   const handleViewContract = (contract: Contract) => {
     setSelectedContract(contract);
     loadMilestones(contract.id);
@@ -437,11 +324,153 @@ export const SmartContracts: React.FC = () => {
   };
 
   const handleCreateContract = async () => {
-    // Implementation for creating contract
-    console.log('Creating contract:', formData);
-    setShowCreateModal(false);
-    setCreateStep(1);
-    loadContracts();
+    setIsProcessing(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const totalValue = formData.quantity * formData.unit_price;
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        template_id: formData.template_id || null,
+        category: formData.category,
+        commodity: formData.commodity,
+        hs_code: formData.hs_code || null,
+        quantity: formData.quantity,
+        unit: formData.unit,
+        unit_price: formData.unit_price,
+        total_value: totalValue,
+        currency: formData.currency,
+        incoterms: formData.incoterms,
+        effective_date: formData.effective_date || null,
+        expiry_date: formData.expiry_date || null,
+        delivery_deadline: formData.delivery_deadline || null,
+        late_delivery_penalty: formData.late_delivery_penalty || 0,
+        status: 'draft' as const,
+        created_by: user.id,
+        seller_user_id: user.id,
+        metadata: {
+          buyer_org_name: formData.buyer_org_name,
+          seller_org_name: formData.seller_org_name
+        }
+      };
+
+      const { error } = await supabase.from('contracts').insert(payload);
+      if (error) throw error;
+
+      setShowCreateModal(false);
+      setCreateStep(1);
+      setFormData(defaultFormData);
+      setIsEditMode(false);
+      setEditingContractId(null);
+      await loadContracts();
+    } catch (e: any) {
+      console.error('Failed to create contract:', e);
+      alert('Failed to create contract: ' + (e.message || 'Unknown error'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleEditContract = (contract: Contract) => {
+    setIsEditMode(true);
+    setEditingContractId(contract.id);
+    setFormData({
+      title: contract.title || '',
+      description: contract.description || '',
+      template_id: '',
+      category: contract.category || '',
+      commodity: contract.commodity || '',
+      hs_code: '',
+      quantity: contract.quantity || 0,
+      unit: contract.unit || 'tons',
+      unit_price: contract.unit_price || 0,
+      currency: contract.currency || 'USD',
+      incoterms: contract.incoterms || 'FOB',
+      effective_date: contract.effective_date || '',
+      expiry_date: contract.expiry_date || '',
+      delivery_deadline: contract.delivery_deadline || '',
+      late_delivery_penalty: 0,
+      buyer_org_id: '',
+      seller_org_id: '',
+      buyer_org_name: contract.buyer_org_name || '',
+      seller_org_name: contract.seller_org_name || ''
+    });
+    setCreateStep(2);
+    setShowDetailModal(false);
+    setShowCreateModal(true);
+  };
+
+  const handleUpdateContract = async () => {
+    if (!editingContractId) return;
+    setIsProcessing(true);
+    try {
+      const totalValue = formData.quantity * formData.unit_price;
+      const updates = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        commodity: formData.commodity,
+        hs_code: formData.hs_code || null,
+        quantity: formData.quantity,
+        unit: formData.unit,
+        unit_price: formData.unit_price,
+        total_value: totalValue,
+        currency: formData.currency,
+        incoterms: formData.incoterms,
+        effective_date: formData.effective_date || null,
+        expiry_date: formData.expiry_date || null,
+        delivery_deadline: formData.delivery_deadline || null,
+        late_delivery_penalty: formData.late_delivery_penalty || 0,
+        metadata: {
+          buyer_org_name: formData.buyer_org_name,
+          seller_org_name: formData.seller_org_name
+        },
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('contracts')
+        .update(updates)
+        .eq('id', editingContractId);
+
+      if (error) throw error;
+
+      setShowCreateModal(false);
+      setCreateStep(1);
+      setFormData(defaultFormData);
+      setIsEditMode(false);
+      setEditingContractId(null);
+      await loadContracts();
+    } catch (e: any) {
+      console.error('Failed to update contract:', e);
+      alert('Failed to update contract: ' + (e.message || 'Unknown error'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleTerminateContract = async (contractId: string) => {
+    if (!confirm('Are you sure you want to terminate this contract? This action cannot be undone.')) return;
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('contracts')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', contractId);
+
+      if (error) throw error;
+
+      setShowDetailModal(false);
+      setSelectedContract(null);
+      await loadContracts();
+    } catch (e: any) {
+      console.error('Failed to terminate contract:', e);
+      alert('Failed to terminate contract: ' + (e.message || 'Unknown error'));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDownload = (format: 'pdf' | 'doc') => {
@@ -499,8 +528,6 @@ export const SmartContracts: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      // In a real app, this would update the contract in the database
-      const { data: { user } } = await supabase.auth.getUser();
       const signedAt = new Date().toISOString();
 
       // Simulate signing - update either buyer or seller signature
@@ -578,7 +605,7 @@ Please log in to AfriTradeOS to view the full contract details.
           </p>
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => { setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData); setCreateStep(1); setShowCreateModal(true); }}
           className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -757,6 +784,8 @@ Please log in to AfriTradeOS to view the full contract details.
                 {[
                   { key: 'overview', label: 'Overview', icon: Eye },
                   { key: 'milestones', label: 'Milestones', icon: Milestone },
+                  { key: 'versions', label: 'Versions', icon: History },
+                  { key: 'analytics', label: 'Analytics', icon: ClipboardList },
                   { key: 'documents', label: 'Documents', icon: FileText },
                   { key: 'activity', label: 'Activity', icon: History }
                 ].map(tab => (
@@ -898,6 +927,25 @@ Please log in to AfriTradeOS to view the full contract details.
                       <Share2 className="w-4 h-4" />
                       Share
                     </button>
+                    {(selectedContract.status === 'draft' || selectedContract.status === 'pending_approval' || selectedContract.status === 'active' || selectedContract.status === 'in_progress') && (
+                      <button
+                        onClick={() => handleEditContract(selectedContract)}
+                        className="flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-700 dark:text-amber-400 font-medium rounded-xl transition-colors"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        Edit Contract
+                      </button>
+                    )}
+                    {selectedContract.status !== 'cancelled' && selectedContract.status !== 'completed' && (
+                      <button
+                        onClick={() => handleTerminateContract(selectedContract.id)}
+                        disabled={isProcessing}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-400 font-medium rounded-xl transition-colors disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Terminate
+                      </button>
+                    )}
                     {selectedContract.status === 'active' && (
                       <button className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-400 font-medium rounded-xl transition-colors">
                         <AlertTriangle className="w-4 h-4" />
@@ -984,6 +1032,105 @@ Please log in to AfriTradeOS to view the full contract details.
                 </div>
               )}
 
+              {/* B8: VERSION CONTROL */}
+              {activeTab === 'versions' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-bold text-gray-500 uppercase">Version History</h3>
+                    <span className="text-xs text-gray-400">Current: v{mockVersions[0].version}</span>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gray-200 dark:bg-slate-700" />
+                    {mockVersions.map((ver) => (
+                      <div key={ver.id} className="relative flex gap-4 pb-5">
+                        <div className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold ${
+                          ver.type === 'creation' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                          ver.type === 'amendment' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
+                          'bg-gray-100 dark:bg-slate-700 text-gray-500'
+                        }`}>
+                          v{ver.version}
+                        </div>
+                        <div className="flex-1 bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
+                          <div className="flex items-start justify-between mb-1">
+                            <h4 className="font-bold text-trade-primary dark:text-white text-sm">{ver.changes}</h4>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                              ver.type === 'creation' ? 'bg-green-100 text-green-700' :
+                              ver.type === 'amendment' ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-600'
+                            }`}>{ver.type}</span>
+                          </div>
+                          <div className="flex gap-4 text-xs text-gray-500">
+                            <span>By: {ver.author}</span>
+                            <span>{new Date(ver.date).toLocaleDateString()}</span>
+                          </div>
+                          <div className="mt-2 flex gap-2">
+                            <button className="text-xs text-trade-primary hover:underline font-medium">View Diff</button>
+                            {ver.type === 'amendment' && <button className="text-xs text-gray-500 hover:underline">Revert</button>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* B9: PERFORMANCE ANALYTICS */}
+              {activeTab === 'analytics' && (
+                <div className="space-y-5">
+                  <h3 className="text-sm font-bold text-gray-500 uppercase">Contract Performance</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {performanceData.map(p => (
+                      <div key={p.metric} className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 text-center">
+                        <div className="relative w-16 h-16 mx-auto mb-2">
+                          <svg className="w-full h-full -rotate-90">
+                            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="6" fill="none" className="text-gray-200 dark:text-slate-700" />
+                            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="6" fill="none"
+                              strokeDasharray={163} strokeDashoffset={163 - (163 * p.value) / 100}
+                              className={`transition-all duration-700 ${p.value >= 70 ? 'text-green-500' : p.value >= 40 ? 'text-amber-500' : 'text-red-500'}`} />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-trade-primary dark:text-white">{p.value}%</span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{p.metric}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-5">
+                    <h4 className="text-sm font-bold text-trade-primary dark:text-white mb-3">Contract Value Trend</h4>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={contractValueTrend}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                          <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                          <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
+                          <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="rgba(59,130,246,0.15)" strokeWidth={2} name="Value" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-5">
+                    <h4 className="text-sm font-bold text-trade-primary dark:text-white mb-3">Status Distribution</h4>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={3}>
+                            {statusDistribution.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex justify-center gap-4 mt-2">
+                      {statusDistribution.map(s => (
+                        <span key={s.name} className="flex items-center gap-1 text-xs text-gray-500">
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} /> {s.name} ({s.value})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'documents' && (
                 <div className="text-center py-12">
                   <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -1013,11 +1160,11 @@ Please log in to AfriTradeOS to view the full contract details.
             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-trade-primary dark:text-white">Create New Contract</h2>
-                  <p className="text-sm text-gray-500">Step {createStep} of 3</p>
+                  <h2 className="text-xl font-bold text-trade-primary dark:text-white">{isEditMode ? 'Edit Contract' : 'Create New Contract'}</h2>
+                  <p className="text-sm text-gray-500">{isEditMode ? 'Update contract details' : `Step ${createStep} of 3`}</p>
                 </div>
                 <button
-                  onClick={() => { setShowCreateModal(false); setCreateStep(1); }}
+                  onClick={() => { setShowCreateModal(false); setCreateStep(1); setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData); }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -1100,6 +1247,29 @@ Please log in to AfriTradeOS to view the full contract details.
                       className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       placeholder="Describe the contract terms and conditions..."
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Buyer (Company / Organization)</label>
+                      <input
+                        type="text"
+                        value={formData.buyer_org_name}
+                        onChange={(e) => setFormData({ ...formData, buyer_org_name: e.target.value })}
+                        className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
+                        placeholder="e.g., European Chocolate Co."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Seller (Company / Organization)</label>
+                      <input
+                        type="text"
+                        value={formData.seller_org_name}
+                        onChange={(e) => setFormData({ ...formData, seller_org_name: e.target.value })}
+                        className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
+                        placeholder="e.g., Ghana Cocoa Board"
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -1241,18 +1411,38 @@ Please log in to AfriTradeOS to view the full contract details.
             {/* Modal Footer */}
             <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-between">
               <button
-                onClick={() => createStep > 1 ? setCreateStep(createStep - 1) : setShowCreateModal(false)}
+                onClick={() => {
+                  if (isEditMode && createStep === 2) {
+                    setShowCreateModal(false); setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData);
+                  } else if (createStep > 1) {
+                    setCreateStep(createStep - 1);
+                  } else {
+                    setShowCreateModal(false); setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData);
+                  }
+                }}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                {createStep > 1 ? 'Back' : 'Cancel'}
+                {isEditMode && createStep === 2 ? 'Cancel' : createStep > 1 ? 'Back' : 'Cancel'}
               </button>
               <button
-                onClick={() => createStep < 3 ? setCreateStep(createStep + 1) : handleCreateContract()}
-                disabled={createStep === 1 && !formData.template_id}
+                onClick={() => {
+                  if (isEditMode) {
+                    if (createStep < 3) setCreateStep(createStep + 1);
+                    else handleUpdateContract();
+                  } else {
+                    if (createStep < 3) setCreateStep(createStep + 1);
+                    else handleCreateContract();
+                  }
+                }}
+                disabled={(createStep === 1 && !isEditMode && !formData.template_id) || isProcessing}
                 className="px-6 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {createStep < 3 ? (
+                {isProcessing ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                ) : createStep < 3 ? (
                   <>Next <ChevronRight className="w-4 h-4" /></>
+                ) : isEditMode ? (
+                  <>Update Contract <Check className="w-4 h-4" /></>
                 ) : (
                   <>Create Contract <Check className="w-4 h-4" /></>
                 )}

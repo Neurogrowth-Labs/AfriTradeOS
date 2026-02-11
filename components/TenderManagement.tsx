@@ -13,7 +13,15 @@ import {
   Loader2,
   Building,
   Send,
-  Award
+  Award,
+  Filter,
+  SlidersHorizontal,
+  Zap,
+  CheckCircle,
+  DollarSign,
+  Globe,
+  Calendar,
+  X
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -40,6 +48,13 @@ interface TenderManagementProps {
   mode?: 'browse' | 'manage';
 }
 
+// B7: Bid submission templates
+const BID_TEMPLATES = [
+  { id: 'bt1', name: 'Standard Supply Bid', description: 'Basic template for commodity supply', fields: ['price_per_unit', 'delivery_date', 'payment_terms'] },
+  { id: 'bt2', name: 'Premium Quality Bid', description: 'Includes quality certifications', fields: ['price_per_unit', 'delivery_date', 'payment_terms', 'certifications', 'samples'] },
+  { id: 'bt3', name: 'Bulk Discount Bid', description: 'Volume-based pricing tiers', fields: ['price_per_unit', 'volume_tiers', 'delivery_date', 'payment_terms'] },
+];
+
 export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'browse' }) => {
   const [tenders, setTenders] = useState<Tender[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +62,16 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [, setShowCreateModal] = useState(false);
   const [selectedTender, setSelectedTender] = useState<Tender | null>(null);
+  // B6: Smart filters state
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterCountry, setFilterCountry] = useState('');
+  const [filterMinBudget, setFilterMinBudget] = useState('');
+  const [filterMaxBudget, setFilterMaxBudget] = useState('');
+  const [filterDeadline, setFilterDeadline] = useState('');
+  // B7: Bid template state
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(BID_TEMPLATES[0]);
+  const [bidData, setBidData] = useState({ price: '', delivery: '', terms: 'Net 30', notes: '' });
 
 
   useEffect(() => {
@@ -146,33 +171,66 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search tenders..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none"
-          />
+      {/* B6: SMART SEARCH FILTERS */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by product, country, organization..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none"
+            />
+          </div>
+          <button onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
+              showAdvancedFilters ? 'bg-trade-primary text-white border-trade-primary' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:border-trade-primary'
+            }`}>
+            <SlidersHorizontal className="w-4 h-4" /> Advanced Filters
+          </button>
+          <div className="flex gap-2 flex-wrap">
+            {['all', 'published', 'closing_soon', 'closed', 'awarded'].map(status => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors capitalize ${
+                  statusFilter === status
+                    ? 'bg-trade-primary text-white'
+                    : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                {status === 'all' ? 'All' : status === 'closing_soon' ? 'Closing Soon' : status}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {['all', 'published', 'closing_soon', 'closed', 'awarded'].map(status => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors capitalize ${
-                statusFilter === status
-                  ? 'bg-trade-primary text-white'
-                  : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
-              }`}
-            >
-              {status === 'all' ? 'All' : status === 'closing_soon' ? 'Closing Soon' : status}
-            </button>
-          ))}
-        </div>
+
+        {showAdvancedFilters && (
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block flex items-center gap-1"><Globe className="w-3 h-3" /> Country</label>
+              <input type="text" placeholder="e.g. Nigeria" value={filterCountry} onChange={e => setFilterCountry(e.target.value)}
+                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm outline-none focus:border-trade-primary" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block flex items-center gap-1"><DollarSign className="w-3 h-3" /> Min Budget</label>
+              <input type="number" placeholder="0" value={filterMinBudget} onChange={e => setFilterMinBudget(e.target.value)}
+                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm outline-none focus:border-trade-primary" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block flex items-center gap-1"><DollarSign className="w-3 h-3" /> Max Budget</label>
+              <input type="number" placeholder="1000000" value={filterMaxBudget} onChange={e => setFilterMaxBudget(e.target.value)}
+                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm outline-none focus:border-trade-primary" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block flex items-center gap-1"><Calendar className="w-3 h-3" /> Deadline Before</label>
+              <input type="date" value={filterDeadline} onChange={e => setFilterDeadline(e.target.value)}
+                className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 dark:text-white text-sm outline-none focus:border-trade-primary" />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -330,11 +388,84 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
               </div>
 
               {selectedTender.status === 'published' && (
-                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors">
-                  <Send className="w-5 h-5" />
-                  Submit Bid
+                <button onClick={() => { setSelectedTender(null); setShowBidModal(true); }}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors">
+                  <Zap className="w-5 h-5" />
+                  Quick Bid with Template
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* B7: ONE-CLICK BID SUBMISSION MODAL */}
+      {showBidModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-500" /> Quick Bid Submission
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">Select a template and fill in key details</p>
+              </div>
+              <button onClick={() => setShowBidModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              {/* Template Selection */}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Choose Template</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {BID_TEMPLATES.map(tpl => (
+                    <button key={tpl.id} onClick={() => setSelectedTemplate(tpl)}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${
+                        selectedTemplate.id === tpl.id ? 'border-trade-primary bg-trade-primary/5' : 'border-gray-200 dark:border-slate-700 hover:border-trade-primary/50'
+                      }`}>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">{tpl.name}</h4>
+                      <p className="text-[10px] text-gray-500 mt-1">{tpl.description}</p>
+                      <div className="flex gap-1 mt-2 flex-wrap">
+                        {tpl.fields.slice(0, 3).map(f => (
+                          <span key={f} className="text-[9px] bg-gray-100 dark:bg-slate-700 text-gray-500 px-1.5 py-0.5 rounded">{f.replace('_', ' ')}</span>
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bid Form */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Price per Unit (USD)</label>
+                  <input type="number" value={bidData.price} onChange={e => setBidData(p => ({ ...p, price: e.target.value }))}
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-trade-primary" placeholder="0.00" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Delivery Date</label>
+                  <input type="date" value={bidData.delivery} onChange={e => setBidData(p => ({ ...p, delivery: e.target.value }))}
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-trade-primary" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Payment Terms</label>
+                  <select value={bidData.terms} onChange={e => setBidData(p => ({ ...p, terms: e.target.value }))}
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none">
+                    {['Net 30', 'Net 60', 'Letter of Credit', 'Cash Against Documents', 'Advance Payment'].map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Notes</label>
+                  <input type="text" value={bidData.notes} onChange={e => setBidData(p => ({ ...p, notes: e.target.value }))}
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none" placeholder="Optional notes..." />
+                </div>
+              </div>
+
+              <button onClick={() => { alert('Bid submitted successfully!'); setShowBidModal(false); setBidData({ price: '', delivery: '', terms: 'Net 30', notes: '' }); }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors">
+                <Send className="w-5 h-5" /> Submit Bid
+              </button>
             </div>
           </div>
         </div>

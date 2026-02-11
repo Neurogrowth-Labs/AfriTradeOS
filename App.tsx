@@ -183,6 +183,7 @@ export default function App() {
   const currentView = routeToView[location.pathname] || AppView.DASHBOARD;
   
   const [isOnboarded, setIsOnboarded] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserPersona>(UserPersona.EXPORTER_SME);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -226,12 +227,10 @@ export default function App() {
         // 2. Fallback to Auth Metadata if DB is empty (First login race condition)
         const meta = session.user.user_metadata || {};
         
-        // Check if profile exists and user has COMPLETED onboarding
-        // User must have: role set AND (company_name OR full_name filled in profile setup)
-        const hasCompletedOnboarding = dbProfile && dbProfile.role && (dbProfile.company_name || dbProfile.phone);
-        
-        if (hasCompletedOnboarding) {
-            setUserRole(dbProfile.role);
+        // Existing account: profile exists in DB → skip onboarding
+        // New account: no profile at all → show onboarding
+        if (dbProfile) {
+            if (dbProfile.role) setUserRole(dbProfile.role);
             setUserProfile({
               userName: dbProfile.full_name || meta.full_name || '',
               companyName: dbProfile.company_name || '',
@@ -242,21 +241,8 @@ export default function App() {
               ...meta
             });
             setIsOnboarded(true);
-        } else if (dbProfile) {
-            // Profile exists but onboarding not completed - redirect to onboarding
-            console.log("Profile exists but onboarding incomplete, redirecting...");
-            setUserProfile({
-              userName: dbProfile.full_name || meta.full_name || '',
-              companyName: dbProfile.company_name || '',
-              email: dbProfile.email || session.user.email,
-              country: dbProfile.country || 'Ghana',
-              phone: dbProfile.phone || meta.phone || '',
-              id: dbProfile.id,
-              ...meta
-            });
-            setIsOnboarded(false);
         } else {
-            // No profile at all - redirect to onboarding
+            // No profile at all - new account, redirect to onboarding
             console.log("No profile found, redirecting to onboarding...");
             setUserProfile({
               userName: meta.full_name || '',
@@ -267,24 +253,26 @@ export default function App() {
         }
       } catch (error) {
         console.error("Profile fetch error:", error);
-        // If critical error, force logout to reset state
-        // await supabase.auth.signOut(); 
-        setIsOnboarded(false);
+        // On error, keep current state - don't force onboarding for existing users
       }
   };
 
   // Check for Supabase Session
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.warn("Session check error:", error.message);
-        setIsOnboarded(false);
-        setUserProfile(null);
-        return;
-      }
-      if (session) {
-        await fetchProfile(session);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.warn("Session check error:", error.message);
+          setIsOnboarded(false);
+          setUserProfile(null);
+          return;
+        }
+        if (session) {
+          await fetchProfile(session);
+        }
+      } finally {
+        setIsAuthLoading(false);
       }
     };
     checkSession();
@@ -370,6 +358,14 @@ export default function App() {
       {label}
     </button>
   );
+
+  if (isAuthLoading) {
+      return (
+        <div className="flex h-screen items-center justify-center bg-trade-bg dark:bg-slate-950">
+          <Loader2 className="w-8 h-8 animate-spin text-trade-accent" />
+        </div>
+      );
+  }
 
   if (!isOnboarded) {
       return <Onboarding onComplete={handleOnboardingComplete} />;

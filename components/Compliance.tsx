@@ -10,7 +10,15 @@ import {
   ChevronRight, 
   ShieldCheck, 
   RefreshCw, 
-  Search
+  Search,
+  BarChart3,
+  Globe,
+  BookOpen,
+  ArrowRight,
+  ChevronDown,
+  Clock,
+  FileText,
+  MapPin
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
 
@@ -25,7 +33,48 @@ const AFRICAN_COUNTRIES = [
   "Tunisia", "Uganda", "Zambia", "Zimbabwe"
 ];
 
+// B10: Compliance dashboard risk data
+const COMPLIANCE_RISKS = [
+  { id: 'r1', area: 'Rules of Origin', status: 'compliant', score: 92, details: 'AfCFTA certificate valid until Dec 2026' },
+  { id: 'r2', area: 'Export Licensing', status: 'warning', score: 65, details: 'License renewal due in 30 days' },
+  { id: 'r3', area: 'Customs Documentation', status: 'compliant', score: 88, details: 'All customs forms up to date' },
+  { id: 'r4', area: 'Sanctions Screening', status: 'compliant', score: 100, details: 'No matches found in latest screening' },
+  { id: 'r5', area: 'Tax Compliance', status: 'critical', score: 35, details: 'VAT registration pending for Nigeria' },
+  { id: 'r6', area: 'Product Standards', status: 'warning', score: 70, details: 'ISO certification expiring in 60 days' },
+];
+
+// B11: Cross-border requirement guides
+const CROSS_BORDER_GUIDES = [
+  {
+    id: 'g1', title: 'Exporting to Nigeria', country: 'Nigeria', steps: [
+      { step: 1, title: 'Obtain Export License', description: 'Apply through your country\'s trade ministry. Processing: 5-10 business days.', required: true },
+      { step: 2, title: 'Product Certification', description: 'Obtain SON (Standards Organisation of Nigeria) conformity certificate.', required: true },
+      { step: 3, title: 'AfCFTA Certificate of Origin', description: 'Apply via customs portal with proof of local content ≥40%.', required: true },
+      { step: 4, title: 'Customs Declaration', description: 'Complete NCS Single Window declaration form. Include HS codes.', required: true },
+      { step: 5, title: 'Payment of Duties', description: 'Pay applicable tariffs (reduced under AfCFTA). Ensure FOREX compliance.', required: true },
+    ]
+  },
+  {
+    id: 'g2', title: 'Exporting to Kenya', country: 'Kenya', steps: [
+      { step: 1, title: 'Register with KRA', description: 'Register as an importer/exporter with Kenya Revenue Authority.', required: true },
+      { step: 2, title: 'KEBS Standards Mark', description: 'Obtain Kenya Bureau of Standards certification for your product.', required: true },
+      { step: 3, title: 'Pre-Shipment Inspection', description: 'Arrange PVoC (Pre-Export Verification of Conformity) inspection.', required: true },
+      { step: 4, title: 'IDF Application', description: 'Apply for Import Declaration Form through KRA iTax portal.', required: true },
+    ]
+  },
+  {
+    id: 'g3', title: 'Exporting to South Africa', country: 'South Africa', steps: [
+      { step: 1, title: 'SARS Registration', description: 'Register with South African Revenue Service for customs.', required: true },
+      { step: 2, title: 'NRCS Compliance', description: 'Ensure product meets National Regulator for Compulsory Specifications.', required: true },
+      { step: 3, title: 'Letter of Authority', description: 'Obtain import permit from ITAC if product requires one.', required: false },
+      { step: 4, title: 'Customs Clearance', description: 'Submit SAD500 form through customs broker. Pay duties via eFiling.', required: true },
+    ]
+  },
+];
+
 export const Compliance: React.FC = () => {
+  const [activeView, setActiveView] = useState<'simulator' | 'dashboard' | 'guides'>('simulator');
+  const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [product, setProduct] = useState('Cotton T-Shirts');
   const [origin, setOrigin] = useState('Benin');
   const [dest, setDest] = useState('Nigeria');
@@ -54,19 +103,162 @@ export const Compliance: React.FC = () => {
   return (
     <div className="h-full flex flex-col gap-5 animate-fade-in pb-4 font-sans">
       
-      {/* Header */}
-      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
-         <div className="flex items-center gap-3">
-             <div className="p-2 bg-trade-primary/10 rounded-lg">
-                <ShieldCheck className="w-5 h-5 text-trade-primary dark:text-white" />
-             </div>
-             <div>
-                <h2 className="text-lg font-bold font-heading text-trade-primary dark:text-white">AfCFTA Compliance Engine</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Automated Rules of Origin Verification</p>
-             </div>
+      {/* Header with Tabs */}
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+         <div className="flex items-center justify-between mb-3">
+           <div className="flex items-center gap-3">
+               <div className="p-2 bg-trade-primary/10 rounded-lg">
+                  <ShieldCheck className="w-5 h-5 text-trade-primary dark:text-white" />
+               </div>
+               <div>
+                  <h2 className="text-lg font-bold font-heading text-trade-primary dark:text-white">AfCFTA Compliance Engine</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Automated Rules of Origin Verification</p>
+               </div>
+           </div>
+         </div>
+         <div className="flex gap-2">
+           {[
+             { id: 'simulator' as const, label: 'RoO Simulator', icon: Scale },
+             { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
+             { id: 'guides' as const, label: 'Cross-Border Guides', icon: BookOpen },
+           ].map(tab => (
+             <button key={tab.id} onClick={() => setActiveView(tab.id)}
+               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                 activeView === tab.id ? 'bg-trade-primary text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+               }`}>
+               <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+             </button>
+           ))}
          </div>
       </div>
 
+      {/* B10: COMPLIANCE DASHBOARD */}
+      {activeView === 'dashboard' && (
+        <div className="flex-1 flex flex-col gap-5">
+          {/* Overall Score */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 text-center">
+              <div className="relative w-20 h-20 mx-auto mb-2">
+                <svg className="w-full h-full -rotate-90">
+                  <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200 dark:text-slate-700" />
+                  <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="8" fill="none"
+                    strokeDasharray={213} strokeDashoffset={213 - (213 * 75) / 100}
+                    className="text-amber-500 transition-all duration-700" />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-trade-primary dark:text-white">75%</span>
+              </div>
+              <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Overall Compliance</p>
+              <p className="text-[10px] text-amber-600">Needs Attention</p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+              <div className="grid grid-cols-3 gap-3 h-full">
+                {[
+                  { label: 'Compliant', count: COMPLIANCE_RISKS.filter(r => r.status === 'compliant').length, color: 'text-green-600 bg-green-100' },
+                  { label: 'Warning', count: COMPLIANCE_RISKS.filter(r => r.status === 'warning').length, color: 'text-amber-600 bg-amber-100' },
+                  { label: 'Critical', count: COMPLIANCE_RISKS.filter(r => r.status === 'critical').length, color: 'text-red-600 bg-red-100' },
+                ].map(s => (
+                  <div key={s.label} className="text-center flex flex-col items-center justify-center">
+                    <p className={`text-2xl font-bold ${s.color.split(' ')[0]}`}>{s.count}</p>
+                    <p className="text-[10px] text-gray-500">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 flex flex-col justify-center">
+              <p className="text-xs text-gray-500 uppercase mb-2">Last Audit</p>
+              <p className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Feb 8, 2026</p>
+              <p className="text-xs text-gray-500 mt-2 mb-1">Next Review</p>
+              <p className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Mar 1, 2026</p>
+            </div>
+          </div>
+
+          {/* Risk Items */}
+          <div className="space-y-3">
+            {COMPLIANCE_RISKS.map(risk => (
+              <div key={risk.id} className={`bg-white dark:bg-slate-800 rounded-xl border p-5 flex items-center justify-between ${
+                risk.status === 'critical' ? 'border-red-200 dark:border-red-900/30' :
+                risk.status === 'warning' ? 'border-amber-200 dark:border-amber-900/30' :
+                'border-gray-100 dark:border-slate-700'
+              }`}>
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    risk.status === 'compliant' ? 'bg-green-100 text-green-600' :
+                    risk.status === 'warning' ? 'bg-amber-100 text-amber-600' :
+                    'bg-red-100 text-red-600'
+                  }`}>
+                    {risk.status === 'compliant' ? <CheckCircle className="w-5 h-5" /> :
+                     risk.status === 'warning' ? <AlertTriangle className="w-5 h-5" /> :
+                     <XCircle className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 dark:text-white">{risk.area}</h4>
+                    <p className="text-xs text-gray-500">{risk.details}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${
+                        risk.score >= 80 ? 'bg-green-500' : risk.score >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                      }`} style={{ width: `${risk.score}%` }} />
+                    </div>
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{risk.score}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* B11: CROSS-BORDER GUIDES */}
+      {activeView === 'guides' && (
+        <div className="flex-1 flex flex-col gap-4">
+          <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-200 dark:border-blue-900/30 p-4 flex items-center gap-3">
+            <Globe className="w-5 h-5 text-blue-600" />
+            <p className="text-sm text-blue-800 dark:text-blue-300">Step-by-step compliance guides for exporting to key African markets under AfCFTA.</p>
+          </div>
+          {CROSS_BORDER_GUIDES.map(guide => (
+            <div key={guide.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+              <button onClick={() => setExpandedGuide(expandedGuide === guide.id ? null : guide.id)}
+                className="w-full p-5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-bold text-gray-900 dark:text-white">{guide.title}</h3>
+                    <p className="text-xs text-gray-500">{guide.steps.length} steps • {guide.steps.filter(s => s.required).length} required</p>
+                  </div>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${expandedGuide === guide.id ? 'rotate-180' : ''}`} />
+              </button>
+              {expandedGuide === guide.id && (
+                <div className="border-t border-gray-100 dark:border-slate-700 p-5 space-y-4">
+                  {guide.steps.map((step, idx) => (
+                    <div key={idx} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center text-xs font-bold">{step.step}</div>
+                        {idx < guide.steps.length - 1 && <div className="w-0.5 flex-1 bg-gray-200 dark:bg-slate-700 my-1" />}
+                      </div>
+                      <div className="flex-1 pb-4">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-gray-900 dark:text-white text-sm">{step.title}</h4>
+                          {step.required && <span className="text-[9px] font-bold px-1.5 py-0.5 bg-red-100 text-red-600 rounded">REQUIRED</span>}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ORIGINAL SIMULATOR VIEW */}
+      {activeView === 'simulator' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0">
          
          {/* Left Panel: Inputs & Score */}
@@ -274,6 +466,7 @@ export const Compliance: React.FC = () => {
          </div>
 
       </div>
+      )}
     </div>
   );
 };

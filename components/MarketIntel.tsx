@@ -11,7 +11,16 @@ import {
   Globe,
   AlertTriangle,
   Target,
-  BarChart3
+  BarChart3,
+  Bell,
+  BellRing,
+  Plus,
+  X,
+  TrendingDown,
+  Zap,
+  PieChart as PieIcon,
+  Activity,
+  CheckCircle
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -23,7 +32,17 @@ import {
   ResponsiveContainer,
   BarChart, 
   Bar,
-  Legend
+  Legend,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis
 } from 'recharts';
 import { getMarketIntelligence } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
@@ -57,6 +76,44 @@ const DEMAND_HEATMAP = [
   { country: 'Angola', demand: 'Medium', trend: '+8%', region: 'Southern Africa', sentiment: 'Improving' },
 ];
 
+// Sector dashboard data
+const SECTOR_DATA = [
+  { sector: 'Agriculture', value: 42, growth: '+12%', color: '#10b981' },
+  { sector: 'Mining', value: 28, growth: '+8%', color: '#6366f1' },
+  { sector: 'Textiles', value: 15, growth: '+18%', color: '#f59e0b' },
+  { sector: 'Manufacturing', value: 10, growth: '+5%', color: '#3b82f6' },
+  { sector: 'Services', value: 5, growth: '+22%', color: '#ec4899' },
+];
+
+// Heat map data (African regions)
+const HEAT_MAP_DATA = [
+  { id: 'wa', name: 'West Africa', x: 250, y: 320, intensity: 0.9, volume: '$8.2B', countries: 'Nigeria, Ghana, Senegal' },
+  { id: 'ea', name: 'East Africa', x: 580, y: 420, intensity: 0.7, volume: '$5.1B', countries: 'Kenya, Tanzania, Ethiopia' },
+  { id: 'sa', name: 'Southern Africa', x: 480, y: 620, intensity: 0.6, volume: '$4.8B', countries: 'South Africa, Mozambique' },
+  { id: 'na', name: 'North Africa', x: 400, y: 150, intensity: 0.5, volume: '$3.9B', countries: 'Egypt, Morocco, Tunisia' },
+  { id: 'ca', name: 'Central Africa', x: 420, y: 430, intensity: 0.3, volume: '$1.2B', countries: 'DRC, Cameroon, Gabon' },
+];
+
+// Import/export flow trend data
+const TRADE_FLOW_DATA = [
+  { month: 'Jul', imports: 3200, exports: 2800, balance: -400 },
+  { month: 'Aug', imports: 3400, exports: 3100, balance: -300 },
+  { month: 'Sep', imports: 3100, exports: 3500, balance: 400 },
+  { month: 'Oct', imports: 3600, exports: 3800, balance: 200 },
+  { month: 'Nov', imports: 3300, exports: 4100, balance: 800 },
+  { month: 'Dec', imports: 3800, exports: 4500, balance: 700 },
+];
+
+// Product alert type
+interface ProductAlert {
+  id: string;
+  product: string;
+  condition: 'price_above' | 'price_below' | 'demand_spike' | 'supply_shortage';
+  threshold: string;
+  active: boolean;
+  triggered: boolean;
+}
+
 export const MarketIntel: React.FC = () => {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -65,6 +122,15 @@ export const MarketIntel: React.FC = () => {
   const [priceData, setPriceData] = useState<{month: string; price: number; globalAvg: number}[]>([]);
   const [marketData, setMarketData] = useState<DbMarketIntelligence[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [activeView, setActiveView] = useState<'research' | 'heatmap' | 'trends' | 'alerts'>('research');
+  const [selectedRegion, setSelectedRegion] = useState<typeof HEAT_MAP_DATA[0] | null>(null);
+  const [productAlerts, setProductAlerts] = useState<ProductAlert[]>([
+    { id: 'pa1', product: 'Cocoa Beans', condition: 'price_above', threshold: '$3,200/ton', active: true, triggered: false },
+    { id: 'pa2', product: 'Shea Butter', condition: 'demand_spike', threshold: '+20% volume', active: true, triggered: true },
+    { id: 'pa3', product: 'Coffee (Arabica)', condition: 'price_below', threshold: '$4,000/ton', active: false, triggered: false },
+  ]);
+  const [showAddAlert, setShowAddAlert] = useState(false);
+  const [newAlert, setNewAlert] = useState({ product: '', condition: 'price_above' as ProductAlert['condition'], threshold: '' });
 
   // Fetch market intelligence data from database
   useEffect(() => {
@@ -120,10 +186,18 @@ export const MarketIntel: React.FC = () => {
     }
   };
 
+  const addAlert = () => {
+    if (!newAlert.product || !newAlert.threshold) return;
+    setProductAlerts(prev => [...prev, { id: `pa${Date.now()}`, ...newAlert, active: true, triggered: false }]);
+    setNewAlert({ product: '', condition: 'price_above', threshold: '' });
+    setShowAddAlert(false);
+  };
+
   return (
       <div className="h-full flex flex-col gap-5 animate-fade-in pb-4">
-          {/* Header & Search */}
-          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* Header & Search + Tabs */}
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                       <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -147,8 +221,244 @@ export const MarketIntel: React.FC = () => {
                       {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowRight className="w-3 h-3" />}
                   </button>
               </form>
+            </div>
+            <div className="flex gap-2 overflow-x-auto">
+              {[
+                { id: 'research' as const, label: 'AI Research', icon: BrainCircuit },
+                { id: 'heatmap' as const, label: 'Heat Map', icon: Target },
+                { id: 'trends' as const, label: 'Trade Flows', icon: Activity },
+                { id: 'alerts' as const, label: 'Alerts', icon: BellRing },
+              ].map(tab => (
+                <button key={tab.id} onClick={() => setActiveView(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                    activeView === tab.id ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                  }`}>
+                  <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* B1: HEAT MAP & SECTOR DASHBOARDS */}
+          {activeView === 'heatmap' && (
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0">
+              {/* SVG Heat Map */}
+              <div className="lg:col-span-8 bg-slate-900 rounded-xl border border-slate-700 relative overflow-hidden min-h-[400px]">
+                <div className="absolute top-3 left-3 z-10 bg-slate-800/90 backdrop-blur p-2 rounded-lg border border-slate-700">
+                  <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">Trade Volume Heat Map</span>
+                </div>
+                <svg viewBox="0 0 800 800" className="w-full h-full">
+                  <rect width="800" height="800" fill="#0f172a" />
+                  <path d="M 280 60 Q 200 100 150 250 Q 130 350 160 450 Q 200 550 300 620 Q 350 680 420 750 Q 480 780 520 720 Q 560 650 580 550 Q 620 450 650 350 Q 660 250 600 150 Q 550 80 450 60 Q 370 50 280 60 Z"
+                    fill="#1e293b" stroke="#334155" strokeWidth="1" />
+                  {HEAT_MAP_DATA.map(region => (
+                    <g key={region.id} onClick={() => setSelectedRegion(selectedRegion?.id === region.id ? null : region)} className="cursor-pointer">
+                      <circle cx={region.x} cy={region.y} r={50 * region.intensity} fill={`rgba(59, 130, 246, ${region.intensity * 0.3})`}>
+                        <animate attributeName="r" values={`${45*region.intensity};${55*region.intensity};${45*region.intensity}`} dur="4s" repeatCount="indefinite" />
+                      </circle>
+                      <circle cx={region.x} cy={region.y} r={30 * region.intensity} fill={`rgba(59, 130, 246, ${region.intensity * 0.6})`} />
+                      <circle cx={region.x} cy={region.y} r={12} fill={`rgba(96, 165, 250, ${0.5 + region.intensity * 0.5})`} stroke="#0f172a" strokeWidth="2" />
+                      <text x={region.x} y={region.y - 18} fill="#94a3b8" fontSize="9" textAnchor="middle" fontWeight="bold">{region.name}</text>
+                      <text x={region.x} y={region.y + 28} fill="#60a5fa" fontSize="10" textAnchor="middle" fontWeight="bold">{region.volume}</text>
+                    </g>
+                  ))}
+                </svg>
+                {selectedRegion && (
+                  <div className="absolute bottom-3 left-3 right-3 md:right-auto md:w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-2xl z-20">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">{selectedRegion.name}</h4>
+                        <p className="text-xs text-gray-500">{selectedRegion.countries}</p>
+                      </div>
+                      <button onClick={() => setSelectedRegion(null)}><X className="w-4 h-4 text-gray-400" /></button>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <span className="text-xs text-gray-500">Trade Volume</span>
+                      <span className="text-sm font-bold text-blue-600">{selectedRegion.volume}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sector Dashboard */}
+              <div className="lg:col-span-4 flex flex-col gap-4">
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+                  <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
+                    <PieIcon className="w-4 h-4 text-blue-500" /> Sector Breakdown
+                  </h3>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={SECTOR_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
+                          {SECTOR_DATA.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 flex-1">
+                  <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-3">Sector Growth</h3>
+                  <div className="space-y-3">
+                    {SECTOR_DATA.map(s => (
+                      <div key={s.sector} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                          <span className="text-xs text-gray-700 dark:text-gray-300">{s.sector}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-900 dark:text-white">{s.value}%</span>
+                          <span className="text-[10px] font-bold text-green-600">{s.growth}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* B2: TRADE FLOW TREND CHARTS */}
+          {activeView === 'trends' && (
+            <div className="flex-1 flex flex-col gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { label: 'Total Exports', value: '$21.8B', change: '+12.4%', up: true },
+                  { label: 'Total Imports', value: '$20.4B', change: '+8.1%', up: true },
+                  { label: 'Trade Balance', value: '+$1.4B', change: '+340%', up: true },
+                ].map(stat => (
+                  <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+                    <p className="text-xs text-gray-500 uppercase">{stat.label}</p>
+                    <p className="text-2xl font-bold text-trade-primary dark:text-white mt-1">{stat.value}</p>
+                    <p className={`text-xs font-bold flex items-center gap-1 mt-1 ${stat.up ? 'text-green-600' : 'text-red-600'}`}>
+                      {stat.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />} {stat.change}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 flex-1">
+                <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-500" /> Import / Export Flow (USD Millions)
+                </h3>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={TRADE_FLOW_DATA}>
+                      <defs>
+                        <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="impGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={v => `$${v}`} />
+                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
+                      <Legend wrapperStyle={{ fontSize: '11px' }} />
+                      <Area type="monotone" dataKey="exports" stroke="#10b981" fill="url(#expGrad)" strokeWidth={2} name="Exports" />
+                      <Area type="monotone" dataKey="imports" stroke="#ef4444" fill="url(#impGrad)" strokeWidth={2} name="Imports" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5">
+                <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-3">Trade Balance Trend</h3>
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={TRADE_FLOW_DATA}>
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                      <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
+                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
+                      <Bar dataKey="balance" name="Balance" radius={[4, 4, 0, 0]}>
+                        {TRADE_FLOW_DATA.map((entry, idx) => (
+                          <Cell key={idx} fill={entry.balance >= 0 ? '#10b981' : '#ef4444'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* B3: CUSTOMIZABLE PRODUCT ALERTS */}
+          {activeView === 'alerts' && (
+            <div className="flex-1 flex flex-col gap-5">
+              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 flex items-center justify-between">
+                <h3 className="font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-blue-500" /> Product Alerts
+                </h3>
+                <button onClick={() => setShowAddAlert(!showAddAlert)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors">
+                  <Plus className="w-3.5 h-3.5" /> New Alert
+                </button>
+              </div>
+
+              {showAddAlert && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-900/30 p-5">
+                  <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-3">Create Alert</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input type="text" placeholder="Product name" value={newAlert.product}
+                      onChange={e => setNewAlert(p => ({ ...p, product: e.target.value }))}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white text-sm outline-none" />
+                    <select value={newAlert.condition} onChange={e => setNewAlert(p => ({ ...p, condition: e.target.value as ProductAlert['condition'] }))}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white text-sm outline-none">
+                      <option value="price_above">Price Above</option>
+                      <option value="price_below">Price Below</option>
+                      <option value="demand_spike">Demand Spike</option>
+                      <option value="supply_shortage">Supply Shortage</option>
+                    </select>
+                    <input type="text" placeholder="Threshold" value={newAlert.threshold}
+                      onChange={e => setNewAlert(p => ({ ...p, threshold: e.target.value }))}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white text-sm outline-none" />
+                    <button onClick={addAlert}
+                      className="py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition-colors">
+                      Add Alert
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {productAlerts.map(alert => (
+                  <div key={alert.id} className={`bg-white dark:bg-slate-800 rounded-xl border p-5 flex items-center justify-between transition-all ${
+                    alert.triggered ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10' : 'border-gray-100 dark:border-slate-700'
+                  }`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`p-2 rounded-lg ${alert.triggered ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 dark:bg-slate-700 text-gray-500'}`}>
+                        {alert.triggered ? <BellRing className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white">{alert.product}</h4>
+                        <p className="text-xs text-gray-500 capitalize">{alert.condition.replace('_', ' ')} — {alert.threshold}</p>
+                      </div>
+                      {alert.triggered && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
+                          <Zap className="w-3 h-3" /> TRIGGERED
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setProductAlerts(prev => prev.map(a => a.id === alert.id ? { ...a, active: !a.active } : a))}
+                        className={`relative w-10 h-5 rounded-full transition-colors ${alert.active ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                        <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${alert.active ? 'left-5' : 'left-0.5'}`} />
+                      </button>
+                      <button onClick={() => setProductAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                        className="text-gray-400 hover:text-red-500 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ORIGINAL RESEARCH VIEW */}
+          {activeView === 'research' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 flex-1">
               {/* Left Column: Charts & Data */}
               <div className="lg:col-span-8 flex flex-col gap-5 overflow-y-auto pr-2">
@@ -294,6 +604,7 @@ export const MarketIntel: React.FC = () => {
                   </div>
               </div>
           </div>
+          )}
       </div>
   );
 };

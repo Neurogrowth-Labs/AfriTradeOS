@@ -17,7 +17,17 @@ import {
   Star,
   Zap,
   MoreHorizontal,
-  Plus
+  Plus,
+  Map as MapIcon,
+  ShieldCheck,
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  X,
+  ZoomIn,
+  ZoomOut,
+  Maximize2
 } from 'lucide-react';
 import { getLogisticsInfo } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
@@ -35,6 +45,57 @@ interface Shipment {
   timeline: { location: string; date: string; status: string; label: string; issue?: string }[];
 }
 
+// Route risk data for color-coded risk levels
+interface RouteRisk {
+  id: string;
+  name: string;
+  type: 'port' | 'customs' | 'route';
+  risk: 'low' | 'medium' | 'high' | 'critical';
+  location: { x: number; y: number };
+  detail: string;
+  avgDelay: string;
+}
+
+// Route map node for SVG visualization
+interface RouteNode {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  type: 'origin' | 'port' | 'customs' | 'transit' | 'destination';
+}
+
+// ETA Timeline entry
+interface ETAEntry {
+  id: string;
+  shipmentId: string;
+  milestone: string;
+  planned: string;
+  actual?: string;
+  status: 'completed' | 'on_time' | 'delayed' | 'upcoming';
+  delayHours?: number;
+}
+
+const ROUTE_RISKS: RouteRisk[] = [
+  { id: 'rr1', name: 'Port of Lagos (Apapa)', type: 'port', risk: 'high', location: { x: 320, y: 350 }, detail: 'Congestion & container backlog, avg 72h wait', avgDelay: '+72h' },
+  { id: 'rr2', name: 'Tema Port', type: 'port', risk: 'low', location: { x: 280, y: 320 }, detail: 'Efficient operations, automated gates', avgDelay: '+4h' },
+  { id: 'rr3', name: 'Mombasa Port', type: 'port', risk: 'medium', location: { x: 600, y: 470 }, detail: 'Moderate congestion, customs digitized', avgDelay: '+24h' },
+  { id: 'rr4', name: 'Cotonou Customs', type: 'customs', risk: 'critical', location: { x: 330, y: 340 }, detail: 'Manual inspections, high corruption index', avgDelay: '+96h' },
+  { id: 'rr5', name: 'Kenya-Uganda Border', type: 'customs', risk: 'medium', location: { x: 580, y: 430 }, detail: 'OSBP operational but periodic delays', avgDelay: '+12h' },
+  { id: 'rr6', name: 'Trans-Sahara Route', type: 'route', risk: 'high', location: { x: 380, y: 200 }, detail: 'Poor road infrastructure, security risks', avgDelay: '+48h' },
+  { id: 'rr7', name: 'Durban Port', type: 'port', risk: 'low', location: { x: 520, y: 720 }, detail: 'Modern deep-water port, quick turnaround', avgDelay: '+8h' },
+  { id: 'rr8', name: 'Northern Corridor', type: 'route', risk: 'medium', location: { x: 560, y: 450 }, detail: 'Mombasa-Nairobi-Kampala, improving', avgDelay: '+18h' },
+];
+
+const MOCK_ETA_TIMELINE: ETAEntry[] = [
+  { id: 'eta1', shipmentId: 'SH-001', milestone: 'Cargo Pickup', planned: 'Jan 15, 08:00', actual: 'Jan 15, 08:30', status: 'completed', delayHours: 0.5 },
+  { id: 'eta2', shipmentId: 'SH-001', milestone: 'Port Arrival', planned: 'Jan 16, 14:00', actual: 'Jan 16, 16:00', status: 'completed', delayHours: 2 },
+  { id: 'eta3', shipmentId: 'SH-001', milestone: 'Customs Clearance', planned: 'Jan 17, 10:00', actual: 'Jan 18, 14:00', status: 'delayed', delayHours: 28 },
+  { id: 'eta4', shipmentId: 'SH-001', milestone: 'Vessel Departure', planned: 'Jan 19, 06:00', status: 'on_time' },
+  { id: 'eta5', shipmentId: 'SH-001', milestone: 'Port of Destination', planned: 'Jan 25, 12:00', status: 'upcoming' },
+  { id: 'eta6', shipmentId: 'SH-001', milestone: 'Last Mile Delivery', planned: 'Jan 27, 09:00', status: 'upcoming' },
+];
+
 // Provider data (static reference data)
 const PROVIDERS = [
   { name: 'Maersk Line', type: 'Ocean', cost: '$$', speed: 'Slow', reliability: 'High (98%)', color: '#3b82f6' },
@@ -43,8 +104,34 @@ const PROVIDERS = [
 ];
 
 export const Logistics: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'tracking' | 'booking'>('tracking');
+  const [activeTab, setActiveTab] = useState<'tracking' | 'booking' | 'route_map' | 'risk_levels' | 'eta_timeline'>('tracking');
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [selectedRisk, setSelectedRisk] = useState<RouteRisk | null>(null);
+  const [riskFilter, setRiskFilter] = useState<'all' | 'port' | 'customs' | 'route'>('all');
+  const [mapZoom, setMapZoom] = useState(1);
+  const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  const handleZoomIn = () => setMapZoom(prev => Math.min(prev + 0.3, 4));
+  const handleZoomOut = () => setMapZoom(prev => Math.max(prev - 0.3, 0.5));
+  const handleResetZoom = () => { setMapZoom(1); setMapPan({ x: 0, y: 0 }); };
+
+  const handleMapWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    setMapZoom(prev => Math.min(Math.max(prev + delta, 0.5), 4));
+  };
+
+  const handleMapMouseDown = (e: React.MouseEvent) => {
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - mapPan.x, y: e.clientY - mapPan.y });
+  };
+  const handleMapMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setMapPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  };
+  const handleMapMouseUp = () => setIsPanning(false);
   const [liveShipments, setLiveShipments] = useState<Shipment[]>([]);
   const [loadingShipments, setLoadingShipments] = useState(true);
 
@@ -179,7 +266,7 @@ export const Logistics: React.FC = () => {
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
        {/* Header / Tabs */}
-       <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+       <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
              <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
                 <Truck className="w-6 h-6 text-teal-600 dark:text-teal-400" />
@@ -189,19 +276,26 @@ export const Logistics: React.FC = () => {
                 <p className="text-xs text-gray-500 dark:text-gray-400">End-to-end visibility & provider selection</p>
              </div>
           </div>
-          <div className="flex bg-gray-100 dark:bg-slate-700/50 p-1 rounded-lg">
-             <button 
-                onClick={() => setActiveTab('tracking')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'tracking' ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
-             >
-                Track Shipments
-             </button>
-             <button 
-                onClick={() => setActiveTab('booking')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'booking' ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
-             >
-                Find Providers
-             </button>
+          <div className="flex bg-gray-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto">
+             {[
+               { id: 'tracking' as const, label: 'Track', icon: Truck },
+               { id: 'booking' as const, label: 'Providers', icon: Navigation },
+               { id: 'route_map' as const, label: 'Route Map', icon: MapIcon },
+               { id: 'risk_levels' as const, label: 'Risk Levels', icon: ShieldCheck },
+               { id: 'eta_timeline' as const, label: 'ETA Timeline', icon: Calendar },
+             ].map(tab => (
+               <button
+                 key={tab.id}
+                 onClick={() => setActiveTab(tab.id)}
+                 className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                   activeTab === tab.id
+                     ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-300 shadow-sm'
+                     : 'text-gray-500 dark:text-gray-400'
+                 }`}
+               >
+                 <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+               </button>
+             ))}
           </div>
        </div>
 
@@ -464,6 +558,316 @@ export const Logistics: React.FC = () => {
                   </div>
                )}
            </div>
+       )}
+
+       {/* A12: INTERACTIVE ROUTE MAP */}
+       {activeTab === 'route_map' && (
+         <div
+           className="flex-1 bg-slate-900 rounded-xl shadow-lg relative overflow-hidden border border-slate-700 min-h-[500px]"
+           onWheel={handleMapWheel}
+           onMouseDown={handleMapMouseDown}
+           onMouseMove={handleMapMouseMove}
+           onMouseUp={handleMapMouseUp}
+           onMouseLeave={handleMapMouseUp}
+           style={{ cursor: isPanning ? 'grabbing' : 'grab' }}
+         >
+           {/* Map Legend */}
+           <div className="absolute top-4 left-4 z-10 bg-slate-800/90 backdrop-blur p-3 rounded-lg border border-slate-700">
+              <div className="flex items-center gap-2 mb-2">
+                 <MapIcon className="w-3.5 h-3.5 text-teal-400" />
+                 <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">Route Risk Map</span>
+              </div>
+              <div className="flex gap-3 text-[10px]">
+                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> <span className="text-slate-400">Low</span></div>
+                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> <span className="text-slate-400">Medium</span></div>
+                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> <span className="text-slate-400">High</span></div>
+                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-700" /> <span className="text-slate-400">Critical</span></div>
+              </div>
+           </div>
+
+           {/* Zoom Controls */}
+           <div className="absolute top-4 right-4 z-10 flex flex-col gap-1.5">
+             <button onClick={handleZoomIn} className="p-2 bg-slate-800/90 backdrop-blur hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 hover:text-white transition-colors" title="Zoom In">
+               <ZoomIn className="w-4 h-4" />
+             </button>
+             <button onClick={handleZoomOut} className="p-2 bg-slate-800/90 backdrop-blur hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 hover:text-white transition-colors" title="Zoom Out">
+               <ZoomOut className="w-4 h-4" />
+             </button>
+             <button onClick={handleResetZoom} className="p-2 bg-slate-800/90 backdrop-blur hover:bg-slate-700 rounded-lg border border-slate-700 text-slate-300 hover:text-white transition-colors" title="Reset View">
+               <Maximize2 className="w-4 h-4" />
+             </button>
+             <div className="text-center text-[10px] text-slate-500 font-mono mt-1">{Math.round(mapZoom * 100)}%</div>
+           </div>
+
+           {/* SVG Map */}
+           <svg viewBox="0 0 800 800" className="w-full h-full" style={{ transform: `scale(${mapZoom}) translate(${mapPan.x / mapZoom}px, ${mapPan.y / mapZoom}px)`, transformOrigin: 'center center', transition: isPanning ? 'none' : 'transform 0.2s ease-out' }}>
+             <defs>
+               <radialGradient id="mapBg" cx="50%" cy="50%" r="50%">
+                 <stop offset="0%" stopColor="#1e293b" />
+                 <stop offset="100%" stopColor="#0f172a" />
+               </radialGradient>
+             </defs>
+             <rect width="800" height="800" fill="url(#mapBg)" />
+
+             {/* Africa outline (simplified) */}
+             <path d="M 280 60 Q 200 100 150 250 Q 130 350 160 450 Q 200 550 300 620 Q 350 680 420 750 Q 480 780 520 720 Q 560 650 580 550 Q 620 450 650 350 Q 660 250 600 150 Q 550 80 450 60 Q 370 50 280 60 Z"
+                   fill="none" stroke="#334155" strokeWidth="1.5" strokeDasharray="4 4" />
+
+             {/* Route lines connecting hubs */}
+             {liveShipments.map((s, i) => {
+               const x1 = 250 + (i * 60);
+               const y1 = 250 + (i * 40);
+               const x2 = 450 + (i * 40);
+               const y2 = 400 + (i * 30);
+               return (
+                 <g key={s.id}>
+                   <line x1={x1} y1={y1} x2={x2} y2={y2}
+                     stroke={s.status === 'on_time' ? '#10b981' : s.status === 'delayed' ? '#f59e0b' : '#ef4444'}
+                     strokeWidth="2" strokeDasharray="6 3" opacity={0.7}>
+                     <animate attributeName="stroke-dashoffset" values="0;-18" dur="2s" repeatCount="indefinite" />
+                   </line>
+                   {/* Moving dot */}
+                   <circle r="4" fill={s.status === 'on_time' ? '#10b981' : '#f59e0b'}>
+                     <animateMotion dur="4s" repeatCount="indefinite"
+                       path={`M ${x1} ${y1} L ${x2} ${y2}`} />
+                   </circle>
+                   {/* Labels */}
+                   <text x={x1 - 10} y={y1 - 10} fill="#94a3b8" fontSize="9" textAnchor="end">{s.origin}</text>
+                   <text x={x2 + 10} y={y2 + 15} fill="#94a3b8" fontSize="9">{s.destination}</text>
+                 </g>
+               );
+             })}
+
+             {/* Risk points on map */}
+             {ROUTE_RISKS.map(rr => {
+               const riskColor = rr.risk === 'low' ? '#10b981' : rr.risk === 'medium' ? '#f59e0b' : rr.risk === 'high' ? '#ef4444' : '#991b1b';
+               return (
+                 <g key={rr.id} onClick={() => setSelectedRisk(selectedRisk?.id === rr.id ? null : rr)} className="cursor-pointer">
+                   <circle cx={rr.location.x} cy={rr.location.y} r="8" fill={riskColor} opacity={0.3}>
+                     <animate attributeName="r" values="8;14;8" dur="3s" repeatCount="indefinite" />
+                   </circle>
+                   <circle cx={rr.location.x} cy={rr.location.y} r="5" fill={riskColor} stroke="#0f172a" strokeWidth="2" />
+                   <text x={rr.location.x + 12} y={rr.location.y + 4} fill="#cbd5e1" fontSize="8" fontWeight="bold">{rr.name.split(' ')[0]}</text>
+                 </g>
+               );
+             })}
+           </svg>
+
+           {/* Selected Risk Detail */}
+           {selectedRisk && (
+             <div className="absolute bottom-4 left-4 right-4 md:right-auto md:w-80 bg-white/95 dark:bg-slate-800/95 backdrop-blur rounded-xl p-4 shadow-2xl border border-slate-200 dark:border-slate-700 z-20 animate-fade-in">
+               <div className="flex justify-between items-start mb-2">
+                 <div>
+                   <h4 className="font-bold text-gray-900 dark:text-white text-sm">{selectedRisk.name}</h4>
+                   <div className="flex items-center gap-2 mt-1">
+                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                       selectedRisk.risk === 'low' ? 'bg-green-100 text-green-700' :
+                       selectedRisk.risk === 'medium' ? 'bg-amber-100 text-amber-700' :
+                       selectedRisk.risk === 'high' ? 'bg-red-100 text-red-700' : 'bg-red-200 text-red-900'
+                     }`}>{selectedRisk.risk} risk</span>
+                     <span className="text-[10px] text-gray-500 capitalize">{selectedRisk.type}</span>
+                   </div>
+                 </div>
+                 <button onClick={() => setSelectedRisk(null)} className="text-gray-400 hover:text-gray-700">
+                   <X className="w-4 h-4" />
+                 </button>
+               </div>
+               <p className="text-xs text-gray-500 mb-2">{selectedRisk.detail}</p>
+               <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                 <span className="text-xs text-gray-500">Avg. Delay</span>
+                 <span className={`text-sm font-bold ${
+                   selectedRisk.risk === 'low' ? 'text-green-600' : selectedRisk.risk === 'medium' ? 'text-amber-600' : 'text-red-600'
+                 }`}>{selectedRisk.avgDelay}</span>
+               </div>
+             </div>
+           )}
+         </div>
+       )}
+
+       {/* A13: COLOR-CODED RISK LEVELS */}
+       {activeTab === 'risk_levels' && (
+         <div className="flex-1 flex flex-col gap-4">
+           {/* Filter Bar */}
+           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex items-center justify-between">
+             <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+               <ShieldCheck className="w-5 h-5 text-teal-500" /> Risk Assessment Matrix
+             </h3>
+             <div className="flex gap-2">
+               {(['all', 'port', 'customs', 'route'] as const).map(f => (
+                 <button
+                   key={f}
+                   onClick={() => setRiskFilter(f)}
+                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${
+                     riskFilter === f
+                       ? 'bg-teal-500 text-white'
+                       : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                   }`}
+                 >
+                   {f === 'all' ? 'All' : f}
+                 </button>
+               ))}
+             </div>
+           </div>
+
+           {/* Risk Cards Grid */}
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+             {ROUTE_RISKS
+               .filter(rr => riskFilter === 'all' || rr.type === riskFilter)
+               .map(rr => {
+                 const riskConfig = {
+                   low: { bg: 'bg-green-50 dark:bg-green-900/10', border: 'border-green-200 dark:border-green-900/30', text: 'text-green-700', badge: 'bg-green-100 text-green-800', icon: CheckCircle, barColor: 'bg-green-500', barWidth: '25%' },
+                   medium: { bg: 'bg-amber-50 dark:bg-amber-900/10', border: 'border-amber-200 dark:border-amber-900/30', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-800', icon: Clock, barColor: 'bg-amber-500', barWidth: '50%' },
+                   high: { bg: 'bg-red-50 dark:bg-red-900/10', border: 'border-red-200 dark:border-red-900/30', text: 'text-red-700', badge: 'bg-red-100 text-red-800', icon: AlertTriangle, barColor: 'bg-red-500', barWidth: '75%' },
+                   critical: { bg: 'bg-red-100 dark:bg-red-900/20', border: 'border-red-300 dark:border-red-800', text: 'text-red-900', badge: 'bg-red-200 text-red-900', icon: AlertTriangle, barColor: 'bg-red-700', barWidth: '100%' },
+                 };
+                 const cfg = riskConfig[rr.risk];
+                 const RiskIcon = cfg.icon;
+                 return (
+                   <div key={rr.id} className={`${cfg.bg} border ${cfg.border} rounded-xl p-4 transition-all hover:shadow-md`}>
+                     <div className="flex items-start justify-between mb-3">
+                       <div className="flex items-center gap-2">
+                         <RiskIcon className={`w-4 h-4 ${cfg.text}`} />
+                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${cfg.badge}`}>{rr.risk}</span>
+                       </div>
+                       <span className="text-[10px] text-gray-500 capitalize bg-white dark:bg-slate-800 px-2 py-0.5 rounded">{rr.type}</span>
+                     </div>
+                     <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-1">{rr.name}</h4>
+                     <p className="text-xs text-gray-500 mb-3">{rr.detail}</p>
+                     <div className="flex items-center justify-between">
+                       <div className="flex-1 mr-3">
+                         <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                           <div className={`h-full ${cfg.barColor} rounded-full`} style={{ width: cfg.barWidth }} />
+                         </div>
+                       </div>
+                       <span className={`text-xs font-bold ${cfg.text}`}>{rr.avgDelay}</span>
+                     </div>
+                   </div>
+                 );
+               })}
+           </div>
+
+           {/* Summary Stats */}
+           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+             <div className="grid grid-cols-4 gap-4 text-center">
+               <div>
+                 <p className="text-xs text-gray-500">Low Risk</p>
+                 <p className="text-2xl font-bold text-green-600">{ROUTE_RISKS.filter(r => r.risk === 'low').length}</p>
+               </div>
+               <div>
+                 <p className="text-xs text-gray-500">Medium</p>
+                 <p className="text-2xl font-bold text-amber-600">{ROUTE_RISKS.filter(r => r.risk === 'medium').length}</p>
+               </div>
+               <div>
+                 <p className="text-xs text-gray-500">High</p>
+                 <p className="text-2xl font-bold text-red-600">{ROUTE_RISKS.filter(r => r.risk === 'high').length}</p>
+               </div>
+               <div>
+                 <p className="text-xs text-gray-500">Critical</p>
+                 <p className="text-2xl font-bold text-red-900">{ROUTE_RISKS.filter(r => r.risk === 'critical').length}</p>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* A14: ETA TIMELINE VIEW */}
+       {activeTab === 'eta_timeline' && (
+         <div className="flex-1 flex flex-col gap-4">
+           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+             <div className="p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                 <Calendar className="w-5 h-5 text-teal-500" /> ETA & Delay Timeline
+               </h3>
+               <div className="flex items-center gap-3 text-xs">
+                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> On Time</span>
+                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Delayed</span>
+                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300" /> Upcoming</span>
+               </div>
+             </div>
+             <div className="p-5">
+               {/* Timeline */}
+               <div className="relative">
+                 <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-slate-700" />
+                 {MOCK_ETA_TIMELINE.map((entry, idx) => {
+                   const statusConfig = {
+                     completed: { bg: 'bg-green-500', ring: 'ring-green-200', text: 'text-green-700', label: 'Completed' },
+                     on_time: { bg: 'bg-blue-500', ring: 'ring-blue-200', text: 'text-blue-700', label: 'On Time' },
+                     delayed: { bg: 'bg-red-500', ring: 'ring-red-200', text: 'text-red-700', label: 'Delayed' },
+                     upcoming: { bg: 'bg-gray-300', ring: 'ring-gray-100', text: 'text-gray-500', label: 'Upcoming' },
+                   };
+                   const cfg = statusConfig[entry.status];
+                   return (
+                     <div key={entry.id} className="relative flex items-start gap-4 mb-6 last:mb-0">
+                       {/* Dot */}
+                       <div className={`relative z-10 w-3 h-3 rounded-full ${cfg.bg} ring-4 ${cfg.ring} mt-1.5 ml-[18px]`} />
+                       
+                       {/* Content */}
+                       <div className="flex-1 ml-2">
+                         <div className={`p-4 rounded-xl border ${
+                           entry.status === 'delayed' ? 'border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10' :
+                           entry.status === 'completed' ? 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/30' :
+                           'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                         }`}>
+                           <div className="flex items-center justify-between mb-2">
+                             <h4 className="font-bold text-gray-900 dark:text-white text-sm flex items-center gap-2">
+                               {entry.status === 'completed' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                               {entry.status === 'delayed' && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                               {entry.status === 'on_time' && <Clock className="w-4 h-4 text-blue-500" />}
+                               {entry.status === 'upcoming' && <Circle className="w-4 h-4 text-gray-400" />}
+                               {entry.milestone}
+                             </h4>
+                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                               entry.status === 'completed' ? 'bg-green-100 text-green-700' :
+                               entry.status === 'delayed' ? 'bg-red-100 text-red-700' :
+                               entry.status === 'on_time' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                             }`}>{cfg.label}</span>
+                           </div>
+                           <div className="grid grid-cols-2 gap-4 text-xs">
+                             <div>
+                               <p className="text-gray-400 uppercase text-[10px] mb-0.5">Planned</p>
+                               <p className="font-medium text-gray-700 dark:text-gray-300">{entry.planned}</p>
+                             </div>
+                             {entry.actual && (
+                               <div>
+                                 <p className="text-gray-400 uppercase text-[10px] mb-0.5">Actual</p>
+                                 <p className={`font-medium ${entry.status === 'delayed' ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>{entry.actual}</p>
+                               </div>
+                             )}
+                           </div>
+                           {entry.delayHours && entry.delayHours > 1 && (
+                             <div className="mt-2 flex items-center gap-2 text-xs">
+                               <AlertTriangle className="w-3 h-3 text-red-500" />
+                               <span className="text-red-600 font-bold">+{entry.delayHours}h delay</span>
+                             </div>
+                           )}
+                         </div>
+                       </div>
+                     </div>
+                   );
+                 })}
+               </div>
+             </div>
+           </div>
+
+           {/* Delay Summary Bar */}
+           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+             <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Delay Impact Summary</h4>
+             <div className="grid grid-cols-3 gap-4 text-center">
+               <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded-lg">
+                 <p className="text-xs text-gray-500">On Schedule</p>
+                 <p className="text-xl font-bold text-green-600">{MOCK_ETA_TIMELINE.filter(e => e.status === 'completed' || e.status === 'on_time').length}</p>
+               </div>
+               <div className="p-3 bg-red-50 dark:bg-red-900/10 rounded-lg">
+                 <p className="text-xs text-gray-500">Delayed</p>
+                 <p className="text-xl font-bold text-red-600">{MOCK_ETA_TIMELINE.filter(e => e.status === 'delayed').length}</p>
+               </div>
+               <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
+                 <p className="text-xs text-gray-500">Total Delay</p>
+                 <p className="text-xl font-bold text-amber-600">{MOCK_ETA_TIMELINE.reduce((acc, e) => acc + (e.delayHours || 0), 0)}h</p>
+               </div>
+             </div>
+           </div>
+         </div>
        )}
     </div>
   );
