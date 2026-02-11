@@ -137,8 +137,43 @@ export const Logistics: React.FC = () => {
     }
   };
 
-  const handleAction = (action: string) => {
-      alert(`${action} initiated. Awaiting provider confirmation.`);
+  // Quote request state management
+  const [quoteRequests, setQuoteRequests] = useState<Record<string, 'pending' | 'sent' | 'received'>>({});
+
+  const handleAction = async (action: string, providerName?: string) => {
+    if (action === 'Quote Request' && providerName) {
+      // Update status to 'sent' for this provider
+      setQuoteRequests(prev => ({ ...prev, [providerName]: 'sent' }));
+
+      // In a real app, this would make an API call to store the request
+      // For now, simulate the request being stored and provider notified
+      try {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Simulate receiving quote after some time
+        setTimeout(() => {
+          setQuoteRequests(prev => ({ ...prev, [providerName]: 'received' }));
+        }, 5000);
+
+      } catch (e) {
+        console.error('Failed to send quote request:', e);
+        setQuoteRequests(prev => ({ ...prev, [providerName]: 'pending' }));
+      }
+    } else {
+      alert(`${action} initiated. Awaiting confirmation.`);
+    }
+  };
+
+  const getQuoteButtonState = (providerName: string) => {
+    const status = quoteRequests[providerName];
+    if (status === 'sent') {
+      return { text: 'Quote Requested', disabled: true, className: 'bg-amber-100 text-amber-700 border-amber-200' };
+    }
+    if (status === 'received') {
+      return { text: 'Quote Received', disabled: true, className: 'bg-green-100 text-green-700 border-green-200' };
+    }
+    return { text: 'Request Quote', disabled: false, className: 'border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700' };
   };
 
   return (
@@ -386,8 +421,12 @@ export const Logistics: React.FC = () => {
                                </div>
                            </div>
                            
-                           <button onClick={() => handleAction('Quote Request')} className="w-full py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
-                               Request Quote
+                           <button
+                               onClick={() => handleAction('Quote Request', provider.name)}
+                               disabled={getQuoteButtonState(provider.name).disabled}
+                               className={`w-full py-2.5 rounded-lg border font-bold transition-colors ${getQuoteButtonState(provider.name).className}`}
+                           >
+                               {getQuoteButtonState(provider.name).text}
                            </button>
                        </div>
                    ))}

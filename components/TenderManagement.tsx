@@ -58,7 +58,14 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
           .select('*, organizations(name)')
           .order('created_at', { ascending: false });
 
-        if (statusFilter !== 'all') {
+        if (statusFilter === 'closing_soon') {
+          const sevenDaysFromNow = new Date();
+          sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+          query = query
+            .eq('status', 'published')
+            .lte('submission_deadline', sevenDaysFromNow.toISOString())
+            .gte('submission_deadline', new Date().toISOString());
+        } else if (statusFilter !== 'all') {
           query = query.eq('status', statusFilter);
         }
 
@@ -151,8 +158,8 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none"
           />
         </div>
-        <div className="flex gap-2">
-          {['all', 'published', 'closed', 'awarded'].map(status => (
+        <div className="flex gap-2 flex-wrap">
+          {['all', 'published', 'closing_soon', 'closed', 'awarded'].map(status => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
@@ -162,7 +169,7 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
                   : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
               }`}
             >
-              {status === 'all' ? 'All' : status}
+              {status === 'all' ? 'All' : status === 'closing_soon' ? 'Closing Soon' : status}
             </button>
           ))}
         </div>

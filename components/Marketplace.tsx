@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  MapPin, 
-  Star, 
-  ShieldCheck, 
-  MessageSquare, 
-  UserPlus, 
-  Filter,
+import {
+  Search,
+  MapPin,
+  Star,
+  ShieldCheck,
+  MessageSquare,
+  UserPlus,
   Building2,
   Truck,
   Scale,
   Briefcase,
-  Loader2
+  Loader2,
+  Users
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbOrganization } from '../types';
+import { supabase } from '../services/supabase';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Partners' },
@@ -22,6 +23,7 @@ const CATEGORIES = [
   { id: 'seller', label: 'Suppliers', icon: Building2 },
   { id: 'logistics', label: 'Logistics', icon: Truck },
   { id: 'legal', label: 'Legal & Compliance', icon: Scale },
+  { id: 'finance', label: 'Finance & Insurance', icon: Building2 },
 ];
 
 export const Marketplace: React.FC = () => {
@@ -29,15 +31,50 @@ export const Marketplace: React.FC = () => {
   const [search, setSearch] = useState('');
   const [partners, setPartners] = useState<DbOrganization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchPartners = async () => {
       setLoading(true);
       try {
-        const data = await mockDatabase.getOrganizations(category === 'all' ? undefined : category);
-        setPartners(data);
+        // Fetch all organizations (including newly onboarded companies)
+        let query = supabase
+          .from('organizations')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false });
+
+        // Apply category filter if not 'all'
+        if (category !== 'all') {
+          query = query.eq('type', category);
+        }
+
+        const { data, error, count } = await query;
+
+        if (error) {
+          console.error("Supabase error:", error);
+          // Fallback to mockDatabase
+          const fallbackData = await mockDatabase.getOrganizations(category === 'all' ? undefined : category);
+          setPartners(fallbackData);
+          setTotalCount(fallbackData.length);
+        } else {
+          // Map database fields to expected format
+          const mappedPartners = (data || []).map((org: any) => ({
+            ...org,
+            logo_initial: org.logo_initial || org.name?.charAt(0)?.toUpperCase() || 'O',
+            tags: org.tags || [],
+            rating: org.rating || 4.5,
+            reviews_count: org.reviews_count || 0,
+            verification_status: org.verification_status ?? org.is_verified ?? false
+          }));
+          setPartners(mappedPartners);
+          setTotalCount(count || mappedPartners.length);
+        }
       } catch (error) {
         console.error("Failed to fetch partners:", error);
+        // Fallback to mockDatabase
+        const fallbackData = await mockDatabase.getOrganizations(category === 'all' ? undefined : category);
+        setPartners(fallbackData);
+        setTotalCount(fallbackData.length);
       } finally {
         setLoading(false);
       }
@@ -62,8 +99,14 @@ export const Marketplace: React.FC = () => {
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg">
-         <h2 className="text-3xl font-bold mb-2">AfriTrade Network</h2>
-         <p className="text-blue-100 mb-6 max-w-2xl">Connect with verified buyers, suppliers, and service providers across the continent. Build your trusted trade ecosystem.</p>
+         <div className="flex items-center justify-between mb-2">
+           <h2 className="text-3xl font-bold">AfriTrade Network</h2>
+           <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+             <Users className="w-4 h-4" />
+             <span className="text-sm font-bold">{totalCount} Partners</span>
+           </div>
+         </div>
+         <p className="text-blue-100 mb-6 max-w-2xl">Connect with verified buyers, suppliers, and service providers across the continent. All onboarded companies automatically appear here.</p>
          
          <div className="bg-white rounded-xl p-2 flex items-center shadow-md max-w-3xl">
             <Search className="w-5 h-5 text-gray-400 ml-3" />

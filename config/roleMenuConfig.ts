@@ -162,22 +162,28 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Oversight',
       items: [
-        { view: AppView.REGULATOR, icon: Building, label: 'Customs Dashboard' },
-        { view: AppView.COMPLIANCE, icon: ClipboardCheck, label: 'Declarations Review' },
+        { view: AppView.REGULATOR, icon: Building, label: 'Customs Dashboard', description: 'Overview of trade volumes, compliance rates, and alerts' },
       ]
     },
     {
-      title: 'Verification',
+      title: 'Declarations',
       items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Trader Verification' },
-        { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'Trade Records' },
+        { view: AppView.COMPLIANCE, icon: ClipboardCheck, label: 'Declaration Review', description: 'Review and approve customs declarations' },
+        { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'Trade Verification', description: 'Verify trade documents and certificates' },
+      ]
+    },
+    {
+      title: 'Records',
+      items: [
+        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Trader Registry', description: 'Registered traders and verification status' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Trade Records', description: 'Historical trade records and audit trail' },
       ]
     },
     {
       title: 'Intelligence',
       items: [
-        { view: AppView.MARKET_INTEL, icon: Globe, label: 'Trade Analytics' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Shipment Monitoring' },
+        { view: AppView.MARKET_INTEL, icon: Globe, label: 'Trade Analytics', description: 'Trade patterns and risk analysis' },
+        { view: AppView.LOGISTICS, icon: Truck, label: 'Shipment Monitoring', description: 'Real-time cargo tracking' },
       ]
     },
     {
@@ -224,25 +230,24 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
   // Bank / Insurer - Focus on finance, risk, applications
   [UserPersona.BANK]: [
     {
-      title: 'Finance',
+      title: 'Applications',
       items: [
-        { view: AppView.DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
-        { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Finance Applications' },
+        { view: AppView.DASHBOARD, icon: LayoutDashboard, label: 'Finance Dashboard', description: 'Overview of pending applications and portfolio' },
+        { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Finance Applications', description: 'Review and process finance requests' },
       ]
     },
     {
-      title: 'Risk Assessment',
+      title: 'Due Diligence',
       items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'KYC Review' },
-        { view: AppView.COMPLIANCE, icon: Shield, label: 'Compliance Check' },
-        { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'Trade History' },
+        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'KYC Review', description: 'Verify client identity and documents' },
+        { view: AppView.COMPLIANCE, icon: Shield, label: 'AML Screening', description: 'Anti-money laundering checks' },
       ]
     },
     {
-      title: 'Market',
+      title: 'Risk & Clients',
       items: [
-        { view: AppView.MARKET_INTEL, icon: TrendingUp, label: 'Market Risk' },
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Client Directory' },
+        { view: AppView.MARKET_INTEL, icon: TrendingUp, label: 'Market Risk', description: 'Country and sector risk analysis' },
+        { view: AppView.MARKETPLACE, icon: Users, label: 'Client Directory', description: 'Verified business directory' },
       ]
     },
     {
@@ -256,25 +261,30 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
   // Government Agency - Focus on policy, oversight, analytics
   [UserPersona.GOVERNMENT]: [
     {
-      title: 'Oversight',
+      title: 'Dashboard',
       items: [
-        { view: AppView.REGULATOR, icon: Building, label: 'Agency Dashboard' },
-        { view: AppView.COMPLIANCE, icon: Scale, label: 'Policy Compliance' },
+        { view: AppView.REGULATOR, icon: Building, label: 'Agency Dashboard', description: 'National trade overview and policy metrics' },
       ]
     },
     {
-      title: 'Analytics',
+      title: 'Policy & Compliance',
       items: [
-        { view: AppView.MARKET_INTEL, icon: BarChart3, label: 'Trade Statistics' },
-        { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'Trade Records' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Trade Flows' },
+        { view: AppView.COMPLIANCE, icon: Scale, label: 'Policy Compliance', description: 'Monitor policy adherence across sectors' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Trade Agreements', description: 'Cross-border trade agreements' },
       ]
     },
     {
-      title: 'Verification',
+      title: 'Statistics',
       items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Entity Verification' },
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Registered Traders' },
+        { view: AppView.MARKET_INTEL, icon: BarChart3, label: 'Trade Statistics', description: 'Export/import data and trends' },
+        { view: AppView.LOGISTICS, icon: Truck, label: 'Trade Flows', description: 'Cargo movement and corridors' },
+      ]
+    },
+    {
+      title: 'Registry',
+      items: [
+        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Entity Verification', description: 'Verify traders and businesses' },
+        { view: AppView.MARKETPLACE, icon: Users, label: 'Business Registry', description: 'Registered traders directory' },
       ]
     },
     {

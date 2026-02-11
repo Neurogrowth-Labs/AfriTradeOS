@@ -1,28 +1,30 @@
 /* eslint-disable react/no-unescaped-entities */
 
-import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Building2, 
-  Shield, 
-  Settings, 
-  CreditCard, 
-  FileText, 
-  CheckCircle, 
-  AlertTriangle, 
-  Globe, 
-  Smartphone, 
-  Mail, 
-  Zap, 
-  LogOut, 
-  LayoutGrid, 
-  Users, 
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  User,
+  Building2,
+  Shield,
+  CreditCard,
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Globe,
+  Smartphone,
+  Mail,
+  Zap,
+  LogOut,
+  Users,
   Download,
   HelpCircle,
   Loader2,
   Key,
   Save,
-  Plus
+  Plus,
+  Upload,
+  Eye,
+  EyeOff,
+  X
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbAuditLog, UserPersona } from '../types';
@@ -41,6 +43,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Security & Compliance state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [kycVerifying, setKycVerifying] = useState(false);
+  const [uploadType, setUploadType] = useState<'kyc' | 'tax' | 'kyb'>('kyc');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Database-driven stats
   const [stats, setStats] = useState({
@@ -163,6 +175,124 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
   const toggle = (key: keyof typeof toggles) => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Handle KYC Verification
+  const handleKYCVerify = async () => {
+    setKycVerifying(true);
+    try {
+      // Create KYC request in database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('kyc_requests').insert({
+          user_id: user.id,
+          status: 'pending',
+          verification_type: 'identity',
+          created_at: new Date().toISOString()
+        });
+      }
+      setUploadType('kyc');
+      setShowUploadModal(true);
+    } catch (e) {
+      console.error('KYC verification error:', e);
+      alert('Failed to start KYC verification. Please try again.');
+    } finally {
+      setKycVerifying(false);
+    }
+  };
+
+  // Handle password change
+  const handlePasswordChange = async () => {
+    if (passwordData.new !== passwordData.confirm) {
+      alert('New passwords do not match.');
+      return;
+    }
+    if (passwordData.new.length < 8) {
+      alert('Password must be at least 8 characters.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.new
+      });
+
+      if (error) throw error;
+
+      alert('Password updated successfully.');
+      setShowPasswordModal(false);
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (e: any) {
+      console.error('Password change error:', e);
+      alert(e.message || 'Failed to change password. Please try again.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  // Handle document upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert('Please log in to upload documents.');
+      return;
+    }
+
+    try {
+      // Upload to Supabase storage
+      const fileName = `${user.id}/${uploadType}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Create document record
+      await supabase.from('documents').insert({
+        user_id: user.id,
+        document_type: uploadType,
+        file_name: file.name,
+        file_path: fileName,
+        status: 'pending',
+        created_at: new Date().toISOString()
+      });
+
+      alert('Document uploaded successfully. It will be reviewed shortly.');
+      setShowUploadModal(false);
+    } catch (e: any) {
+      console.error('Upload error:', e);
+      alert(e.message || 'Failed to upload document. Please try again.');
+    }
+  };
+
+  // Handle SSO connection
+  const handleSSOConnect = async (provider: 'google' | 'microsoft' | 'saml') => {
+    try {
+      if (provider === 'google') {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: window.location.origin }
+        });
+        if (error) throw error;
+      } else if (provider === 'microsoft') {
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'azure',
+          options: { redirectTo: window.location.origin }
+        });
+        if (error) throw error;
+      } else {
+        alert('SAML/OIDC configuration requires enterprise setup. Contact support.');
+      }
+    } catch (e: any) {
+      console.error('SSO connection error:', e);
+      alert(e.message || 'Failed to connect SSO provider.');
+    }
   };
 
   const navItems = [
@@ -459,7 +589,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                                          <p className="font-bold text-trade-primary dark:text-white">Password</p>
                                          <p className="text-xs text-gray-500">Last changed 3 months ago.</p>
                                      </div>
-                                     <button className="text-sm text-blue-600 hover:underline font-bold">Update</button>
+                                     <button
+                                       onClick={() => setShowPasswordModal(true)}
+                                       className="text-sm text-blue-600 hover:underline font-bold"
+                                     >
+                                       Update
+                                     </button>
                                  </div>
 
                                  {/* SSO Settings */}
@@ -471,21 +606,30 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                                          </div>
                                      </div>
                                      <div className="space-y-2">
-                                         <button className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                         <button
+                                           onClick={() => handleSSOConnect('google')}
+                                           className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                                         >
                                              <div className="flex items-center gap-2">
                                                  <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-gray-200 text-xs font-bold text-slate-800">G</div>
                                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Google Workspace</span>
                                              </div>
                                              <span className="text-xs text-blue-600 font-bold">Link</span>
                                          </button>
-                                         <button className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                         <button
+                                           onClick={() => handleSSOConnect('microsoft')}
+                                           className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                                         >
                                              <div className="flex items-center gap-2">
                                                  <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">M</div>
                                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Microsoft Entra ID</span>
                                              </div>
                                              <span className="text-xs text-blue-600 font-bold">Link</span>
                                          </button>
-                                         <button className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                                         <button
+                                           onClick={() => handleSSOConnect('saml')}
+                                           className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                                         >
                                              <div className="flex items-center gap-2">
                                                  <div className="w-6 h-6 rounded-full bg-trade-primary flex items-center justify-center text-white text-xs font-bold"><Key className="w-3 h-3" /></div>
                                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SAML / OIDC Custom</span>
@@ -517,7 +661,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                                            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">KYC Verification</p>
                                            <p className="text-xs text-amber-700 dark:text-amber-400">Identity verification pending.</p>
                                        </div>
-                                       <button className="text-xs bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200">Verify</button>
+                                       <button
+                                         onClick={handleKYCVerify}
+                                         disabled={kycVerifying}
+                                         className="text-xs bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200 hover:bg-amber-50 transition-colors flex items-center gap-1"
+                                       >
+                                         {kycVerifying ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                         Verify
+                                       </button>
                                    </div>
                                  )}
                                  {stats.kybVerified ? (
@@ -535,7 +686,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                                            <p className="text-sm font-bold text-amber-800 dark:text-amber-300">KYB Verification</p>
                                            <p className="text-xs text-amber-700 dark:text-amber-400">Business verification pending.</p>
                                        </div>
-                                       <button className="text-xs bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200">Verify</button>
+                                       <button
+                                         onClick={() => { setUploadType('kyb'); setShowUploadModal(true); }}
+                                         className="text-xs bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200 hover:bg-amber-50 transition-colors"
+                                       >
+                                         Verify
+                                       </button>
                                    </div>
                                  )}
                                  <div className="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg flex items-center gap-3 border border-gray-200 dark:border-slate-700">
@@ -544,7 +700,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                                          <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Tax Clearance</p>
                                          <p className="text-xs text-gray-500 dark:text-gray-400">Upload tax clearance certificate.</p>
                                      </div>
-                                     <button className="text-xs bg-white dark:bg-slate-800 text-gray-600 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-slate-600">Upload</button>
+                                     <button
+                                       onClick={() => { setUploadType('tax'); setShowUploadModal(true); }}
+                                       className="text-xs bg-white dark:bg-slate-800 text-gray-600 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-100 transition-colors flex items-center gap-1"
+                                     >
+                                       <Upload className="w-3 h-3" /> Upload
+                                     </button>
                                  </div>
                              </div>
                          </div>
@@ -755,6 +916,157 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
          </div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white">Change Password</h2>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.current ? 'text' : 'password'}
+                    value={passwordData.current}
+                    onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                    className="w-full p-3 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.new ? 'text' : 'password'}
+                    value={passwordData.new}
+                    onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                    className="w-full p-3 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPasswords.confirm ? 'text' : 'password'}
+                    value={passwordData.confirm}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                    className="w-full p-3 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handlePasswordChange}
+                disabled={!passwordData.current || !passwordData.new || !passwordData.confirm || isChangingPassword}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
+              >
+                {isChangingPassword ? <Loader2 className="w-5 h-5 animate-spin" /> : <Key className="w-5 h-5" />}
+                {isChangingPassword ? 'Updating...' : 'Update Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white">
+                  {uploadType === 'kyc' ? 'KYC Verification' : uploadType === 'kyb' ? 'Business Verification' : 'Tax Clearance'}
+                </h2>
+                <button
+                  onClick={() => setShowUploadModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  {uploadType === 'kyc'
+                    ? 'Please upload a government-issued ID (passport, national ID, or driver\'s license).'
+                    : uploadType === 'kyb'
+                    ? 'Please upload your business registration certificate or incorporation documents.'
+                    : 'Please upload your tax clearance certificate from the relevant tax authority.'}
+                </p>
+              </div>
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-trade-primary hover:bg-trade-primary/5 transition-colors"
+              >
+                <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  PDF, JPG, or PNG (max 10MB)
+                </p>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+
+              <p className="text-xs text-gray-500 text-center">
+                Your documents will be reviewed within 24-48 hours.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

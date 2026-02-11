@@ -248,57 +248,57 @@ export const TradeFinance: React.FC = () => {
            </div>
 
            {/* Risk Dashboard */}
-           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex-1">
+           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex-1 min-h-0 overflow-hidden">
               <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center justify-between">
                   Country Risk Exposure
                   <TrendingUp className="w-4 h-4" />
               </h3>
               {loadingMetrics ? (
-                <div className="h-64 flex items-center justify-center">
+                <div className="h-48 flex items-center justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 </div>
               ) : countryRisks.length === 0 ? (
-                <div className="h-64 flex items-center justify-center text-gray-400 text-sm">
+                <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
                   No trade data available
                 </div>
               ) : (
-                <>
-                  <div className="h-64">
+                <div className="flex flex-col h-full">
+                  <div className="h-48 flex-shrink-0">
                      <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={countryRisks.map(r => ({ name: r.country, risk: r.risk }))} layout="vertical">
                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" opacity={0.5} />
                            <XAxis type="number" hide domain={[0, 100]} />
-                           <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 11, fill: '#64748b'}} />
-                           <Tooltip 
-                             cursor={{fill: 'transparent'}} 
+                           <YAxis dataKey="name" type="category" width={70} tick={{fontSize: 10, fill: '#64748b'}} />
+                           <Tooltip
+                             cursor={{fill: 'transparent'}}
                              contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white' }}
                              formatter={(value: number) => [`${value}/100`, 'Risk Score']}
                            />
-                           <Bar dataKey="risk" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={12} name="Risk Score" />
+                           <Bar dataKey="risk" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={10} name="Risk Score" />
                         </BarChart>
                      </ResponsiveContainer>
                   </div>
-                  
+
                   {/* Exposure breakdown */}
-                  <div className="mt-4 space-y-1">
+                  <div className="mt-3 space-y-1 flex-shrink-0">
                     {countryRisks.slice(0, 3).map((r, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">{r.country}</span>
+                        <span className="text-gray-500 truncate max-w-[100px]">{r.country}</span>
                         <span className="font-bold text-gray-700 dark:text-gray-300">
-                          {r.percentage > 0 ? `${r.percentage}% ($${(r.value / 1000).toFixed(0)}K)` : 'No trades'}
+                          {r.percentage > 0 ? `${r.percentage}%` : 'No trades'}
                         </span>
                       </div>
                     ))}
                   </div>
-                  
+
                   {countryRisks.some(r => r.risk >= 60 && r.percentage >= 30) && (
-                    <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30">
-                       <p className="text-xs text-red-700 dark:text-red-300">
-                          <span className="font-bold">Alert:</span> High concentration in risky markets. Consider diversifying or obtaining political risk insurance.
+                    <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30 flex-shrink-0">
+                       <p className="text-[10px] text-red-700 dark:text-red-300">
+                          <span className="font-bold">Alert:</span> High concentration in risky markets.
                        </p>
                     </div>
                   )}
-                </>
+                </div>
               )}
            </div>
         </div>

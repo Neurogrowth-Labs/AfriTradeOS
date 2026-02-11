@@ -31,7 +31,10 @@ import {
   ClipboardList,
   PenTool,
   History,
-  MessageSquare
+  MessageSquare,
+  Mail,
+  Share2,
+  FileDown
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -119,6 +122,11 @@ export const SmartContracts: React.FC = () => {
   const [selectedMilestones, setSelectedMilestones] = useState<Milestone[]>([]);
   const [activeTab, setActiveTab] = useState<'overview' | 'milestones' | 'documents' | 'activity'>('overview');
   const [createStep, setCreateStep] = useState(1);
+  const [showSignModal, setShowSignModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [signatureData, setSignatureData] = useState({ name: '', title: '', agreed: false });
+  const [shareData, setShareData] = useState({ email: '', method: 'email' as 'email' | 'platform' });
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<ContractFormData>({
     title: '',
     description: '',
@@ -293,6 +301,7 @@ export const SmartContracts: React.FC = () => {
         `)
         .order('created_at', { ascending: false });
 
+      // Apply proper status filtering
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
       }
@@ -308,11 +317,17 @@ export const SmartContracts: React.FC = () => {
           seller_org_name: c.seller_org?.name
         })));
       } else {
-        setContracts(mockContracts);
+        const filteredMockContracts = statusFilter === 'all'
+          ? mockContracts
+          : mockContracts.filter(c => c.status === statusFilter);
+        setContracts(filteredMockContracts);
       }
     } catch (e) {
       console.error('Failed to fetch contracts:', e);
-      setContracts(mockContracts);
+      const filteredMockContracts = statusFilter === 'all'
+        ? mockContracts
+        : mockContracts.filter(c => c.status === statusFilter);
+      setContracts(filteredMockContracts);
     } finally {
       setLoading(false);
     }
@@ -427,6 +442,126 @@ export const SmartContracts: React.FC = () => {
     setShowCreateModal(false);
     setCreateStep(1);
     loadContracts();
+  };
+
+  const handleDownload = (format: 'pdf' | 'doc') => {
+    if (!selectedContract) return;
+    setIsProcessing(true);
+
+    const contractContent = `
+      CONTRACT AGREEMENT
+      ==================
+
+      Contract Number: ${selectedContract.contract_number}
+      Title: ${selectedContract.title}
+
+      PARTIES:
+      Buyer: ${selectedContract.buyer_org_name}
+      Seller: ${selectedContract.seller_org_name}
+
+      TERMS:
+      Commodity: ${selectedContract.commodity}
+      Quantity: ${selectedContract.quantity} ${selectedContract.unit}
+      Unit Price: ${formatCurrency(selectedContract.unit_price, selectedContract.currency)}
+      Total Value: ${formatCurrency(selectedContract.total_value, selectedContract.currency)}
+      Incoterms: ${selectedContract.incoterms}
+
+      DATES:
+      Effective Date: ${new Date(selectedContract.effective_date).toLocaleDateString()}
+      Expiry Date: ${new Date(selectedContract.expiry_date).toLocaleDateString()}
+      Delivery Deadline: ${new Date(selectedContract.delivery_deadline).toLocaleDateString()}
+
+      DESCRIPTION:
+      ${selectedContract.description}
+
+      SIGNATURES:
+      Buyer Signed: ${selectedContract.buyer_signed_at ? new Date(selectedContract.buyer_signed_at).toLocaleDateString() : 'Pending'}
+      Seller Signed: ${selectedContract.seller_signed_at ? new Date(selectedContract.seller_signed_at).toLocaleDateString() : 'Pending'}
+    `;
+
+    // Create and download file
+    const blob = new Blob([contractContent], { type: format === 'pdf' ? 'application/pdf' : 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedContract.contract_number}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    setIsProcessing(false);
+  };
+
+  // Sign contract digitally
+  const handleSign = async () => {
+    if (!selectedContract || !signatureData.name || !signatureData.agreed) return;
+    setIsProcessing(true);
+
+    try {
+      // In a real app, this would update the contract in the database
+      const { data: { user } } = await supabase.auth.getUser();
+      const signedAt = new Date().toISOString();
+
+      // Simulate signing - update either buyer or seller signature
+      const updateField = selectedContract.buyer_signed_at ? 'seller_signed_at' : 'buyer_signed_at';
+
+      await supabase
+        .from('contracts')
+        .update({ [updateField]: signedAt })
+        .eq('id', selectedContract.id);
+
+      // Update local state
+      setSelectedContract({
+        ...selectedContract,
+        [updateField]: signedAt
+      });
+
+      setShowSignModal(false);
+      setSignatureData({ name: '', title: '', agreed: false });
+
+      // Reload contracts
+      loadContracts();
+    } catch (e) {
+      console.error('Failed to sign contract:', e);
+      alert('Failed to sign contract. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Share contract
+  const handleShare = async () => {
+    if (!selectedContract || !shareData.email) return;
+    setIsProcessing(true);
+
+    try {
+      if (shareData.method === 'email') {
+        // Simulate sending email
+        const subject = encodeURIComponent(`Contract: ${selectedContract.title}`);
+        const body = encodeURIComponent(`
+You have been invited to view the following contract:
+
+Contract: ${selectedContract.title}
+Contract Number: ${selectedContract.contract_number}
+Value: ${formatCurrency(selectedContract.total_value, selectedContract.currency)}
+
+Please log in to AfriTradeOS to view the full contract details.
+        `);
+        window.open(`mailto:${shareData.email}?subject=${subject}&body=${body}`);
+      } else {
+        // Platform sharing - would create a notification/invitation in the database
+        alert(`Contract shared with ${shareData.email} on the platform. They will receive a notification.`);
+      }
+
+      setShowShareModal(false);
+      setShareData({ email: '', method: 'email' });
+    } catch (e) {
+      console.error('Failed to share contract:', e);
+      alert('Failed to share contract. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -727,18 +862,40 @@ export const SmartContracts: React.FC = () => {
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
-                    {selectedContract.status === 'pending_approval' && (
-                      <button className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors">
+                    {(selectedContract.status === 'pending_approval' || selectedContract.status === 'active') && (
+                      <button
+                        onClick={() => setShowSignModal(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+                      >
                         <PenTool className="w-4 h-4" />
                         Sign Contract
                       </button>
                     )}
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-colors">
-                      <Download className="w-4 h-4" />
-                      Download PDF
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-colors">
-                      <Send className="w-4 h-4" />
+                    <div className="relative group">
+                      <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-colors">
+                        <Download className="w-4 h-4" />
+                        Download
+                      </button>
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                        <button
+                          onClick={() => handleDownload('pdf')}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 w-full text-left"
+                        >
+                          <FileDown className="w-4 h-4" /> Download as PDF
+                        </button>
+                        <button
+                          onClick={() => handleDownload('doc')}
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 w-full text-left"
+                        >
+                          <FileText className="w-4 h-4" /> Download as DOC
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowShareModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
                       Share
                     </button>
                     {selectedContract.status === 'active' && (
@@ -1098,6 +1255,170 @@ export const SmartContracts: React.FC = () => {
                   <>Next <ChevronRight className="w-4 h-4" /></>
                 ) : (
                   <>Create Contract <Check className="w-4 h-4" /></>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Contract Modal */}
+      {showSignModal && selectedContract && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white">Digital Signature</h2>
+                <button
+                  onClick={() => setShowSignModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  <strong>Contract:</strong> {selectedContract.title}
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                  {selectedContract.contract_number}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Full Legal Name
+                </label>
+                <input
+                  type="text"
+                  value={signatureData.name}
+                  onChange={(e) => setSignatureData({ ...signatureData, name: e.target.value })}
+                  placeholder="Enter your full name"
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-trade-primary focus:border-trade-primary outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Title / Position
+                </label>
+                <input
+                  type="text"
+                  value={signatureData.title}
+                  onChange={(e) => setSignatureData({ ...signatureData, title: e.target.value })}
+                  placeholder="e.g., Chief Executive Officer"
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-trade-primary focus:border-trade-primary outline-none"
+                />
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                <input
+                  type="checkbox"
+                  checked={signatureData.agreed}
+                  onChange={(e) => setSignatureData({ ...signatureData, agreed: e.target.checked })}
+                  className="w-5 h-5 rounded border-gray-300 text-trade-primary focus:ring-trade-primary mt-0.5"
+                />
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  I confirm that I have read and agree to all terms and conditions outlined in this contract.
+                  This digital signature is legally binding and equivalent to a handwritten signature.
+                </p>
+              </div>
+
+              <button
+                onClick={handleSign}
+                disabled={!signatureData.name || !signatureData.agreed || isProcessing}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
+              >
+                {isProcessing ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Signing...</>
+                ) : (
+                  <><PenTool className="w-5 h-5" /> Sign Contract</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Contract Modal */}
+      {showShareModal && selectedContract && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white">Share Contract</h2>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  {selectedContract.title}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {selectedContract.contract_number}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Share Method
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShareData({ ...shareData, method: 'email' })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-medium transition-colors ${
+                      shareData.method === 'email'
+                        ? 'border-trade-primary bg-trade-primary/5 text-trade-primary'
+                        : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    <Mail className="w-4 h-4" /> Email
+                  </button>
+                  <button
+                    onClick={() => setShareData({ ...shareData, method: 'platform' })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-medium transition-colors ${
+                      shareData.method === 'platform'
+                        ? 'border-trade-primary bg-trade-primary/5 text-trade-primary'
+                        : 'border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    <Users className="w-4 h-4" /> Platform
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {shareData.method === 'email' ? 'Email Address' : 'Username or Email'}
+                </label>
+                <input
+                  type="email"
+                  value={shareData.email}
+                  onChange={(e) => setShareData({ ...shareData, email: e.target.value })}
+                  placeholder={shareData.method === 'email' ? 'recipient@company.com' : 'Search user...'}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-trade-primary focus:border-trade-primary outline-none"
+                />
+              </div>
+
+              <button
+                onClick={handleShare}
+                disabled={!shareData.email || isProcessing}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
+              >
+                {isProcessing ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</>
+                ) : (
+                  <><Send className="w-5 h-5" /> {shareData.method === 'email' ? 'Send Email' : 'Share on Platform'}</>
                 )}
               </button>
             </div>
