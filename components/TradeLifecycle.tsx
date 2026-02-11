@@ -214,19 +214,41 @@ export const TradeLifecycle: React.FC = () => {
   // Kanban drag handlers
   const handleDragStart = (cardId: string, fromCol: string) => setDraggedCard({ cardId, fromCol });
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
-  const handleDrop = (toCol: string) => {
+  const kanbanToStatus: Record<string, DbTrade['status']> = {
+    draft: 'draft',
+    compliance: 'pending_compliance',
+    execution: 'pending_execution',
+    settlement: 'pending_settlement',
+    completed: 'completed',
+  };
+
+  const handleDrop = async (toCol: string) => {
     if (!draggedCard || draggedCard.fromCol === toCol) { setDraggedCard(null); return; }
+
+    const cardId = draggedCard.cardId;
+
+    // Optimistic UI update
     setKanbanColumns(prev => {
       const updated = prev.map(col => ({ ...col, cards: [...col.cards] }));
       const fromIdx = updated.findIndex(c => c.id === draggedCard.fromCol);
       const toIdx = updated.findIndex(c => c.id === toCol);
-      const cardIdx = updated[fromIdx].cards.findIndex(c => c.id === draggedCard.cardId);
+      const cardIdx = updated[fromIdx].cards.findIndex(c => c.id === cardId);
       if (cardIdx === -1) return prev;
       const [card] = updated[fromIdx].cards.splice(cardIdx, 1);
       updated[toIdx].cards.push(card);
       return updated;
     });
     setDraggedCard(null);
+
+    // Persist to database
+    const newStatus = kanbanToStatus[toCol];
+    if (newStatus) {
+      try {
+        await mockDatabase.updateTrade(cardId, { status: newStatus });
+      } catch (e) {
+        console.error('Failed to update trade status:', e);
+      }
+    }
   };
 
   // Document drop handler
