@@ -432,5 +432,109 @@ export const mockDatabase = {
       console.error("Delete Trade Error:", e);
       return false;
     }
-  }
+  },
+
+  // --- ADMIN METHODS ---
+
+  getAdminStats: async (): Promise<{
+    totalUsers: number;
+    totalTrades: number;
+    totalOrganizations: number;
+    usersByCountry: { country: string; count: number; trades: number }[];
+  }> => {
+    try {
+      const [usersRes, tradesRes, orgsRes] = await Promise.all([
+        supabase.from('profiles').select('id, country, role', { count: 'exact' }),
+        supabase.from('trades').select('id, origin_country, destination_country', { count: 'exact' }),
+        supabase.from('organizations').select('id', { count: 'exact' }),
+      ]);
+
+      const users = usersRes.data || [];
+      const trades = tradesRes.data || [];
+      const totalUsers = usersRes.count || users.length;
+      const totalTrades = tradesRes.count || trades.length;
+      const totalOrganizations = orgsRes.count || 0;
+
+      // Aggregate users by country
+      const countryMap: Record<string, { count: number; trades: number }> = {};
+      users.forEach((u: any) => {
+        const c = u.country || 'Unknown';
+        if (!countryMap[c]) countryMap[c] = { count: 0, trades: 0 };
+        countryMap[c].count++;
+      });
+      trades.forEach((t: any) => {
+        const c = t.origin_country || t.destination_country || 'Unknown';
+        if (!countryMap[c]) countryMap[c] = { count: 0, trades: 0 };
+        countryMap[c].trades++;
+      });
+
+      const usersByCountry = Object.entries(countryMap)
+        .map(([country, data]) => ({ country, ...data }))
+        .sort((a, b) => b.count - a.count);
+
+      return { totalUsers, totalTrades, totalOrganizations, usersByCountry };
+    } catch (e) {
+      console.error('getAdminStats error:', e);
+      return { totalUsers: 0, totalTrades: 0, totalOrganizations: 0, usersByCountry: [] };
+    }
+  },
+
+  getAllUsers: async (): Promise<DbUser[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as DbUser[];
+    } catch (e) {
+      console.error('getAllUsers error:', e);
+      return [];
+    }
+  },
+
+  updateKYCStatus: async (id: string, status: 'Approved' | 'Rejected'): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('kyc_requests')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error('updateKYCStatus error:', e);
+      return false;
+    }
+  },
+
+  updateAMLStatus: async (id: string, status: 'Investigating' | 'Resolved'): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('aml_alerts')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error('updateAMLStatus error:', e);
+      return false;
+    }
+  },
+
+  createAuditLog: async (log: { action: string; user_id?: string; details?: string; ip?: string; status: string }): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('audit_logs')
+        .insert({
+          ...log,
+          created_at: new Date().toISOString(),
+        });
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error('createAuditLog error:', e);
+      return false;
+    }
+  },
 };
