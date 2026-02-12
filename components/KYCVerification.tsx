@@ -68,8 +68,7 @@ export const KYCVerification: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedDocType, setSelectedDocType] = useState<string | null>(null);
-  // B12: Interactive verification flow
-  const [wizardStep, setWizardStep] = useState(0); // 0 = overview, 1-N = document steps, N+1 = review, N+2 = submit
+  const [wizardStep, setWizardStep] = useState(0);
   const [showWizard, setShowWizard] = useState(false);
   const [dragOver, setDragOver] = useState<string | null>(null);
 
@@ -416,7 +415,6 @@ export const KYCVerification: React.FC = () => {
         onChange={handleFileUpload}
       />
 
-      {/* Submit Button + Wizard Launch */}
       <div className="flex justify-between items-center">
         {!showWizard && (
           <button onClick={() => { setShowWizard(true); setWizardStep(0); }}
@@ -435,7 +433,6 @@ export const KYCVerification: React.FC = () => {
         )}
       </div>
 
-      {/* B12: INTERACTIVE VERIFICATION WIZARD */}
       {showWizard && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">

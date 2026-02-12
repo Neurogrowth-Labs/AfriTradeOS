@@ -309,51 +309,79 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
       
       {/* 1. Header & Trust Hub */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center gap-6">
+      <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center gap-3 md:gap-6">
          <div className="relative">
-             <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-slate-700 overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg">
+             <div className="w-14 h-14 md:w-24 md:h-24 rounded-full bg-gray-200 dark:bg-slate-700 overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg">
                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personalInfo.name)}&background=0B1F33&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
              </div>
-             <div className="absolute bottom-0 right-0 bg-green-500 text-white p-1.5 rounded-full border-2 border-white dark:border-slate-800" title="Verified ID">
-                 <CheckCircle className="w-4 h-4" />
+             <div className="absolute bottom-0 right-0 bg-green-500 text-white p-1 md:p-1.5 rounded-full border-2 border-white dark:border-slate-800" title="Verified ID">
+                 <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
              </div>
          </div>
          
          <div className="flex-1 text-center md:text-left">
-             <h1 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">{personalInfo.name}</h1>
-             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-gray-500 dark:text-gray-400 mb-4">
-                 <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" /> {personalInfo.companyName}</span>
+             <h1 className="text-base md:text-2xl font-bold font-heading text-trade-primary dark:text-white mb-0.5 md:mb-1">{personalInfo.name}</h1>
+             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-2 md:mb-4">
+                 <span className="flex items-center gap-1"><Building2 className="w-3 h-3 md:w-3.5 md:h-3.5" /> {personalInfo.companyName}</span>
                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                 <span className="flex items-center gap-1"><Globe className="w-3.5 h-3.5" /> {personalInfo.country}</span>
+                 <span className="flex items-center gap-1"><Globe className="w-3 h-3 md:w-3.5 md:h-3.5" /> {personalInfo.country}</span>
              </div>
-             <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                 <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-bold uppercase tracking-wider">{personalInfo.role}</span>
+             <div className="flex flex-wrap justify-center md:justify-start gap-1.5 md:gap-2">
+                 <span className="px-2 md:px-3 py-0.5 md:py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider">{personalInfo.role}</span>
                  {stats.kycVerified ? (
-                   <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                       <Shield className="w-3 h-3" /> Verified
+                   <span className="px-2 md:px-3 py-0.5 md:py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                       <Shield className="w-2.5 h-2.5 md:w-3 md:h-3" /> Verified
                    </span>
                  ) : (
-                   <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                       <AlertTriangle className="w-3 h-3" /> Pending Verification
+                   <span className="px-2 md:px-3 py-0.5 md:py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                       <AlertTriangle className="w-2.5 h-2.5 md:w-3 md:h-3" /> Pending Verification
                    </span>
                  )}
              </div>
          </div>
 
          {/* Trust Score */}
-         <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-700 flex flex-col items-center min-w-[160px]">
-             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Trade Trust Score</span>
-             <div className="text-3xl font-black text-trade-primary dark:text-white font-mono">{stats.trustScore}<span className="text-sm text-gray-400 font-medium">/100</span></div>
-             <p className={`text-[10px] font-bold mt-1 ${stats.trustScore >= 80 ? 'text-green-600' : stats.trustScore >= 60 ? 'text-amber-600' : 'text-gray-500'}`}>
+         <div className="bg-gray-50 dark:bg-slate-900 p-2.5 md:p-4 rounded-xl border border-gray-100 dark:border-slate-700 flex flex-col items-center min-w-[120px] md:min-w-[160px]">
+             <span className="text-[9px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Trade Trust Score</span>
+             <div className="text-xl md:text-3xl font-black text-trade-primary dark:text-white font-mono">{stats.trustScore}<span className="text-[10px] md:text-sm text-gray-400 font-medium">/100</span></div>
+             <p className={`text-[9px] md:text-[10px] font-bold mt-0.5 md:mt-1 ${stats.trustScore >= 80 ? 'text-green-600' : stats.trustScore >= 60 ? 'text-amber-600' : 'text-gray-500'}`}>
                {stats.trustScore >= 80 ? 'High Credibility' : stats.trustScore >= 60 ? 'Good Standing' : 'Building Trust'}
              </p>
          </div>
       </div>
 
+      {/* Mobile Tab Bar */}
+      <div className="lg:hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-2">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as Tab)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
+                  activeTab === item.id
+                    ? 'bg-trade-primary text-white'
+                    : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
+                }`}
+              >
+                <item.icon className="w-3.5 h-3.5" />
+                {item.label}
+              </button>
+            ))}
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 bg-red-50 dark:bg-red-900/20 text-red-600"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
          
-         {/* 2. Sidebar Navigation */}
-         <div className="lg:col-span-3">
+         {/* 2. Sidebar Navigation — Desktop only */}
+         <div className="hidden lg:block lg:col-span-3">
              <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
                  {navItems.map(item => (
                      <button
