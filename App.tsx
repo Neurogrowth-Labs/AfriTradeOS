@@ -34,6 +34,14 @@ import { SystemDiagnostic } from './components/SystemDiagnostic';
 import { KYCVerification } from './components/KYCVerification';
 import { TenderManagement } from './components/TenderManagement';
 import { SmartContracts } from './components/SmartContracts';
+import { AnalyticsHub } from './components/AnalyticsHub';
+import { AnalystMarketResearch } from './components/AnalystMarketResearch';
+import { AnalystTradeTrends } from './components/AnalystTradeTrends';
+import { AnalystRegulatoryData } from './components/AnalystRegulatoryData';
+import { AnalystLogisticsData } from './components/AnalystLogisticsData';
+import { AnalystFinanceMetrics } from './components/AnalystFinanceMetrics';
+import { AnalystMarketPlayers } from './components/AnalystMarketPlayers';
+import { AnalystTenderAnalysis } from './components/AnalystTenderAnalysis';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
@@ -321,6 +329,22 @@ export default function App() {
   };
 
   const renderView = () => {
+    // Trade Analyst gets dedicated analyst-specific components
+    if (userRole === UserPersona.ANALYST) {
+      switch (currentView) {
+        case AppView.DASHBOARD: return <AnalyticsHub />;
+        case AppView.MARKET_INTEL: return <AnalystMarketResearch />;
+        case AppView.TRADE_LIFECYCLE: return <AnalystTradeTrends />;
+        case AppView.COMPLIANCE: return <AnalystRegulatoryData />;
+        case AppView.LOGISTICS: return <AnalystLogisticsData />;
+        case AppView.TRADE_FINANCE: return <AnalystFinanceMetrics />;
+        case AppView.MARKETPLACE: return <AnalystMarketPlayers />;
+        case AppView.TENDERS: return <AnalystTenderAnalysis />;
+        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default: return <AnalyticsHub />;
+      }
+    }
+
     switch (currentView) {
       case AppView.DASHBOARD: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
       case AppView.TRADE_LIFECYCLE: return <TradeLifecycle />;
@@ -441,19 +465,33 @@ export default function App() {
               <Menu className="w-5 h-5" />
             </button>
             <h1 className="text-base font-heading font-semibold text-trade-primary dark:text-gray-100">
-              {currentView === AppView.DASHBOARD ? 'Command Center' : 
-               currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
-               currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
-               currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
-               currentView === AppView.COMPLIANCE ? 'Compliance Engine' :
-               currentView === AppView.LOGISTICS ? 'Logistics' :
-               currentView === AppView.MARKETPLACE ? 'Partner Network' :
-               currentView === AppView.LIVE_ASSISTANT ? 'Live Assistant' : 
-               currentView === AppView.MARKETING ? 'Marketing Studio' : 
-               currentView === AppView.ADMIN ? 'Admin Console' :
-               currentView === AppView.REGULATOR ? 'Regulator Oversight' :
-               currentView === AppView.DIAGNOSTIC ? 'System Diagnostic' :
-               'Profile & Settings'}
+              {userRole === UserPersona.ANALYST ? (
+                currentView === AppView.DASHBOARD ? 'Analytics Hub' :
+                currentView === AppView.MARKET_INTEL ? 'Market Research' :
+                currentView === AppView.TRADE_LIFECYCLE ? 'Trade Trends' :
+                currentView === AppView.COMPLIANCE ? 'Regulatory Data' :
+                currentView === AppView.LOGISTICS ? 'Logistics Data' :
+                currentView === AppView.TRADE_FINANCE ? 'Finance Metrics' :
+                currentView === AppView.MARKETPLACE ? 'Market Players' :
+                currentView === AppView.TENDERS ? 'Tender Analysis' :
+                'Profile & Settings'
+              ) : (
+                currentView === AppView.DASHBOARD ? 'Command Center' : 
+                currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
+                currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
+                currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
+                currentView === AppView.COMPLIANCE ? 'Compliance Engine' :
+                currentView === AppView.LOGISTICS ? 'Logistics' :
+                currentView === AppView.MARKETPLACE ? 'Partner Network' :
+                currentView === AppView.LIVE_ASSISTANT ? 'Live Assistant' : 
+                currentView === AppView.MARKETING ? 'Marketing Studio' : 
+                currentView === AppView.ADMIN ? 'Admin Console' :
+                currentView === AppView.REGULATOR ? 'Regulator Oversight' :
+                currentView === AppView.DIAGNOSTIC ? 'System Diagnostic' :
+                currentView === AppView.TENDERS ? 'Tenders & RFQ' :
+                currentView === AppView.CONTRACTS ? 'Smart Contracts' :
+                'Profile & Settings'
+              )}
             </h1>
           </div>
           
