@@ -263,28 +263,28 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Dashboard',
       items: [
-        { view: AppView.REGULATOR, icon: Building, label: 'Agency Dashboard', description: 'National trade overview and policy metrics' },
+        { view: AppView.REGULATOR, icon: Building, label: 'Command Center', description: 'Live trade monitoring, KPIs, risk alerts & AI anomaly detection' },
       ]
     },
     {
       title: 'Policy & Compliance',
       items: [
-        { view: AppView.COMPLIANCE, icon: Scale, label: 'Policy Compliance', description: 'Monitor policy adherence across sectors' },
-        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Trade Agreements', description: 'Cross-border trade agreements' },
+        { view: AppView.COMPLIANCE, icon: Scale, label: 'Policy & Compliance', description: 'Policy library, enforcement cases & regulatory gap analysis' },
+        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Trade Agreements', description: 'AfCFTA, SADC, COMESA — tariffs, RoO & smart calculator' },
       ]
     },
     {
       title: 'Statistics',
       items: [
-        { view: AppView.MARKET_INTEL, icon: BarChart3, label: 'Trade Statistics', description: 'Export/import data and trends' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Trade Flows', description: 'Cargo movement and corridors' },
+        { view: AppView.MARKET_INTEL, icon: BarChart3, label: 'Trade Statistics', description: 'Import/export volumes, AI insights & forecasts' },
+        { view: AppView.LOGISTICS, icon: Truck, label: 'Trade Flows', description: 'Border crossings, corridors & congestion intelligence' },
       ]
     },
     {
       title: 'Registry',
       items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Entity Verification', description: 'Verify traders and businesses' },
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Business Registry', description: 'Registered traders directory' },
+        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Entity Verification', description: 'Digital KYC, AML screening & trusted trader tiers' },
+        { view: AppView.MARKETPLACE, icon: Users, label: 'Business Registry', description: 'Company profiles, ownership & compliance scores' },
       ]
     },
     {

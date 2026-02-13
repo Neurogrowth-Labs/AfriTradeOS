@@ -42,6 +42,13 @@ import { AnalystLogisticsData } from './components/AnalystLogisticsData';
 import { AnalystFinanceMetrics } from './components/AnalystFinanceMetrics';
 import { AnalystMarketPlayers } from './components/AnalystMarketPlayers';
 import { AnalystTenderAnalysis } from './components/AnalystTenderAnalysis';
+import { GovAgencyDashboard } from './components/GovAgencyDashboard';
+import { GovPolicyCompliance } from './components/GovPolicyCompliance';
+import { GovTradeAgreements } from './components/GovTradeAgreements';
+import { GovTradeStatistics } from './components/GovTradeStatistics';
+import { GovTradeFlows } from './components/GovTradeFlows';
+import { GovEntityVerification } from './components/GovEntityVerification';
+import { GovBusinessRegistry } from './components/GovBusinessRegistry';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
@@ -345,6 +352,21 @@ export default function App() {
       }
     }
 
+    // Government Agency gets dedicated government-specific components
+    if (userRole === UserPersona.GOVERNMENT) {
+      switch (currentView) {
+        case AppView.REGULATOR: return <GovAgencyDashboard />;
+        case AppView.COMPLIANCE: return <GovPolicyCompliance />;
+        case AppView.CONTRACTS: return <GovTradeAgreements />;
+        case AppView.MARKET_INTEL: return <GovTradeStatistics />;
+        case AppView.LOGISTICS: return <GovTradeFlows />;
+        case AppView.KYC_VERIFICATION: return <GovEntityVerification />;
+        case AppView.MARKETPLACE: return <GovBusinessRegistry />;
+        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default: return <GovAgencyDashboard />;
+      }
+    }
+
     switch (currentView) {
       case AppView.DASHBOARD: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
       case AppView.TRADE_LIFECYCLE: return <TradeLifecycle />;
@@ -475,6 +497,15 @@ export default function App() {
                 currentView === AppView.MARKETPLACE ? 'Market Players' :
                 currentView === AppView.TENDERS ? 'Tender Analysis' :
                 'Profile & Settings'
+              ) : userRole === UserPersona.GOVERNMENT ? (
+                currentView === AppView.REGULATOR ? 'Agency Command Center' :
+                currentView === AppView.COMPLIANCE ? 'Policy & Compliance' :
+                currentView === AppView.CONTRACTS ? 'Trade Agreements' :
+                currentView === AppView.MARKET_INTEL ? 'Trade Statistics' :
+                currentView === AppView.LOGISTICS ? 'Trade Flows' :
+                currentView === AppView.KYC_VERIFICATION ? 'Entity Verification' :
+                currentView === AppView.MARKETPLACE ? 'Business Registry' :
+                'Settings'
               ) : (
                 currentView === AppView.DASHBOARD ? 'Command Center' : 
                 currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
@@ -531,7 +562,7 @@ export default function App() {
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto p-4 lg:p-5 relative flex flex-col">
-          <div className="flex-1 min-h-0">
+          <div>
             {renderView()}
           </div>
         </div>
