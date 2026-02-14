@@ -53,6 +53,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   const [kycVerifying, setKycVerifying] = useState(false);
   const [uploadType, setUploadType] = useState<'kyc' | 'tax' | 'kyb'>('kyc');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('viewer');
   
   // Database-driven stats
   const [stats, setStats] = useState({
@@ -412,7 +417,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                  </div>
                  <h4 className="font-bold mb-1">Need Help?</h4>
                  <p className="text-xs text-gray-300 mb-3">Our support team is available 24/7 for Enterprise users.</p>
-                 <button className="text-xs font-bold bg-white text-trade-primary px-4 py-2 rounded-lg w-full">Contact Support</button>
+                 <button 
+                  onClick={() => setShowSupportModal(true)}
+                  className="text-xs font-bold bg-white text-trade-primary px-4 py-2 rounded-lg w-full"
+                >
+                  Contact Support
+                </button>
              </div>
          </div>
 
@@ -659,9 +669,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                              </div>
                            ))}
                          </div>
-                         <button className="mt-3 w-full py-2 bg-trade-primary/10 hover:bg-trade-primary/20 text-trade-primary rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5">
-                           <Plus className="w-3.5 h-3.5" /> Invite Team Member
-                         </button>
+                         <button 
+                          onClick={() => setShowInviteModal(true)}
+                          className="mt-3 w-full py-2 bg-trade-primary/10 hover:bg-trade-primary/20 text-trade-primary rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Invite Team Member
+                        </button>
                      </div>
 
                      {/* Regional Trade Association Links */}
@@ -670,7 +683,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                        <div>
                          <p className="text-xs font-bold text-blue-800 dark:text-blue-300">Link with Trade Associations & AfCFTA</p>
                          <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-0.5">Connect your account with regional trade associations and AfCFTA portals for streamlined compliance and market access.</p>
-                         <button className="mt-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors">Connect Now</button>
+                         <button 
+                          onClick={() => setShowConnectModal(true)}
+                          className="mt-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors"
+                        >
+                          Connect Now
+                        </button>
                        </div>
                      </div>
                  </div>
@@ -1296,6 +1314,143 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               <p className="text-xs text-gray-500 text-center">
                 Your documents will be reviewed within 24-48 hours.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invite Team Member Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-trade-primary" /> Invite Team Member
+                </h3>
+                <button onClick={() => setShowInviteModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Email Address</label>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  placeholder="colleague@company.com"
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-trade-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Role</label>
+                <select
+                  value={inviteRole}
+                  onChange={e => setInviteRole(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none"
+                >
+                  <option value="viewer">Viewer - Read-only access</option>
+                  <option value="editor">Editor - Can edit trades and documents</option>
+                  <option value="admin">Admin - Full access</option>
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  setShowInviteModal(false);
+                  setInviteEmail('');
+                }}
+                className="w-full py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+              >
+                Send Invitation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Connect Trade Associations Modal */}
+      {showConnectModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-blue-600" /> Connect Trade Associations
+                </h3>
+                <button onClick={() => setShowConnectModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Link your account with regional trade bodies for streamlined compliance.</p>
+              <div className="space-y-3">
+                {[
+                  { name: 'AfCFTA Secretariat', status: 'Available' },
+                  { name: 'ECOWAS Trade Portal', status: 'Available' },
+                  { name: 'EAC Single Customs', status: 'Coming Soon' },
+                  { name: 'SADC Trade Hub', status: 'Available' },
+                ].map(assoc => (
+                  <div key={assoc.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <span className="text-sm font-medium text-gray-800 dark:text-white">{assoc.name}</span>
+                    <button
+                      disabled={assoc.status === 'Coming Soon'}
+                      className={`text-xs font-bold px-3 py-1 rounded-lg ${
+                        assoc.status === 'Coming Soon'
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
+                    >
+                      {assoc.status === 'Coming Soon' ? 'Coming Soon' : 'Connect'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Support Modal */}
+      {showSupportModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-trade-primary" /> Contact Support
+                </h3>
+                <button onClick={() => setShowSupportModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <button className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-trade-primary transition-all text-center">
+                  <Mail className="w-6 h-6 text-trade-primary mx-auto mb-2" />
+                  <p className="text-sm font-bold text-gray-800 dark:text-white">Email</p>
+                  <p className="text-[10px] text-gray-500">support@afritrade.os</p>
+                </button>
+                <button className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-trade-primary transition-all text-center">
+                  <Smartphone className="w-6 h-6 text-trade-primary mx-auto mb-2" />
+                  <p className="text-sm font-bold text-gray-800 dark:text-white">Phone</p>
+                  <p className="text-[10px] text-gray-500">+233 20 123 4567</p>
+                </button>
+              </div>
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                <p className="text-xs text-green-700 dark:text-green-400">
+                  <span className="font-bold">Enterprise Support:</span> As an Enterprise user, you have access to 24/7 priority support with a dedicated account manager.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowSupportModal(false)}
+                className="w-full py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

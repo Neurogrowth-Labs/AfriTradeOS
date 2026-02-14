@@ -5,6 +5,7 @@ export enum AppView {
   MARKET_INTEL = 'MARKET_INTEL', // Search Grounding
   COMPLIANCE = 'COMPLIANCE', // Thinking Mode
   LOGISTICS = 'LOGISTICS', // Maps Grounding
+  LOGISTICS_PROVIDER = 'LOGISTICS_PROVIDER', // Logistics Provider Panel
   TRADE_FINANCE = 'TRADE_FINANCE', // New Finance
   MARKETPLACE = 'MARKETPLACE', // New Network
   LIVE_ASSISTANT = 'LIVE_ASSISTANT', // Live API
@@ -18,6 +19,12 @@ export enum AppView {
   TENDERS = 'TENDERS', // Tender/RFQ Management
   CONTRACTS = 'CONTRACTS', // Smart Contracts Management
   CUSTOMS = 'CUSTOMS', // Customs Authority Panel
+  BANK_DASHBOARD = 'BANK_DASHBOARD', // Bank Finance Dashboard
+  BANK_APPLICATIONS = 'BANK_APPLICATIONS', // Bank Finance Applications
+  BANK_DUE_DILIGENCE = 'BANK_DUE_DILIGENCE', // Bank KYC/AML Review
+  BANK_RISK_CLIENTS = 'BANK_RISK_CLIENTS', // Bank Risk & Client Directory
+  BANK_SETTINGS = 'BANK_SETTINGS', // Bank Account Settings
+  BANK_TRADE_TOOLS = 'BANK_TRADE_TOOLS', // Bank Trade Tools (Insurance, Blockchain, AfCFTA)
 }
 
 export interface ChartData {

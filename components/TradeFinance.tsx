@@ -145,6 +145,10 @@ export const TradeFinance: React.FC = () => {
   const [hedgingSuggestions, setHedgingSuggestions] = useState<HedgingSuggestion[]>(FALLBACK_HEDGING);
   const [calcForm, setCalcForm] = useState({ cifValue: 10000, hsCode: '0709.93', origin: 'Ghana', destination: 'Kenya', isAfcfta: true });
   const [calcResult, setCalcResult] = useState<TariffResult | null>(null);
+  const [showHedgeModal, setShowHedgeModal] = useState(false);
+  const [selectedHedge, setSelectedHedge] = useState<HedgingSuggestion | null>(null);
+  const [hedgeApplying, setHedgeApplying] = useState(false);
+  const [hedgeApplied, setHedgeApplied] = useState<string[]>([]);
 
   // Finance summary state (from DB)
   const [financeSummary, setFinanceSummary] = useState({
@@ -751,9 +755,21 @@ export const TradeFinance: React.FC = () => {
                             h.risk === 'low' ? 'bg-green-100 text-green-700' :
                             h.risk === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
                           }`}>Risk: {h.risk}</span>
-                          <button className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
-                            Apply Strategy <ArrowRight className="w-3 h-3" />
-                          </button>
+                          {hedgeApplied.includes(h.id) ? (
+                            <span className="text-xs text-green-600 font-bold flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" /> Strategy Applied
+                            </span>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                setSelectedHedge(h);
+                                setShowHedgeModal(true);
+                              }}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
+                            >
+                              Apply Strategy <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -949,6 +965,94 @@ export const TradeFinance: React.FC = () => {
                   <><Plus className="w-5 h-5" /> Submit Application</>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hedge Strategy Modal */}
+      {showHedgeModal && selectedHedge && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-indigo-500" /> Apply Hedging Strategy
+                </h3>
+                <button onClick={() => setShowHedgeModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className={`p-4 rounded-xl border ${
+                selectedHedge.type === 'forward' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' :
+                selectedHedge.type === 'option' ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' :
+                'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800'
+              }`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className={`p-2 rounded-lg ${
+                    selectedHedge.type === 'forward' ? 'bg-blue-100 text-blue-600' :
+                    selectedHedge.type === 'option' ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'
+                  }`}>
+                    {selectedHedge.type === 'forward' ? <ArrowRight className="w-4 h-4" /> :
+                     selectedHedge.type === 'option' ? <Shield className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 dark:text-white capitalize">{selectedHedge.type} Contract</h4>
+                    <span className="text-xs text-gray-500">{selectedHedge.pair} • {selectedHedge.term}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{selectedHedge.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-center">
+                  <p className="text-xs text-gray-500">Estimated Savings</p>
+                  <p className="text-xl font-bold text-green-600">{selectedHedge.savings}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-center">
+                  <p className="text-xs text-gray-500">Risk Level</p>
+                  <p className={`text-xl font-bold capitalize ${
+                    selectedHedge.risk === 'low' ? 'text-green-600' :
+                    selectedHedge.risk === 'medium' ? 'text-amber-600' : 'text-red-600'
+                  }`}>{selectedHedge.risk}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  <span className="font-bold">Note:</span> By applying this strategy, you agree to the terms and conditions of the hedging contract. A confirmation will be sent to your registered email.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowHedgeModal(false)}
+                  className="flex-1 py-3 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    setHedgeApplying(true);
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    setHedgeApplied(prev => [...prev, selectedHedge.id]);
+                    setHedgeApplying(false);
+                    setShowHedgeModal(false);
+                    setSelectedHedge(null);
+                  }}
+                  disabled={hedgeApplying}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold rounded-xl transition-colors"
+                >
+                  {hedgeApplying ? (
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Applying...</>
+                  ) : (
+                    <><CheckCircle className="w-5 h-5" /> Apply Now</>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

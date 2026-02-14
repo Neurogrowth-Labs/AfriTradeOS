@@ -105,6 +105,7 @@ export const Compliance: React.FC = () => {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [score, setScore] = useState(0);
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
 
   const handleAnalyze = async () => {
     setLoading(true);
@@ -245,7 +246,12 @@ export const Compliance: React.FC = () => {
             <div className="flex-1">
               <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Regulatory Update — Nigeria</p>
               <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">New SON conformity assessment requirement effective March 2026. Products in HS Chapter 84-85 now require additional certification.</p>
-              <button className="mt-2 text-[10px] font-bold text-amber-700 hover:text-amber-900 underline">View Full Notice</button>
+              <button 
+                onClick={() => setShowNoticeModal(true)}
+                className="mt-2 text-[10px] font-bold text-amber-700 hover:text-amber-900 underline"
+              >
+                View Full Notice
+              </button>
             </div>
           </div>
 
@@ -561,6 +567,73 @@ export const Compliance: React.FC = () => {
          </div>
 
       </div>
+      )}
+
+      {/* Regulatory Notice Modal */}
+      {showNoticeModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                  <Bell className="w-5 h-5" /> Regulatory Notice
+                </h3>
+                <button onClick={() => setShowNoticeModal(false)} className="p-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded-lg">
+                  <XCircle className="w-5 h-5 text-amber-600" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Published: February 15, 2026</span>
+                <span className="mx-2">•</span>
+                <span>Effective: March 1, 2026</span>
+              </div>
+              
+              <h4 className="font-bold text-gray-900 dark:text-white">New SON Conformity Assessment Requirement — Nigeria</h4>
+              
+              <div className="prose prose-sm dark:prose-invert">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  The Standards Organisation of Nigeria (SON) has issued new conformity assessment requirements for products falling under HS Chapters 84-85 (Machinery and Electrical Equipment).
+                </p>
+                
+                <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                  <h5 className="text-sm font-bold text-gray-800 dark:text-white mb-2">Key Changes:</h5>
+                  <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
+                      <span>All products in HS 84-85 now require SONCAP Product Certificate</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
+                      <span>Pre-shipment inspection mandatory for consignments over $10,000</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
+                      <span>Certificate validity reduced from 12 to 6 months</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                      <span>Non-compliant shipments subject to 25% penalty duty</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+                  For more information, contact SON directly or consult with your customs broker. AfriTradeOS will automatically update compliance checklists for affected products.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowNoticeModal(false)}
+                className="w-full py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+              >
+                Acknowledge & Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -73,6 +73,12 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
   const [showBidModal, setShowBidModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(BID_TEMPLATES[0]);
   const [bidData, setBidData] = useState({ price: '', delivery: '', terms: 'Net 30', notes: '' });
+  // Coalition and AI state
+  const [showCoalitionModal, setShowCoalitionModal] = useState(false);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showAIRecommendations, setShowAIRecommendations] = useState(false);
+  const [coalitionForm, setCoalitionForm] = useState({ name: '', description: '', targetTender: '' });
+  const [joinedCoalitions, setJoinedCoalitions] = useState<string[]>([]);
 
 
   useEffect(() => {
@@ -227,7 +233,10 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
                 ? `We found ${Math.min(filteredTenders.length, 3)} tender${filteredTenders.length > 1 ? 's' : ''} matching your product portfolio. AI suggests competitive pricing at 12-15% below budget ceiling for highest win probability.`
                 : 'Submit bids to get AI-powered pricing recommendations, payment term suggestions, and documentation checklists.'}
             </p>
-            <button className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20">
+            <button 
+              onClick={() => setShowAIRecommendations(true)}
+              className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20"
+            >
               View AI Recommendations
             </button>
           </div>
@@ -245,9 +254,17 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
                 <div className="w-6 h-6 rounded-full bg-indigo-200 dark:bg-indigo-800 flex items-center justify-center text-[10px] font-bold text-indigo-700 dark:text-indigo-300">3</div>
                 <p className="text-xs font-medium text-gray-800 dark:text-white">Active bid coalitions</p>
               </div>
-              <button className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Join</button>
+              <button 
+                onClick={() => setShowJoinModal(true)}
+                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                {joinedCoalitions.length > 0 ? 'Joined' : 'Join'}
+              </button>
             </div>
-            <button className="w-full py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold transition-colors">
+            <button 
+              onClick={() => setShowCoalitionModal(true)}
+              className="w-full py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold transition-colors"
+            >
               + Create Bid Coalition
             </button>
           </div>
@@ -552,6 +569,176 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
                 className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors">
                 <Send className="w-5 h-5" /> Submit Bid
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join Coalition Modal */}
+      {showJoinModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-500" /> Join Bid Coalition
+                </h3>
+                <button onClick={() => setShowJoinModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Select a coalition to join and pool resources with other SMEs.</p>
+              <div className="space-y-3">
+                {[
+                  { id: 'c1', name: 'West Africa Cocoa Consortium', members: 5, target: 'Agricultural Products Tender' },
+                  { id: 'c2', name: 'East Africa Coffee Alliance', members: 3, target: 'Bulk Coffee Supply RFQ' },
+                  { id: 'c3', name: 'Pan-African Textiles Group', members: 7, target: 'Garment Manufacturing Tender' },
+                ].map(coalition => (
+                  <div key={coalition.id} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-gray-900 dark:text-white">{coalition.name}</h4>
+                        <p className="text-xs text-gray-500">{coalition.members} members • {coalition.target}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setJoinedCoalitions(prev => [...prev, coalition.id]);
+                          setShowJoinModal(false);
+                        }}
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
+                      >
+                        Join
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Coalition Modal */}
+      {showCoalitionModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-500" /> Create Bid Coalition
+                </h3>
+                <button onClick={() => setShowCoalitionModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Coalition Name</label>
+                <input
+                  type="text"
+                  value={coalitionForm.name}
+                  onChange={e => setCoalitionForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., West Africa Exporters Alliance"
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Description</label>
+                <textarea
+                  value={coalitionForm.description}
+                  onChange={e => setCoalitionForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe the coalition purpose and requirements..."
+                  rows={3}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-indigo-500 resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Target Tender</label>
+                <select
+                  value={coalitionForm.targetTender}
+                  onChange={e => setCoalitionForm(prev => ({ ...prev, targetTender: e.target.value }))}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none"
+                >
+                  <option value="">Select a tender...</option>
+                  {filteredTenders.slice(0, 5).map(t => (
+                    <option key={t.id} value={t.id}>{t.title}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCoalitionModal(false);
+                  setCoalitionForm({ name: '', description: '', targetTender: '' });
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors"
+              >
+                <CheckCircle className="w-5 h-5" /> Create Coalition
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Recommendations Modal */}
+      {showAIRecommendations && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-500" /> AI Bid Recommendations
+                </h3>
+                <button onClick={() => setShowAIRecommendations(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[60vh]">
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                <h4 className="font-bold text-amber-800 dark:text-amber-300 mb-2">Pricing Strategy</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-400">Based on market analysis, we recommend pricing 12-15% below the budget ceiling for optimal win probability while maintaining healthy margins.</p>
+              </div>
+              
+              {filteredTenders.slice(0, 3).map((tender, idx) => (
+                <div key={tender.id} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white">{tender.title}</h4>
+                      <p className="text-xs text-gray-500">{tender.organization_name || 'Organization'}</p>
+                    </div>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">
+                      {85 - idx * 5}% Match
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                      <p className="text-xs text-gray-500">Suggested Price</p>
+                      <p className="text-sm font-bold text-green-600">${Math.round(tender.budget_max * 0.88).toLocaleString()}</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                      <p className="text-xs text-gray-500">Win Probability</p>
+                      <p className="text-sm font-bold text-indigo-600">{75 - idx * 8}%</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                      <p className="text-xs text-gray-500">Competition</p>
+                      <p className="text-sm font-bold text-amber-600">{3 + idx} bids</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedTender(tender);
+                      setShowAIRecommendations(false);
+                      setShowBidModal(true);
+                    }}
+                    className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors"
+                  >
+                    Apply Recommendation & Bid
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

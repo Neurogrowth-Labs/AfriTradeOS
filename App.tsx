@@ -57,6 +57,13 @@ import { GovTradeFlows } from './components/GovTradeFlows';
 import { GovEntityVerification } from './components/GovEntityVerification';
 import { GovBusinessRegistry } from './components/GovBusinessRegistry';
 import { CustomsAuthorityPanel } from './components/CustomsAuthorityPanel';
+import { LogisticsProviderPanel } from './components/LogisticsProviderPanel';
+import BankFinanceDashboard from './components/BankFinanceDashboard';
+import BankFinanceApplications from './components/BankFinanceApplications';
+import BankDueDiligence from './components/BankDueDiligence';
+import BankRiskClients from './components/BankRiskClients';
+import BankAccountSettings from './components/BankAccountSettings';
+import BankTradeTools from './components/BankTradeTools';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
@@ -147,6 +154,7 @@ const routeToView: Record<string, AppView> = {
   '/market': AppView.MARKET_INTEL,
   '/compliance': AppView.COMPLIANCE,
   '/logistics': AppView.LOGISTICS,
+  '/logistics-provider': AppView.LOGISTICS_PROVIDER,
   '/marketplace': AppView.MARKETPLACE,
   '/assistant': AppView.LIVE_ASSISTANT,
   '/marketing': AppView.MARKETING,
@@ -158,6 +166,12 @@ const routeToView: Record<string, AppView> = {
   '/tenders': AppView.TENDERS,
   '/contracts': AppView.CONTRACTS,
   '/customs': AppView.CUSTOMS,
+  '/bank-dashboard': AppView.BANK_DASHBOARD,
+  '/bank-applications': AppView.BANK_APPLICATIONS,
+  '/bank-due-diligence': AppView.BANK_DUE_DILIGENCE,
+  '/bank-risk-clients': AppView.BANK_RISK_CLIENTS,
+  '/bank-settings': AppView.BANK_SETTINGS,
+  '/bank-trade-tools': AppView.BANK_TRADE_TOOLS,
 };
 
 const viewToRoute: Record<AppView, string> = {
@@ -167,6 +181,7 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.MARKET_INTEL]: '/market',
   [AppView.COMPLIANCE]: '/compliance',
   [AppView.LOGISTICS]: '/logistics',
+  [AppView.LOGISTICS_PROVIDER]: '/logistics-provider',
   [AppView.MARKETPLACE]: '/marketplace',
   [AppView.LIVE_ASSISTANT]: '/assistant',
   [AppView.MARKETING]: '/marketing',
@@ -179,6 +194,32 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.TENDERS]: '/tenders',
   [AppView.CONTRACTS]: '/contracts',
   [AppView.CUSTOMS]: '/customs',
+  [AppView.BANK_DASHBOARD]: '/bank-dashboard',
+  [AppView.BANK_APPLICATIONS]: '/bank-applications',
+  [AppView.BANK_DUE_DILIGENCE]: '/bank-due-diligence',
+  [AppView.BANK_RISK_CLIENTS]: '/bank-risk-clients',
+  [AppView.BANK_SETTINGS]: '/bank-settings',
+  [AppView.BANK_TRADE_TOOLS]: '/bank-trade-tools',
+};
+
+// Get default route for each role
+const getDefaultRouteForRole = (role: UserPersona): string => {
+  switch (role) {
+    case UserPersona.CUSTOMS:
+      return '/customs';
+    case UserPersona.LOGISTICS:
+      return '/logistics-provider';
+    case UserPersona.GOVERNMENT:
+      return '/regulator';
+    case UserPersona.ADMIN:
+      return '/admin';
+    case UserPersona.ANALYST:
+      return '/dashboard';
+    case UserPersona.BANK:
+      return '/bank-dashboard';
+    default:
+      return '/dashboard';
+  }
 };
 
 export default function App() {
@@ -401,7 +442,8 @@ export default function App() {
         // Existing account: profile exists in DB → skip onboarding
         // New account: no profile at all → show onboarding
         if (dbProfile) {
-            if (dbProfile.role) setUserRole(dbProfile.role);
+            const role = dbProfile.role || UserPersona.EXPORTER_SME;
+            if (dbProfile.role) setUserRole(role);
             setUserProfile({
               userName: dbProfile.full_name || meta.full_name || '',
               companyName: dbProfile.company_name || '',
@@ -412,6 +454,11 @@ export default function App() {
               ...meta
             });
             setIsOnboarded(true);
+            // Navigate to role-specific default route
+            const defaultRoute = getDefaultRouteForRole(role);
+            if (location.pathname === '/' || location.pathname === '/dashboard') {
+              navigate(defaultRoute);
+            }
         } else {
             // No profile at all - new account, redirect to onboarding
             console.log("No profile found, redirecting to onboarding...");
@@ -489,6 +536,8 @@ export default function App() {
       setUserRole(role);
       setUserProfile(profile);
       setIsOnboarded(true);
+      // Navigate to role-specific default route
+      navigate(getDefaultRouteForRole(role));
   };
 
   const renderView = () => {
@@ -523,6 +572,28 @@ export default function App() {
       }
     }
 
+    // Logistics Provider gets dedicated logistics provider panel
+    if (userRole === UserPersona.LOGISTICS) {
+      switch (currentView) {
+        case AppView.LOGISTICS_PROVIDER: return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
+        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default: return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
+      }
+    }
+
+    // Bank / Insurer gets dedicated bank-specific components
+    if (userRole === UserPersona.BANK) {
+      switch (currentView) {
+        case AppView.BANK_DASHBOARD: return <BankFinanceDashboard />;
+        case AppView.BANK_APPLICATIONS: return <BankFinanceApplications />;
+        case AppView.BANK_DUE_DILIGENCE: return <BankDueDiligence />;
+        case AppView.BANK_RISK_CLIENTS: return <BankRiskClients />;
+        case AppView.BANK_SETTINGS: return <BankAccountSettings />;
+        case AppView.BANK_TRADE_TOOLS: return <BankTradeTools />;
+        default: return <BankFinanceDashboard />;
+      }
+    }
+
     switch (currentView) {
       case AppView.DASHBOARD: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
       case AppView.TRADE_LIFECYCLE: return <TradeLifecycle />;
@@ -541,6 +612,7 @@ export default function App() {
       case AppView.TENDERS: return <TenderManagement />;
       case AppView.CONTRACTS: return <SmartContracts />;
       case AppView.CUSTOMS: return <CustomsAuthorityPanel />;
+      case AppView.LOGISTICS_PROVIDER: return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
       default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
@@ -604,16 +676,40 @@ export default function App() {
         </div>
 
         <nav className="p-3 space-y-0.5 mt-2 overflow-y-auto max-h-[calc(100vh-160px)] custom-scrollbar pb-28">
-          {getMenuForRole(userRole).map((section, sectionIdx) => (
-            <div key={section.title}>
-              <div className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading`}>
-                {section.title}
+          {isAuthLoading ? (
+            // Skeleton loading for sidebar menu
+            <div className="space-y-2 animate-pulse">
+              <div className="px-4 py-1.5">
+                <div className="h-3 w-16 bg-slate-700 rounded" />
               </div>
-              {section.items.map((item) => (
-                <NavItem key={item.view} view={item.view} icon={item.icon} label={item.label} />
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="w-4 h-4 bg-slate-700 rounded" />
+                  <div className="h-3 w-24 bg-slate-700 rounded" />
+                </div>
+              ))}
+              <div className="px-4 py-1.5 mt-4">
+                <div className="h-3 w-20 bg-slate-700 rounded" />
+              </div>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="w-4 h-4 bg-slate-700 rounded" />
+                  <div className="h-3 w-20 bg-slate-700 rounded" />
+                </div>
               ))}
             </div>
-          ))}
+          ) : (
+            getMenuForRole(userRole).map((section, sectionIdx) => (
+              <div key={section.title}>
+                <div className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading`}>
+                  {section.title}
+                </div>
+                {section.items.map((item) => (
+                  <NavItem key={item.view} view={item.view} icon={item.icon} label={item.label} />
+                ))}
+              </div>
+            ))
+          )}
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
@@ -663,6 +759,10 @@ export default function App() {
                 currentView === AppView.KYC_VERIFICATION ? 'Entity Verification' :
                 currentView === AppView.MARKETPLACE ? 'Business Registry' :
                 'Settings'
+              ) : userRole === UserPersona.LOGISTICS ? (
+                currentView === AppView.LOGISTICS_PROVIDER ? 'Logistics Command Center' :
+                currentView === AppView.PROFILE ? 'Settings' :
+                'Logistics Command Center'
               ) : (
                 currentView === AppView.DASHBOARD ? 'Command Center' : 
                 currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :

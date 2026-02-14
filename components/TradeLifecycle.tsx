@@ -223,6 +223,7 @@ export const TradeLifecycle: React.FC = () => {
     { id: 'doc_3', name: 'Bill of Lading.pdf', type: 'PDF', size: '512 KB', uploadedBy: 'Logistics Partner', uploadedAt: '3 days ago', status: 'verified' },
   ]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [docPreview, setDocPreview] = useState<string | null>(null);
 
   // Activity timeline state
   const [activities] = useState<ActivityEvent[]>([
@@ -600,13 +601,49 @@ export const TradeLifecycle: React.FC = () => {
               </select>
               <div className="flex gap-2 ml-auto">
                 <button
-                  onClick={() => alert('Exporting trade history to PDF...')}
+                  onClick={() => {
+                    const filteredTrades = allTrades.filter(t => {
+                      if (tradeFilter.status && t.status !== tradeFilter.status) return false;
+                      if (tradeSearch && !(`${t.product} ${t.destination_country} ${t.origin_country}`.toLowerCase().includes(tradeSearch.toLowerCase()))) return false;
+                      return true;
+                    });
+                    const content = `TRADE HISTORY REPORT\n${'='.repeat(50)}\nGenerated: ${new Date().toLocaleString()}\n\n${filteredTrades.map(t => 
+                      `Trade ID: ${t.id}\nProduct: ${t.product}\nRoute: ${t.origin_country} → ${t.destination_country}\nValue: $${t.value?.toLocaleString() || 'N/A'}\nStatus: ${t.status}\n${'─'.repeat(30)}`
+                    ).join('\n\n')}`;
+                    const blob = new Blob([content], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trade-history-${new Date().toISOString().split('T')[0]}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
                   className="flex items-center gap-1.5 px-3 py-2 bg-trade-primary/10 hover:bg-trade-primary/20 text-trade-primary rounded-lg text-xs font-bold transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" /> PDF
                 </button>
                 <button
-                  onClick={() => alert('Exporting trade history to Excel...')}
+                  onClick={() => {
+                    const filteredTrades = allTrades.filter(t => {
+                      if (tradeFilter.status && t.status !== tradeFilter.status) return false;
+                      if (tradeSearch && !(`${t.product} ${t.destination_country} ${t.origin_country}`.toLowerCase().includes(tradeSearch.toLowerCase()))) return false;
+                      return true;
+                    });
+                    let csvContent = 'data:text/csv;charset=utf-8,';
+                    csvContent += 'Trade ID,Product,Origin,Destination,Value,Status,Created\n';
+                    filteredTrades.forEach(t => {
+                      csvContent += `${t.id},${t.product},${t.origin_country},${t.destination_country},${t.value || ''},${t.status},${t.created_at || ''}\n`;
+                    });
+                    const encodedUri = encodeURI(csvContent);
+                    const a = document.createElement('a');
+                    a.href = encodedUri;
+                    a.download = `trade-history-${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                  }}
                   className="flex items-center gap-1.5 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-bold transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" /> Excel
@@ -804,31 +841,91 @@ export const TradeLifecycle: React.FC = () => {
             </div>
             <div className="divide-y divide-gray-100 dark:divide-slate-700 overflow-y-auto max-h-[400px]">
               {documents.map(doc => (
-                <div key={doc.id} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      doc.status === 'verified' ? 'bg-green-100 text-green-600' :
-                      doc.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
-                    }`}>
-                      <FileText className="w-4 h-4" />
+                <div key={doc.id}>
+                  <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${
+                        doc.status === 'verified' ? 'bg-green-100 text-green-600' :
+                        doc.status === 'rejected' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
+                      }`}>
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-white">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{doc.size} &middot; {doc.uploadedBy} &middot; {doc.uploadedAt}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800 dark:text-white">{doc.name}</p>
-                      <p className="text-xs text-gray-500">{doc.size} &middot; {doc.uploadedBy} &middot; {doc.uploadedAt}</p>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        doc.status === 'verified' ? 'bg-green-100 text-green-700' :
+                        doc.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                      }`}>{doc.status}</span>
+                      <button 
+                        onClick={() => {
+                          setDocPreview(docPreview === doc.id ? null : doc.id);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${docPreview === doc.id ? 'bg-trade-primary/10 text-trade-primary' : 'hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-400'}`}
+                        title={docPreview === doc.id ? 'Hide Document' : 'View Document'}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const blob = new Blob([`Document: ${doc.name}\nType: ${doc.type}\nSize: ${doc.size}\nStatus: ${doc.status}\nUploaded by: ${doc.uploadedBy}\nUploaded at: ${doc.uploadedAt}`], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = doc.name;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-gray-400 hover:text-trade-primary"
+                        title="Download Document"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      doc.status === 'verified' ? 'bg-green-100 text-green-700' :
-                      doc.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                    }`}>{doc.status}</span>
-                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                      <Eye className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
-                      <Download className="w-4 h-4 text-gray-400" />
-                    </button>
-                  </div>
+                  {docPreview === doc.id && (
+                    <div className="px-4 pb-4">
+                      <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-white">Document Preview</h4>
+                          <button 
+                            onClick={() => setDocPreview(null)}
+                            className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                          >
+                            Hide Preview
+                          </button>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-600 p-6 text-center min-h-[200px] flex flex-col items-center justify-center">
+                          <FileText className="w-12 h-12 text-gray-300 dark:text-slate-600 mb-3" />
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{doc.name}</p>
+                          <p className="text-xs text-gray-500 mt-1">{doc.type} • {doc.size}</p>
+                          <div className="mt-4 flex gap-2">
+                            <button 
+                              onClick={() => {
+                                const blob = new Blob([`Document: ${doc.name}\nType: ${doc.type}\nSize: ${doc.size}\nStatus: ${doc.status}\nUploaded by: ${doc.uploadedBy}\nUploaded at: ${doc.uploadedAt}`], { type: 'text/plain' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = doc.name;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                              }}
+                              className="px-3 py-1.5 bg-trade-primary text-white text-xs font-bold rounded-lg hover:bg-trade-primary/90 transition-colors flex items-center gap-1"
+                            >
+                              <Download className="w-3 h-3" /> Download
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

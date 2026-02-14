@@ -21,7 +21,9 @@ import {
   ClipboardCheck,
   BarChart3,
   Shield,
-  LucideIcon
+  LucideIcon,
+  Zap,
+  Link2
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -176,26 +178,9 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
   // Logistics Provider - Focus on shipments, routes, tracking
   [UserPersona.LOGISTICS]: [
     {
-      title: 'Operations',
+      title: 'Command Center',
       items: [
-        { view: AppView.DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Fleet Management' },
-        { view: AppView.TRADE_LIFECYCLE, icon: Package, label: 'Active Shipments' },
-      ]
-    },
-    {
-      title: 'Business',
-      items: [
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Find Clients' },
-        { view: AppView.TENDERS, icon: FileText, label: 'Logistics Tenders' },
-        { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Invoicing' },
-      ]
-    },
-    {
-      title: 'Compliance',
-      items: [
-        { view: AppView.COMPLIANCE, icon: Scale, label: 'Customs Docs' },
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Certifications' },
+        { view: AppView.LOGISTICS_PROVIDER, icon: LayoutDashboard, label: 'Logistics Panel', description: 'Full logistics provider mission control' },
       ]
     },
     {
@@ -209,30 +194,34 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
   // Bank / Insurer - Focus on finance, risk, applications
   [UserPersona.BANK]: [
     {
-      title: 'Applications',
+      title: 'Command Center',
       items: [
-        { view: AppView.DASHBOARD, icon: LayoutDashboard, label: 'Finance Dashboard', description: 'Overview of pending applications and portfolio' },
-        { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Finance Applications', description: 'Review and process finance requests' },
+        { view: AppView.BANK_DASHBOARD, icon: LayoutDashboard, label: 'Finance Dashboard', description: 'Portfolio snapshot, trade flows, credit pipeline & risk radar' },
+        { view: AppView.BANK_APPLICATIONS, icon: Landmark, label: 'Finance Applications', description: 'Smart application builder, document extraction & credit scoring' },
       ]
     },
     {
       title: 'Due Diligence',
       items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'KYC Review', description: 'Verify client identity and documents' },
-        { view: AppView.COMPLIANCE, icon: Shield, label: 'AML Screening', description: 'Anti-money laundering checks' },
+        { view: AppView.BANK_DUE_DILIGENCE, icon: Shield, label: 'KYC & AML', description: 'KYC verification and AML screening' },
       ]
     },
     {
       title: 'Risk & Clients',
       items: [
-        { view: AppView.MARKET_INTEL, icon: TrendingUp, label: 'Market Risk', description: 'Country and sector risk analysis' },
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Client Directory', description: 'Verified business directory' },
+        { view: AppView.BANK_RISK_CLIENTS, icon: BarChart3, label: 'Risk & Clients', description: 'Market risk monitoring and client directory' },
+      ]
+    },
+    {
+      title: 'Tools',
+      items: [
+        { view: AppView.BANK_TRADE_TOOLS, icon: Zap, label: 'Trade Tools', description: 'Insurance quoting, blockchain verification & AfCFTA checker' },
       ]
     },
     {
       title: 'Account',
       items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
+        { view: AppView.BANK_SETTINGS, icon: Settings, label: 'Account Settings', description: 'Users, roles, currencies, integrations & audit logs' },
       ]
     }
   ],

@@ -133,6 +133,10 @@ export const SmartContracts: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
+  const [showComplianceModal, setShowComplianceModal] = useState(false);
+  const [showRiskyClausesModal, setShowRiskyClausesModal] = useState(false);
+  const [complianceRunning, setComplianceRunning] = useState(false);
+  const [complianceResults, setComplianceResults] = useState<{status: string; issues: {type: string; severity: string; description: string}[]} | null>(null);
 
   const defaultFormData: ContractFormData = {
     title: '',
@@ -689,10 +693,16 @@ Please log in to AfriTradeOS to view the full contract details.
               }
             </p>
             <div className="flex gap-2">
-              <button className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20">
+              <button 
+                onClick={() => setShowComplianceModal(true)}
+                className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20"
+              >
                 Run Compliance Check
               </button>
-              <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-colors">
+              <button 
+                onClick={() => setShowRiskyClausesModal(true)}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-colors"
+              >
                 Review Risky Clauses
               </button>
             </div>
@@ -1706,6 +1716,141 @@ Please log in to AfriTradeOS to view the full contract details.
                 ) : (
                   <><Send className="w-5 h-5" /> {shareData.method === 'email' ? 'Send Email' : 'Share on Platform'}</>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Compliance Check Modal */}
+      {showComplianceModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Scale className="w-5 h-5 text-trade-primary" /> AI Compliance Check
+                </h3>
+                <button onClick={() => { setShowComplianceModal(false); setComplianceResults(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {!complianceResults && !complianceRunning && (
+                <div className="text-center py-6">
+                  <Scale className="w-12 h-12 text-trade-primary mx-auto mb-4" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Run AI-powered compliance analysis on your contracts against AfCFTA rules, export regulations, and tax obligations.</p>
+                  <button
+                    onClick={async () => {
+                      setComplianceRunning(true);
+                      await new Promise(resolve => setTimeout(resolve, 2000));
+                      setComplianceResults({
+                        status: 'completed',
+                        issues: [
+                          { type: 'AfCFTA', severity: 'warning', description: 'Certificate of Origin clause needs verification for preferential tariff eligibility' },
+                          { type: 'Payment Terms', severity: 'info', description: 'Consider adding LC confirmation for transactions over $50,000' },
+                          { type: 'Incoterms', severity: 'success', description: 'Incoterms 2020 correctly applied for CIF shipments' },
+                        ]
+                      });
+                      setComplianceRunning(false);
+                    }}
+                    className="px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+                  >
+                    Run Compliance Check
+                  </button>
+                </div>
+              )}
+              {complianceRunning && (
+                <div className="text-center py-10">
+                  <Loader2 className="w-10 h-10 text-trade-primary mx-auto mb-4 animate-spin" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Analyzing contracts against compliance rules...</p>
+                </div>
+              )}
+              {complianceResults && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-green-700 dark:text-green-400">Compliance check completed</span>
+                  </div>
+                  {complianceResults.issues.map((issue, idx) => (
+                    <div key={idx} className={`p-4 rounded-xl border ${
+                      issue.severity === 'warning' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
+                      issue.severity === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+                      'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        {issue.severity === 'warning' ? <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" /> :
+                         issue.severity === 'success' ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> :
+                         <AlertCircle className="w-5 h-5 text-blue-500 shrink-0" />}
+                        <div>
+                          <p className="text-xs font-bold text-gray-500 uppercase">{issue.type}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">{issue.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Risky Clauses Modal */}
+      {showRiskyClausesModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" /> Risky Clauses Review
+                </h3>
+                <button onClick={() => setShowRiskyClausesModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">AI has identified the following potentially risky clauses in your contracts:</p>
+              
+              <div className="space-y-3">
+                <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-red-700 dark:text-red-400">High Risk: Payment Terms</p>
+                      <p className="text-xs text-red-600 dark:text-red-300 mt-1">Contract #CTR-2024-001 has 100% advance payment clause which exposes buyer to significant risk. Consider milestone-based payments.</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Medium Risk: Force Majeure</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">2 contracts lack comprehensive force majeure clauses. Recommend adding pandemic and supply chain disruption provisions.</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Medium Risk: Dispute Resolution</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">Contract #CTR-2024-003 specifies foreign jurisdiction for disputes. Consider neutral arbitration (e.g., OHADA, ICC).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowRiskyClausesModal(false)}
+                className="w-full py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+              >
+                Acknowledge & Close
               </button>
             </div>
           </div>

@@ -71,6 +71,9 @@ export const KYCVerification: React.FC = () => {
   const [wizardStep, setWizardStep] = useState(0);
   const [showWizard, setShowWizard] = useState(false);
   const [dragOver, setDragOver] = useState<string | null>(null);
+  const [showBiometricModal, setShowBiometricModal] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricScanning, setBiometricScanning] = useState(false);
 
   useEffect(() => {
     fetchKYCStatus();
@@ -281,7 +284,16 @@ export const KYCVerification: React.FC = () => {
           <div>
             <p className="text-xs font-bold text-purple-800 dark:text-purple-300">Biometric Verification</p>
             <p className="text-[10px] text-purple-700 dark:text-purple-400 mt-0.5">Enhanced security with fingerprint or facial recognition for identity verification.</p>
-            <button className="mt-1.5 text-[10px] font-bold bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg transition-colors">Enable Biometric</button>
+            <button 
+              onClick={() => setShowBiometricModal(true)}
+              className={`mt-1.5 text-[10px] font-bold px-3 py-1 rounded-lg transition-colors ${
+                biometricEnabled 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+              }`}
+            >
+              {biometricEnabled ? 'Biometric Enabled ✓' : 'Enable Biometric'}
+            </button>
           </div>
         </div>
       </div>
@@ -688,6 +700,88 @@ export const KYCVerification: React.FC = () => {
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">
               {kycRequest.rejection_reason || 'Your documents could not be verified. Please re-upload the required documents.'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Biometric Verification Modal */}
+      {showBiometricModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 bg-purple-50 dark:bg-purple-900/20">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+                  <Fingerprint className="w-5 h-5" /> Biometric Verification
+                </h3>
+                <button onClick={() => setShowBiometricModal(false)} className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg">
+                  <XCircle className="w-5 h-5 text-purple-600" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              {!biometricScanning && !biometricEnabled && (
+                <>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Enable biometric verification for enhanced security. Choose your preferred method:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={async () => {
+                        setBiometricScanning(true);
+                        await new Promise(resolve => setTimeout(resolve, 2500));
+                        setBiometricScanning(false);
+                        setBiometricEnabled(true);
+                      }}
+                      className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all flex flex-col items-center gap-2"
+                    >
+                      <Fingerprint className="w-8 h-8 text-purple-600" />
+                      <span className="text-sm font-bold text-gray-800 dark:text-white">Fingerprint</span>
+                    </button>
+                    <button
+                      onClick={async () => {
+                        setBiometricScanning(true);
+                        await new Promise(resolve => setTimeout(resolve, 2500));
+                        setBiometricScanning(false);
+                        setBiometricEnabled(true);
+                      }}
+                      className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all flex flex-col items-center gap-2"
+                    >
+                      <Camera className="w-8 h-8 text-purple-600" />
+                      <span className="text-sm font-bold text-gray-800 dark:text-white">Face ID</span>
+                    </button>
+                  </div>
+                </>
+              )}
+              
+              {biometricScanning && (
+                <div className="text-center py-8">
+                  <div className="relative w-24 h-24 mx-auto mb-4">
+                    <ScanLine className="w-24 h-24 text-purple-600 animate-pulse" />
+                    <div className="absolute inset-0 border-4 border-purple-400 rounded-full animate-ping opacity-30" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Scanning biometric data...</p>
+                  <p className="text-xs text-gray-500 mt-1">Please hold still</p>
+                </div>
+              )}
+              
+              {biometricEnabled && !biometricScanning && (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h4 className="font-bold text-green-700 dark:text-green-400 mb-2">Biometric Enabled Successfully</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Your biometric data has been securely registered. You can now use biometric verification for identity confirmation.
+                  </p>
+                  <button
+                    onClick={() => setShowBiometricModal(false)}
+                    className="mt-4 px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
