@@ -18,7 +18,10 @@ import {
   ChevronDown,
   Clock,
   FileText,
-  MapPin
+  MapPin,
+  Bell,
+  Zap,
+  Circle
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
 
@@ -92,7 +95,7 @@ const CROSS_BORDER_GUIDES = [
 ];
 
 export const Compliance: React.FC = () => {
-  const [activeView, setActiveView] = useState<'simulator' | 'dashboard' | 'guides'>('simulator');
+  const [activeView, setActiveView] = useState<'simulator' | 'dashboard' | 'guides' | 'checklist'>('simulator');
   const [expandedGuide, setExpandedGuide] = useState<string | null>(null);
   const [product, setProduct] = useState('Cotton T-Shirts');
   const [origin, setOrigin] = useState('Benin');
@@ -139,6 +142,7 @@ export const Compliance: React.FC = () => {
            {[
              { id: 'simulator' as const, label: 'RoO Simulator', icon: Scale },
              { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
+             { id: 'checklist' as const, label: 'Checklist', icon: FileCheck },
              { id: 'guides' as const, label: 'Cross-Border Guides', icon: BookOpen },
            ].map(tab => (
              <button key={tab.id} onClick={() => setActiveView(tab.id)}
@@ -223,6 +227,78 @@ export const Compliance: React.FC = () => {
                     </div>
                     <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{risk.score}%</span>
                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* INTERACTIVE COMPLIANCE CHECKLIST */}
+      {activeView === 'checklist' && (
+        <div className="flex-1 flex flex-col gap-4">
+          {/* Regulatory Change Alert */}
+          <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4 flex items-start gap-3">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
+              <Bell className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Regulatory Update — Nigeria</p>
+              <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">New SON conformity assessment requirement effective March 2026. Products in HS Chapter 84-85 now require additional certification.</p>
+              <button className="mt-2 text-[10px] font-bold text-amber-700 hover:text-amber-900 underline">View Full Notice</button>
+            </div>
+          </div>
+
+          {/* AI Compliance Assistant */}
+          <div className="bg-gradient-to-r from-trade-primary to-trade-secondary rounded-xl p-4 text-white flex items-center gap-4">
+            <div className="p-2.5 bg-white/20 rounded-xl shrink-0"><Zap className="w-5 h-5" /></div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">AI Compliance Assistant: You have <span className="font-bold">3 items</span> requiring action. Complete them to maintain your compliance score above 80%.</p>
+            </div>
+          </div>
+
+          {/* Checklist Items */}
+          <div className="space-y-3">
+            {[
+              { id: 'ck1', title: 'Certificate of Origin', category: 'Customs', status: 'complete' as const, description: 'AfCFTA Certificate of Origin filed and verified', deadline: 'Completed Feb 1' },
+              { id: 'ck2', title: 'Import License Renewal', category: 'Licensing', status: 'warning' as const, description: 'Import permit expires in 30 days — renewal required', deadline: 'Due Mar 15' },
+              { id: 'ck3', title: 'VAT Registration (Nigeria)', category: 'Duties', status: 'critical' as const, description: 'VAT registration pending for Nigeria import operations', deadline: 'Overdue' },
+              { id: 'ck4', title: 'Product Standards (KEBS)', category: 'Standards', status: 'pending' as const, description: 'Kenya Bureau of Standards certification for electronics', deadline: 'Due Apr 1' },
+              { id: 'ck5', title: 'Sanctions Screening', category: 'Compliance', status: 'complete' as const, description: 'Latest screening completed — no matches found', deadline: 'Completed Feb 8' },
+              { id: 'ck6', title: 'Pre-Shipment Inspection', category: 'Customs', status: 'pending' as const, description: 'PVoC inspection required for next Kenya-bound shipment', deadline: 'Due Mar 20' },
+              { id: 'ck7', title: 'Customs Bond Renewal', category: 'Customs', status: 'complete' as const, description: 'Customs bond guarantee renewed for 2026', deadline: 'Completed Jan 15' },
+              { id: 'ck8', title: 'AfCFTA Tariff Classification', category: 'Duties', status: 'complete' as const, description: 'HS codes verified for preferential tariff rates', deadline: 'Completed Feb 5' },
+            ].map(item => (
+              <div key={item.id} className={`bg-white dark:bg-slate-800 rounded-xl border p-4 flex items-center gap-4 transition-all hover:shadow-sm ${
+                item.status === 'critical' ? 'border-red-200 dark:border-red-900/30' :
+                item.status === 'warning' ? 'border-amber-200 dark:border-amber-900/30' :
+                item.status === 'complete' ? 'border-green-200 dark:border-green-900/30' :
+                'border-gray-100 dark:border-slate-700'
+              }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                  item.status === 'complete' ? 'bg-green-100 text-green-600' :
+                  item.status === 'warning' ? 'bg-amber-100 text-amber-600' :
+                  item.status === 'critical' ? 'bg-red-100 text-red-600' :
+                  'bg-gray-100 text-gray-400'
+                }`}>
+                  {item.status === 'complete' ? <CheckCircle className="w-4 h-4" /> :
+                   item.status === 'warning' ? <AlertTriangle className="w-4 h-4" /> :
+                   item.status === 'critical' ? <XCircle className="w-4 h-4" /> :
+                   <Circle className="w-4 h-4" />}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">{item.title}</h4>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400">{item.category}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-0.5">{item.description}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-[10px] font-bold ${
+                    item.status === 'critical' ? 'text-red-600' :
+                    item.status === 'warning' ? 'text-amber-600' :
+                    item.status === 'complete' ? 'text-green-600' : 'text-gray-500'
+                  }`}>{item.deadline}</p>
                 </div>
               </div>
             ))}

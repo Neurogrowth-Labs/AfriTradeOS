@@ -254,6 +254,38 @@ export const KYCVerification: React.FC = () => {
         {kycRequest && getStatusBadge(kycRequest.status)}
       </div>
 
+      {/* One-Time Submission Reuse, Multi-Language, Biometric */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-xl p-4 flex items-start gap-3">
+          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg shrink-0">
+            <RefreshCw className="w-4 h-4 text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-green-800 dark:text-green-300">One-Time Submission</p>
+            <p className="text-[10px] text-green-700 dark:text-green-400 mt-0.5">Your verified documents are automatically reused across trades, tenders, and finance applications.</p>
+          </div>
+        </div>
+        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl p-4 flex items-start gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
+            <Info className="w-4 h-4 text-blue-600" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">Multi-Language Support</p>
+            <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-0.5">Documents accepted in English, French, Arabic, and Portuguese for pan-African SMEs.</p>
+          </div>
+        </div>
+        <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-900/30 rounded-xl p-4 flex items-start gap-3">
+          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
+            <Fingerprint className="w-4 h-4 text-purple-600" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-purple-800 dark:text-purple-300">Biometric Verification</p>
+            <p className="text-[10px] text-purple-700 dark:text-purple-400 mt-0.5">Enhanced security with fingerprint or facial recognition for identity verification.</p>
+            <button className="mt-1.5 text-[10px] font-bold bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg transition-colors">Enable Biometric</button>
+          </div>
+        </div>
+      </div>
+
       {/* Verification Type Selector */}
       {!kycRequest && (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">

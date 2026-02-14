@@ -19,7 +19,9 @@ import {
   BarChart3,
   Globe,
   Award,
-  Clock
+  Clock,
+  Zap,
+  Calendar
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbOrganization } from '../types';
@@ -186,6 +188,50 @@ export const Marketplace: React.FC = () => {
               </button>
             )
          })}
+      </div>
+
+      {/* AI Matchmaking & Enhanced Filters */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 text-white flex items-center gap-4 shadow-md">
+        <div className="p-2.5 bg-white/20 rounded-xl backdrop-blur-sm border border-white/10 shrink-0">
+          <Zap className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full w-fit mb-1">AI Partner Match</p>
+          <p className="text-sm opacity-95">Based on your product portfolio and trade history, we found <span className="font-bold">3 high-compatibility partners</span> in West Africa with verified KYC and strong reliability scores.</p>
+        </div>
+        <button className="shrink-0 px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 rounded-lg text-sm font-bold transition-colors">View Matches</button>
+      </div>
+
+      {/* Enhanced Filters Row */}
+      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700">
+        <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1">Filters:</span>
+        <select className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none">
+          <option value="">Company Size</option>
+          <option value="small">Small (1-50)</option>
+          <option value="medium">Medium (51-500)</option>
+          <option value="large">Large (500+)</option>
+        </select>
+        <select className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none">
+          <option value="">Trade History</option>
+          <option value="new">New (0-5 trades)</option>
+          <option value="experienced">Experienced (5-50)</option>
+          <option value="veteran">Veteran (50+)</option>
+        </select>
+        <select className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none">
+          <option value="">Certifications</option>
+          <option value="afcfta">AfCFTA Certified</option>
+          <option value="iso">ISO Certified</option>
+          <option value="organic">Organic Certified</option>
+        </select>
+        <select className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none">
+          <option value="">Min Rating</option>
+          <option value="4.5">4.5+ Stars</option>
+          <option value="4.0">4.0+ Stars</option>
+          <option value="3.5">3.5+ Stars</option>
+        </select>
+        <button className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+          <Calendar className="w-3.5 h-3.5" /> Schedule B2B Meeting
+        </button>
       </div>
 
       {/* B4: NETWORK GRAPH VIEW */}

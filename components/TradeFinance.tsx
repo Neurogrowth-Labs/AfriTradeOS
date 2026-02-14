@@ -257,6 +257,54 @@ export const TradeFinance: React.FC = () => {
          </div>
       </div>
 
+      {/* AI-Powered Finance Recommendations */}
+      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 rounded-xl shadow-lg text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-8 -mb-8" />
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm border border-white/10 shrink-0">
+            <Zap className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">AI Recommendation</span>
+            </div>
+            <p className="text-sm font-medium leading-relaxed opacity-95">
+              Based on your trade history and credit score of <span className="font-bold">{readinessScore}/100</span>, we recommend 
+              <span className="font-bold"> Invoice Factoring with Ecobank</span> at 2.5% — you could unlock up to <span className="font-bold">$45,000</span> in 
+              working capital within 48 hours.
+            </p>
+          </div>
+          <button className="shrink-0 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold transition-colors backdrop-blur-sm border border-white/20">
+            Apply Now
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Finance Overview Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Approved Credit</p>
+          <p className="text-xl font-bold text-green-600 mt-1">$125,000</p>
+          <p className="text-[10px] text-green-600">Available to draw</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Pending Requests</p>
+          <p className="text-xl font-bold text-amber-600 mt-1">{applications.length}</p>
+          <p className="text-[10px] text-amber-600">Under review</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Avg Interest Rate</p>
+          <p className="text-xl font-bold text-indigo-600 mt-1">2.3%</p>
+          <p className="text-[10px] text-gray-500">Across products</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Next Repayment</p>
+          <p className="text-xl font-bold text-trade-primary mt-1">Mar 15</p>
+          <p className="text-[10px] text-gray-500">$8,500 due</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
         
         {/* Left Column: Stats & Risk */}

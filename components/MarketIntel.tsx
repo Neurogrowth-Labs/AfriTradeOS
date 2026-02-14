@@ -239,6 +239,40 @@ export const MarketIntel: React.FC = () => {
             </div>
           </div>
 
+          {/* AI Personalized Recommendations & AfCFTA Tariff Quick Access */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-6 -mt-6" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4" />
+                  <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full">AI Insight</span>
+                </div>
+                <p className="text-sm font-medium opacity-95 leading-relaxed">
+                  Based on your product portfolio, <span className="font-bold">Shea Butter</span> demand in West Africa is up <span className="font-bold">+15%</span> this quarter. 
+                  Consider expanding exports to <span className="font-bold">Nigeria & Ghana</span> where AfCFTA tariff savings could reach <span className="font-bold">$8,400</span>.
+                </p>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase mb-3">AfCFTA Tariff Quick Check</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { product: 'Cocoa', tariff: '0%', savings: '$2.1K', flag: '🇬🇭' },
+                  { product: 'Textiles', tariff: '5%', savings: '$890', flag: '🇳🇬' },
+                  { product: 'Coffee', tariff: '0%', savings: '$1.5K', flag: '🇰🇪' },
+                ].map(item => (
+                  <div key={item.product} className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2.5 text-center">
+                    <p className="text-lg mb-0.5">{item.flag}</p>
+                    <p className="text-xs font-bold text-gray-800 dark:text-white">{item.product}</p>
+                    <p className="text-[10px] text-green-600 font-bold">Tariff: {item.tariff}</p>
+                    <p className="text-[10px] text-gray-500">Save {item.savings}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* B1: HEAT MAP & SECTOR DASHBOARDS */}
           {activeView === 'heatmap' && (
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0">

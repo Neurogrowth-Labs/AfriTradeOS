@@ -30,7 +30,7 @@ import { mockDatabase } from '../services/mockDatabase';
 import { DbAuditLog, UserPersona } from '../types';
 import { supabase } from '../services/supabase';
 
-type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit' | 'integrations';
+type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit' | 'integrations' | 'preferences';
 
 interface UserProfileProps {
   profileData?: any;
@@ -298,6 +298,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   const navItems = [
     { id: 'general', label: 'Identity & Profile', icon: User },
     { id: 'organization', label: 'Organization', icon: Building2 },
+    { id: 'preferences', label: 'Preferences', icon: Globe },
     { id: 'security', label: 'Security & Compliance', icon: Shield },
     { id: 'integrations', label: 'Integrations', icon: Globe },
     { id: 'ai', label: 'AI & Data Control', icon: Zap },
@@ -524,6 +525,153 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                                  </button>
                              </div>
                          </div>
+                     </div>
+                 </div>
+             )}
+
+             {/* --- PREFERENCES TAB --- */}
+             {activeTab === 'preferences' && (
+                 <div className="space-y-8 animate-fade-in">
+                     <div>
+                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Preferences</h2>
+                         <p className="text-sm text-gray-500">Notification, privacy, language, currency, and access control settings.</p>
+                     </div>
+
+                     {/* Notification Settings */}
+                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
+                           <Mail className="w-4 h-4" /> Notification Settings
+                         </h3>
+                         <div className="space-y-4">
+                           {[
+                             { key: 'tradeUpdates', label: 'Trade Status Updates', desc: 'Get notified when trade status changes', default: true },
+                             { key: 'complianceAlerts', label: 'Compliance Alerts', desc: 'Regulatory changes and deadline reminders', default: true },
+                             { key: 'marketOpportunities', label: 'Market Opportunities', desc: 'AI-detected market trends and partner matches', default: true },
+                             { key: 'financeReminders', label: 'Finance Reminders', desc: 'Payment deadlines and repayment schedules', default: true },
+                             { key: 'contractRenewals', label: 'Contract Renewals', desc: 'Expiring contracts and milestone notifications', default: false },
+                             { key: 'shipmentTracking', label: 'Shipment Tracking', desc: 'Real-time delivery and customs updates', default: true },
+                           ].map(notif => (
+                             <div key={notif.key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                               <div>
+                                 <p className="text-sm font-medium text-gray-800 dark:text-white">{notif.label}</p>
+                                 <p className="text-[10px] text-gray-500">{notif.desc}</p>
+                               </div>
+                               <label className="relative inline-flex items-center cursor-pointer">
+                                 <input type="checkbox" defaultChecked={notif.default} className="sr-only peer" />
+                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-trade-primary"></div>
+                               </label>
+                             </div>
+                           ))}
+                         </div>
+                     </div>
+
+                     {/* Language, Currency & Region */}
+                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
+                           <Globe className="w-4 h-4" /> Localization
+                         </h3>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <div>
+                             <label className="block text-xs font-bold text-gray-500 mb-1.5">Language</label>
+                             <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm text-gray-800 dark:text-white outline-none">
+                               <option>English</option>
+                               <option>French (Français)</option>
+                               <option>Arabic (العربية)</option>
+                               <option>Portuguese (Português)</option>
+                             </select>
+                           </div>
+                           <div>
+                             <label className="block text-xs font-bold text-gray-500 mb-1.5">Currency</label>
+                             <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm text-gray-800 dark:text-white outline-none">
+                               <option>USD ($)</option>
+                               <option>EUR (€)</option>
+                               <option>GBP (£)</option>
+                               <option>NGN (₦)</option>
+                               <option>KES (KSh)</option>
+                               <option>ZAR (R)</option>
+                               <option>GHS (GH₵)</option>
+                               <option>EGP (E£)</option>
+                             </select>
+                           </div>
+                           <div>
+                             <label className="block text-xs font-bold text-gray-500 mb-1.5">Timezone</label>
+                             <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm text-gray-800 dark:text-white outline-none">
+                               <option>GMT (Accra)</option>
+                               <option>GMT+1 (Lagos, Douala)</option>
+                               <option>GMT+2 (Cairo, Johannesburg)</option>
+                               <option>GMT+3 (Nairobi, Addis Ababa)</option>
+                             </select>
+                           </div>
+                         </div>
+                     </div>
+
+                     {/* Privacy Controls */}
+                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
+                           <Shield className="w-4 h-4" /> Privacy Controls
+                         </h3>
+                         <div className="space-y-4">
+                           {[
+                             { key: 'profileVisibility', label: 'Profile Visibility', desc: 'Allow verified partners to view your company profile', default: true },
+                             { key: 'tradeHistory', label: 'Trade History Sharing', desc: 'Share trade volume and reliability metrics with potential partners', default: false },
+                             { key: 'aiAnalytics', label: 'AI Analytics', desc: 'Allow AI to analyze your trade data for personalized recommendations', default: true },
+                           ].map(priv => (
+                             <div key={priv.key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                               <div>
+                                 <p className="text-sm font-medium text-gray-800 dark:text-white">{priv.label}</p>
+                                 <p className="text-[10px] text-gray-500">{priv.desc}</p>
+                               </div>
+                               <label className="relative inline-flex items-center cursor-pointer">
+                                 <input type="checkbox" defaultChecked={priv.default} className="sr-only peer" />
+                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-trade-primary"></div>
+                               </label>
+                             </div>
+                           ))}
+                         </div>
+                     </div>
+
+                     {/* Multi-Tier Access Control */}
+                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
+                           <Users className="w-4 h-4" /> Multi-Tier Access Control
+                         </h3>
+                         <p className="text-xs text-gray-500 mb-4">Manage team access levels for SMEs with multiple users.</p>
+                         <div className="space-y-3">
+                           {[
+                             { name: personalInfo.name, email: personalInfo.email, role: 'Admin', access: 'Full Access', color: 'bg-red-100 text-red-700' },
+                             { name: 'Finance Manager', email: 'finance@company.com', role: 'Finance', access: 'Finance & Billing', color: 'bg-blue-100 text-blue-700' },
+                             { name: 'Trade Operations', email: 'ops@company.com', role: 'Operations', access: 'Trades & Logistics', color: 'bg-green-100 text-green-700' },
+                           ].map((member, idx) => (
+                             <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                               <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-600 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
+                                   {member.name.charAt(0)}
+                                 </div>
+                                 <div>
+                                   <p className="text-sm font-medium text-gray-800 dark:text-white">{member.name}</p>
+                                   <p className="text-[10px] text-gray-500">{member.email}</p>
+                                 </div>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${member.color}`}>{member.role}</span>
+                                 <span className="text-[10px] text-gray-500">{member.access}</span>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                         <button className="mt-3 w-full py-2 bg-trade-primary/10 hover:bg-trade-primary/20 text-trade-primary rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5">
+                           <Plus className="w-3.5 h-3.5" /> Invite Team Member
+                         </button>
+                     </div>
+
+                     {/* Regional Trade Association Links */}
+                     <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl p-4 flex items-start gap-3">
+                       <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                       <div>
+                         <p className="text-xs font-bold text-blue-800 dark:text-blue-300">Link with Trade Associations & AfCFTA</p>
+                         <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-0.5">Connect your account with regional trade associations and AfCFTA portals for streamlined compliance and market access.</p>
+                         <button className="mt-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors">Connect Now</button>
+                       </div>
                      </div>
                  </div>
              )}
