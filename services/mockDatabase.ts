@@ -522,6 +522,133 @@ export const mockDatabase = {
     }
   },
 
+  // --- FINANCE MODULE: FX Rates, Hedging, Summary ---
+
+  getFXRates: async (): Promise<{ pair: string; rate: number; change: number; changePercent: number }[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('fx_rates')
+        .select('pair, rate, change, change_percent')
+        .order('pair');
+      if (error) throw error;
+      return (data || []).map((r: any) => ({
+        pair: r.pair,
+        rate: Number(r.rate),
+        change: Number(r.change),
+        changePercent: Number(r.change_percent),
+      }));
+    } catch (e) {
+      console.error('getFXRates error:', e);
+      return [];
+    }
+  },
+
+  getFXRateHistory: async (pair: string): Promise<{ time: string; rate: number }[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('fx_rate_history')
+        .select('rate, recorded_at')
+        .eq('pair', pair)
+        .order('recorded_at', { ascending: true })
+        .limit(30);
+      if (error) throw error;
+      return (data || []).map((r: any, i: number) => ({
+        time: `Day ${i + 1}`,
+        rate: Number(r.rate),
+      }));
+    } catch (e) {
+      console.error('getFXRateHistory error:', e);
+      return [];
+    }
+  },
+
+  getHedgingSuggestions: async (): Promise<{ id: string; type: 'forward' | 'option' | 'swap'; pair: string; description: string; savings: string; risk: 'low' | 'medium' | 'high'; term: string }[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('hedging_suggestions')
+        .select('*')
+        .eq('is_active', true);
+      if (error) throw error;
+      return (data || []).map((h: any) => ({
+        id: h.id,
+        type: h.type,
+        pair: h.pair,
+        description: h.description,
+        savings: h.savings_display || `$${Number(h.estimated_savings).toLocaleString()}`,
+        risk: h.risk,
+        term: h.term,
+      }));
+    } catch (e) {
+      console.error('getHedgingSuggestions error:', e);
+      return [];
+    }
+  },
+
+  getFinanceSummary: async (): Promise<{
+    approvedCredit: number;
+    avgInterestRate: number;
+    nextRepaymentDate: string | null;
+    nextRepaymentAmount: number;
+    fxExposure: number;
+    hedgedAmount: number;
+  }> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { approvedCredit: 0, avgInterestRate: 0, nextRepaymentDate: null, nextRepaymentAmount: 0, fxExposure: 0, hedgedAmount: 0 };
+
+      // Try finance_summary table first
+      const { data: summary } = await supabase
+        .from('finance_summary')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (summary) {
+        return {
+          approvedCredit: Number(summary.approved_credit) || 0,
+          avgInterestRate: Number(summary.avg_interest_rate) || 0,
+          nextRepaymentDate: summary.next_repayment_date || null,
+          nextRepaymentAmount: Number(summary.next_repayment_amount) || 0,
+          fxExposure: Number(summary.fx_exposure) || 0,
+          hedgedAmount: Number(summary.hedged_amount) || 0,
+        };
+      }
+
+      // Fallback: compute from finance_requests and trades
+      const [finReqRes, tradesRes] = await Promise.all([
+        supabase.from('finance_requests').select('status, amount, product_type').eq('applicant_id', user.id),
+        supabase.from('trades').select('value, currency, status').eq('exporter_id', user.id),
+      ]);
+
+      const finReqs = finReqRes.data || [];
+      const trades = tradesRes.data || [];
+
+      const approved = finReqs.filter((f: any) => f.status === 'approved');
+      const approvedCredit = approved.reduce((sum: number, f: any) => sum + (Number(f.amount) || 0), 0);
+
+      // Avg interest from financiers that user has approved apps with
+      const { data: financiers } = await supabase.from('financiers').select('interest_rate').eq('is_active', true);
+      const rates = (financiers || []).map((f: any) => Number(f.interest_rate)).filter((r: number) => r > 0);
+      const avgInterestRate = rates.length > 0 ? rates.reduce((a: number, b: number) => a + b, 0) / rates.length : 0;
+
+      // FX exposure from active trades with non-USD currencies
+      const activeTrades = trades.filter((t: any) => t.status !== 'completed' && t.status !== 'cancelled');
+      const fxExposure = activeTrades.reduce((sum: number, t: any) => sum + (Number(t.value) || 0), 0);
+
+      return {
+        approvedCredit,
+        avgInterestRate: Math.round(avgInterestRate * 100) / 100,
+        nextRepaymentDate: null,
+        nextRepaymentAmount: 0,
+        fxExposure,
+        hedgedAmount: 0,
+      };
+    } catch (e) {
+      console.error('getFinanceSummary error:', e);
+      return { approvedCredit: 0, avgInterestRate: 0, nextRepaymentDate: null, nextRepaymentAmount: 0, fxExposure: 0, hedgedAmount: 0 };
+    }
+  },
+
   createAuditLog: async (log: { action: string; user_id?: string; details?: string; ip?: string; status: string }): Promise<boolean> => {
     try {
       const { error } = await supabase
