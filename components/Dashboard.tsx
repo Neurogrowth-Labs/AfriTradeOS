@@ -526,10 +526,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
     switch (userRole) {
       case UserPersona.EXPORTER_SME:
         return [
-          { label: 'Active Shipments', value: metrics.activeShipments.toString(), sub: 'Live Tracking', icon: Truck, color: 'text-trade-primary', bg: 'bg-blue-50' },
-          { label: 'Compliance Health', value: 'Good', sub: `Score: ${metrics.complianceScore}/100`, icon: ShieldCheck, color: 'text-trade-success', bg: 'bg-green-50' },
-          { label: 'Pending Docs', value: metrics.pendingDocs.toString(), sub: 'Action Required', icon: FileText, color: 'text-trade-warning', bg: 'bg-orange-50' },
-          { label: 'Avg Clearance', value: `${metrics.avgClearance} Days`, sub: '-4h vs Avg', icon: Clock, color: 'text-trade-secondary', bg: 'bg-indigo-50' },
+          { label: 'Export Volume', value: metrics.activeShipments.toString(), sub: `${metrics.activeShipments > 0 ? '+' + Math.min(metrics.activeShipments * 3, 24) + '% vs last month' : 'No shipments yet'}`, icon: Package, color: 'text-trade-primary', bg: 'bg-blue-50', trend: 'up' as const },
+          { label: 'Revenue', value: `$${(metrics.dailyRevenue * 30).toFixed(0)}K`, sub: `$${metrics.dailyRevenue.toFixed(1)}M pipeline`, icon: DollarSign, color: 'text-trade-success', bg: 'bg-green-50', trend: 'up' as const },
+          { label: 'Shipment Status', value: `${metrics.activeShipments - metrics.pendingDocs}/${metrics.activeShipments}`, sub: `${metrics.pendingDocs} pending action`, icon: Truck, color: 'text-teal-600', bg: 'bg-teal-50', trend: 'neutral' as const },
+          { label: 'Trade Balance', value: `+$${metrics.tradeBalance.toFixed(0)}K`, sub: `Score: ${metrics.complianceScore}/100`, icon: Scale, color: 'text-trade-secondary', bg: 'bg-indigo-50', trend: metrics.tradeBalance > 0 ? 'up' as const : 'down' as const },
         ];
       case UserPersona.CUSTOMS:
         return [
@@ -575,10 +575,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
       case UserPersona.EXPORTER_SME:
         return [
           { label: 'New Trade', icon: Plus, color: 'bg-trade-primary', desc: 'Start export', action: () => navigateTo(AppView.TRADE_LIFECYCLE) },
-          { label: 'Check HS Code', icon: Search, color: 'bg-trade-secondary', desc: 'Verify codes', action: () => navigateTo(AppView.COMPLIANCE) },
+          { label: 'Request Finance', icon: Banknote, color: 'bg-purple-500', desc: 'Apply now', action: () => navigateTo(AppView.TRADE_FINANCE) },
+          { label: 'Upload Docs', icon: FileText, color: 'bg-trade-secondary', desc: 'KYC & trade', action: () => navigateTo(AppView.KYC_VERIFICATION) },
           { label: 'Track Shipment', icon: Truck, color: 'bg-trade-success', desc: 'Live tracking', action: () => navigateTo(AppView.LOGISTICS) },
           { label: 'Find Buyer', icon: Users, color: 'bg-trade-accent', desc: 'Marketplace', action: () => navigateTo(AppView.MARKETPLACE) },
-          { label: 'Get Finance', icon: Banknote, color: 'bg-purple-500', desc: 'Apply now', action: () => navigateTo(AppView.TRADE_FINANCE) },
           { label: 'AI Assistant', icon: MessageSquare, color: 'bg-pink-500', desc: 'Get help', action: () => navigateTo(AppView.LIVE_ASSISTANT) },
         ];
       case UserPersona.EXPORTER_ENTERPRISE:
@@ -1306,14 +1306,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
       {isWidgetVisible('kpis') && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {getKPIs().map((kpi, i) => (
-            <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
-               <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{kpi.label}</p>
-                  <p className={`text-xl font-bold font-heading mt-1 ${kpi.color} dark:text-white`}>{kpi.value}</p>
-                  <p className="text-[10px] text-gray-500">{kpi.sub}</p>
+            <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-trade-primary/20 transition-all group cursor-pointer relative overflow-hidden">
+               <div className="flex items-start justify-between">
+                 <div className="flex-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{kpi.label}</p>
+                    <p className={`text-xl font-bold font-heading mt-1 ${kpi.color} dark:text-white`}>{kpi.value}</p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                       {'trend' in kpi && kpi.trend === 'up' && <TrendingUp className="w-3 h-3 text-green-500" />}
+                       {'trend' in kpi && kpi.trend === 'down' && <TrendingUp className="w-3 h-3 text-red-500 rotate-180" />}
+                       <p className={`text-[10px] ${'trend' in kpi && kpi.trend === 'up' ? 'text-green-600' : 'trend' in kpi && kpi.trend === 'down' ? 'text-red-500' : 'text-gray-500'}`}>{kpi.sub}</p>
+                    </div>
+                 </div>
+                 <div className={`p-2.5 rounded-xl ${kpi.bg} dark:bg-slate-700/50 group-hover:scale-110 transition-transform`}>
+                    <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+                 </div>
                </div>
-               <div className={`p-2 rounded-lg ${kpi.bg} dark:bg-slate-700/50`}>
-                  <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+               {/* Mini sparkline bars */}
+               <div className="flex items-end gap-0.5 mt-3 h-4">
+                 {[35, 50, 40, 65, 55, 70, 60, 80, 75, 90].map((h, idx) => (
+                   <div key={idx} className={`flex-1 rounded-sm ${kpi.bg} dark:bg-slate-700/50 transition-all`} style={{ height: `${h}%`, opacity: 0.4 + (idx * 0.06) }} />
+                 ))}
                </div>
             </div>
           ))}

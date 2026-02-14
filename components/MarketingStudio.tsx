@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image as ImageIcon, Download, Sparkles, Loader2, PlayCircle } from 'lucide-react';
+import { Image as ImageIcon, Download, Sparkles, Loader2, PlayCircle, FileText, Mail, Share2, BarChart3, TrendingUp, Eye, MousePointer, Zap } from 'lucide-react';
 import { generateMarketingImage, generateSpeech } from '../services/geminiService';
 import { decodeAudioData, decode } from '../services/audioUtils';
 
@@ -123,6 +123,88 @@ export const MarketingStudio: React.FC = () => {
                     </div>
                 )}
             </div>
+         </div>
+       </div>
+
+       {/* Marketing Templates */}
+       <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+         <div className="flex items-center justify-between mb-4">
+           <div className="flex items-center gap-2">
+             <FileText className="w-5 h-5 text-pink-500" />
+             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Templates</h3>
+           </div>
+           <span className="text-xs text-gray-500">Quick start with pre-built designs</span>
+         </div>
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+           {[
+             { name: 'Product Brochure', icon: FileText, desc: 'A4 print-ready', color: 'bg-blue-100 text-blue-600' },
+             { name: 'Social Media Post', icon: Share2, desc: 'Instagram/Facebook', color: 'bg-pink-100 text-pink-600' },
+             { name: 'Product Catalog', icon: ImageIcon, desc: 'Multi-page PDF', color: 'bg-purple-100 text-purple-600' },
+             { name: 'Email Campaign', icon: Mail, desc: 'Newsletter template', color: 'bg-green-100 text-green-600' },
+           ].map(tpl => (
+             <button key={tpl.name} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-pink-300 dark:hover:border-pink-700 hover:shadow-md transition-all text-left group">
+               <div className={`p-2.5 rounded-lg ${tpl.color} w-fit mb-3 group-hover:scale-110 transition-transform`}>
+                 <tpl.icon className="w-5 h-5" />
+               </div>
+               <p className="text-sm font-bold text-gray-900 dark:text-white">{tpl.name}</p>
+               <p className="text-[10px] text-gray-500 mt-0.5">{tpl.desc}</p>
+             </button>
+           ))}
+         </div>
+       </div>
+
+       {/* AI Content Suggestions & Analytics */}
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+         {/* AI Content Suggestions */}
+         <div className="bg-gradient-to-br from-pink-500 to-purple-600 p-6 rounded-xl text-white relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8" />
+           <div className="relative z-10">
+             <div className="flex items-center gap-2 mb-3">
+               <Zap className="w-5 h-5" />
+               <h3 className="font-bold">AI Content Suggestions</h3>
+             </div>
+             <p className="text-sm opacity-90 mb-4">Based on your target markets in West Africa, here are content ideas:</p>
+             <div className="space-y-2">
+               {[
+                 'Highlight AfCFTA duty-free benefits in product descriptions',
+                 'Create "Made in Africa" brand story for Shea Butter line',
+                 'Design infographic comparing local vs import prices',
+               ].map((suggestion, idx) => (
+                 <div key={idx} className="flex items-start gap-2 bg-white/10 rounded-lg p-2.5 backdrop-blur-sm">
+                   <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                   <p className="text-xs leading-relaxed">{suggestion}</p>
+                 </div>
+               ))}
+             </div>
+           </div>
+         </div>
+
+         {/* Campaign Analytics */}
+         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+           <div className="flex items-center gap-2 mb-4">
+             <BarChart3 className="w-5 h-5 text-pink-500" />
+             <h3 className="font-bold text-gray-900 dark:text-white">Campaign Analytics</h3>
+           </div>
+           <div className="grid grid-cols-2 gap-4 mb-4">
+             {[
+               { label: 'Total Views', value: '12.4K', change: '+18%', icon: Eye },
+               { label: 'Engagement', value: '3.2K', change: '+24%', icon: MousePointer },
+               { label: 'Conversions', value: '142', change: '+9%', icon: TrendingUp },
+               { label: 'Assets Created', value: '28', change: '+5', icon: ImageIcon },
+             ].map(stat => (
+               <div key={stat.label} className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3">
+                 <div className="flex items-center justify-between mb-1">
+                   <stat.icon className="w-3.5 h-3.5 text-gray-400" />
+                   <span className="text-[10px] font-bold text-green-600">{stat.change}</span>
+                 </div>
+                 <p className="text-lg font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                 <p className="text-[10px] text-gray-500">{stat.label}</p>
+               </div>
+             ))}
+           </div>
+           <button className="w-full py-2 bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 dark:hover:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-lg text-xs font-bold transition-colors">
+             View Full Analytics Dashboard
+           </button>
          </div>
        </div>
     </div>

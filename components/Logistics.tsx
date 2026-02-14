@@ -299,6 +299,49 @@ export const Logistics: React.FC = () => {
           </div>
        </div>
 
+       {liveShipments.length > 0 && (
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4 flex items-start gap-3">
+             <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
+               <AlertTriangle className="w-4 h-4 text-amber-600" />
+             </div>
+             <div className="flex-1">
+               <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Customs Clearance Update</p>
+               <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">Port congestion at Lagos — expect +24h delay on shipments via Apapa terminal.</p>
+               <div className="flex gap-2 mt-2">
+                 <button className="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline">View Details</button>
+                 <button className="text-[10px] text-gray-500 hover:text-gray-700">Dismiss</button>
+               </div>
+             </div>
+           </div>
+
+           <div className="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-900/30 rounded-xl p-4 flex items-start gap-3">
+             <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
+               <Navigation className="w-4 h-4 text-teal-600" />
+             </div>
+             <div className="flex-1">
+               <p className="text-xs font-bold text-teal-800 dark:text-teal-300">Route Optimization</p>
+               <p className="text-[10px] text-teal-700 dark:text-teal-400 mt-0.5">Switch to Tema Port (Ghana) via AfCFTA free trade zone — save <span className="font-bold">$1,200</span> and <span className="font-bold">2 days</span> transit time.</p>
+               <button className="mt-2 text-[10px] font-bold bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-lg transition-colors">Apply Route</button>
+             </div>
+           </div>
+
+           <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-4 flex items-start gap-3">
+             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
+               <ShieldCheck className="w-4 h-4 text-indigo-600" />
+             </div>
+             <div className="flex-1">
+               <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300">Automated Customs Filing</p>
+               <p className="text-[10px] text-indigo-700 dark:text-indigo-400 mt-0.5">Pre-filled customs forms ready for {liveShipments.length} shipment{liveShipments.length > 1 ? 's' : ''}. QR codes generated for faster border processing.</p>
+               <div className="flex gap-2 mt-2">
+                 <button className="text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg transition-colors">File Now</button>
+                 <button className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline">View QR Codes</button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
        {/* TRACKING VIEW */}
        {activeTab === 'tracking' && (
          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
