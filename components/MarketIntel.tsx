@@ -46,6 +46,7 @@ import {
 } from 'recharts';
 import { getMarketIntelligence } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
+import { enterpriseExporterService, MarketIntelligence } from '../services/enterpriseExporterService';
 import { DbMarketIntelligence } from '../types';
 
 // Price data will be generated based on search or empty
@@ -132,15 +133,37 @@ export const MarketIntel: React.FC = () => {
   const [showAddAlert, setShowAddAlert] = useState(false);
   const [newAlert, setNewAlert] = useState({ product: '', condition: 'price_above' as ProductAlert['condition'], threshold: '' });
 
-  // Fetch market intelligence data from database
+  // Fetch market intelligence data from database - Supabase first, fallback to mock
   useEffect(() => {
     const fetchData = async () => {
       setLoadingData(true);
       try {
-        const data = await mockDatabase.getMarketIntelligence();
-        setMarketData(data);
+        // Try Supabase first
+        const supabaseData = await enterpriseExporterService.getMarketIntelligence();
+        if (supabaseData.length > 0) {
+          // Convert Supabase format to local format
+          const converted: DbMarketIntelligence[] = supabaseData.map((m: MarketIntelligence) => ({
+            id: m.id,
+            product_code: m.hs_code || m.sector,
+            country: m.country,
+            region: m.country,
+            demand_index: (m.demand_index > 70 ? 'High' : m.demand_index > 40 ? 'Medium' : 'Low') as 'High' | 'Medium' | 'Low',
+            price_trend: m.price_trend === 'rising' ? '+15%' : m.price_trend === 'falling' ? '-10%' : '0%',
+            sentiment: (m.ai_opportunity_score > 70 ? 'Positive' : m.ai_opportunity_score > 40 ? 'Neutral' : 'Caution') as 'Positive' | 'Neutral' | 'Caution' | 'Improving',
+          }));
+          setMarketData(converted);
+        } else {
+          // Fallback to mock
+          const data = await mockDatabase.getMarketIntelligence();
+          setMarketData(data);
+        }
       } catch (e) {
         console.error('Failed to fetch market data:', e);
+        // Fallback to mock on error
+        try {
+          const data = await mockDatabase.getMarketIntelligence();
+          setMarketData(data);
+        } catch { /* use empty */ }
       } finally {
         setLoadingData(false);
       }

@@ -17,6 +17,7 @@ export enum AppView {
   KYC_VERIFICATION = 'KYC_VERIFICATION', // KYC/KYB Document Upload
   TENDERS = 'TENDERS', // Tender/RFQ Management
   CONTRACTS = 'CONTRACTS', // Smart Contracts Management
+  CUSTOMS = 'CUSTOMS', // Customs Authority Panel
 }
 
 export interface ChartData {

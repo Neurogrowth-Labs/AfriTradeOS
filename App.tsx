@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu,
@@ -13,7 +13,14 @@ import {
   Key,
   CheckCircle,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  Package,
+  CreditCard,
+  Shield,
+  CheckCheck,
+  Trash2,
+  ExternalLink
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { Dashboard } from './components/Dashboard';
@@ -49,6 +56,7 @@ import { GovTradeStatistics } from './components/GovTradeStatistics';
 import { GovTradeFlows } from './components/GovTradeFlows';
 import { GovEntityVerification } from './components/GovEntityVerification';
 import { GovBusinessRegistry } from './components/GovBusinessRegistry';
+import { CustomsAuthorityPanel } from './components/CustomsAuthorityPanel';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
@@ -149,6 +157,7 @@ const routeToView: Record<string, AppView> = {
   '/kyc': AppView.KYC_VERIFICATION,
   '/tenders': AppView.TENDERS,
   '/contracts': AppView.CONTRACTS,
+  '/customs': AppView.CUSTOMS,
 };
 
 const viewToRoute: Record<AppView, string> = {
@@ -169,6 +178,7 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.KYC_VERIFICATION]: '/kyc',
   [AppView.TENDERS]: '/tenders',
   [AppView.CONTRACTS]: '/contracts',
+  [AppView.CUSTOMS]: '/customs',
 };
 
 export default function App() {
@@ -225,6 +235,152 @@ export default function App() {
   // Localization State
   const [language, setLanguage] = useState('EN');
   const [currency, setCurrency] = useState('USD');
+
+  // Notifications State
+  interface Notification {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    link: string | null;
+    is_read: boolean;
+    created_at: string;
+  }
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Fetch notifications from Supabase
+  const fetchNotifications = useCallback(async () => {
+    if (!userProfile?.id) return;
+    setNotificationsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userProfile.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      setNotifications(data || []);
+    } catch (e) {
+      console.error('Failed to fetch notifications:', e);
+      // Fallback mock notifications for demo
+      setNotifications([
+        { id: '1', type: 'trade_created', title: 'New Trade Created', message: 'Your export order #EXP-2024-001 has been created successfully.', link: '/trade', is_read: false, created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
+        { id: '2', type: 'kyc_approved', title: 'KYC Approved', message: 'Your business verification has been approved. You can now access all features.', link: '/kyc', is_read: false, created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
+        { id: '3', type: 'payment_received', title: 'Payment Received', message: 'You received $12,500 from Euro Imports Ltd for order #ORD-789.', link: '/finance', is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
+        { id: '4', type: 'document_approved', title: 'Document Verified', message: 'Your Certificate of Origin has been verified and approved.', link: '/compliance', is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
+        { id: '5', type: 'system_alert', title: 'System Maintenance', message: 'Scheduled maintenance on Feb 15, 2024 from 2:00 AM - 4:00 AM UTC.', link: null, is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
+      ]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [userProfile?.id]);
+
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    try {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq('id', notificationId);
+      
+      setNotifications(prev => prev.map(n => 
+        n.id === notificationId ? { ...n, is_read: true } : n
+      ));
+    } catch (e) {
+      console.error('Failed to mark notification as read:', e);
+    }
+  };
+
+  // Mark all as read
+  const markAllAsRead = async () => {
+    try {
+      if (userProfile?.id) {
+        await supabase
+          .from('notifications')
+          .update({ is_read: true, read_at: new Date().toISOString() })
+          .eq('user_id', userProfile.id)
+          .eq('is_read', false);
+      }
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (e) {
+      console.error('Failed to mark all as read:', e);
+    }
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = async () => {
+    try {
+      if (userProfile?.id) {
+        await supabase
+          .from('notifications')
+          .delete()
+          .eq('user_id', userProfile.id);
+      }
+      setNotifications([]);
+    } catch (e) {
+      console.error('Failed to clear notifications:', e);
+    }
+  };
+
+  // Fetch notifications when user profile is loaded
+  useEffect(() => {
+    if (userProfile?.id) {
+      fetchNotifications();
+    }
+  }, [userProfile?.id, fetchNotifications]);
+
+  // Close notifications dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      trade_created: <Package className="w-4 h-4 text-blue-500" />,
+      trade_updated: <Package className="w-4 h-4 text-amber-500" />,
+      trade_completed: <CheckCircle className="w-4 h-4 text-green-500" />,
+      kyc_submitted: <Shield className="w-4 h-4 text-blue-500" />,
+      kyc_approved: <Shield className="w-4 h-4 text-green-500" />,
+      kyc_rejected: <Shield className="w-4 h-4 text-red-500" />,
+      document_uploaded: <FileText className="w-4 h-4 text-blue-500" />,
+      document_approved: <FileText className="w-4 h-4 text-green-500" />,
+      document_rejected: <FileText className="w-4 h-4 text-red-500" />,
+      payment_received: <CreditCard className="w-4 h-4 text-green-500" />,
+      payment_sent: <CreditCard className="w-4 h-4 text-amber-500" />,
+      system_alert: <AlertTriangle className="w-4 h-4 text-amber-500" />,
+    };
+    return icons[type] || <Bell className="w-4 h-4 text-gray-500" />;
+  };
+
+  // Format relative time
+  const formatRelativeTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
   
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -384,6 +540,7 @@ export default function App() {
       case AppView.KYC_VERIFICATION: return <KYCVerification />;
       case AppView.TENDERS: return <TenderManagement />;
       case AppView.CONTRACTS: return <SmartContracts />;
+      case AppView.CUSTOMS: return <CustomsAuthorityPanel />;
       default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
@@ -553,10 +710,133 @@ export default function App() {
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className="relative p-1.5 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-trade-error rounded-full border border-white dark:border-slate-900"></span>
-            </button>
+            {/* Notifications Dropdown */}
+            <div className="relative" ref={notificationRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-1.5 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-trade-error text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-white dark:border-slate-900">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notifications Panel */}
+              {showNotifications && (
+                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-700/50">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-trade-accent" />
+                      <span className="font-bold text-gray-900 dark:text-white">Notifications</span>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 bg-trade-accent text-white text-[10px] font-bold rounded-full">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={markAllAsRead}
+                          className="p-1.5 text-gray-500 hover:text-trade-accent hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                          title="Mark all as read"
+                        >
+                          <CheckCheck className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button 
+                        onClick={clearAllNotifications}
+                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                        title="Clear all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Notifications List */}
+                  <div className="max-h-96 overflow-y-auto">
+                    {notificationsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 text-trade-accent animate-spin" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-slate-400">
+                        <Bell className="w-10 h-10 mb-2 opacity-30" />
+                        <p className="text-sm">No notifications</p>
+                      </div>
+                    ) : (
+                      notifications.map(notification => (
+                        <div 
+                          key={notification.id}
+                          onClick={() => {
+                            if (!notification.is_read) markAsRead(notification.id);
+                            if (notification.link) {
+                              navigate(notification.link);
+                              setShowNotifications(false);
+                            }
+                          }}
+                          className={`px-4 py-3 border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer transition-colors ${
+                            !notification.is_read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              !notification.is_read ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-slate-700'
+                            }`}>
+                              {getNotificationIcon(notification.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className={`text-sm font-medium truncate ${
+                                  !notification.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-slate-300'
+                                }`}>
+                                  {notification.title}
+                                </p>
+                                <span className="text-[10px] text-gray-400 dark:text-slate-500 whitespace-nowrap flex-shrink-0">
+                                  {formatRelativeTime(notification.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                                {notification.message}
+                              </p>
+                              {notification.link && (
+                                <div className="flex items-center gap-1 mt-1 text-trade-accent text-xs">
+                                  <ExternalLink className="w-3 h-3" />
+                                  <span>View details</span>
+                                </div>
+                              )}
+                            </div>
+                            {!notification.is_read && (
+                              <div className="w-2 h-2 bg-trade-accent rounded-full flex-shrink-0 mt-2" />
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  {notifications.length > 0 && (
+                    <div className="px-4 py-2 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                      <button 
+                        onClick={() => {
+                          setShowNotifications(false);
+                          // Could navigate to a dedicated notifications page
+                        }}
+                        className="w-full text-center text-xs text-trade-accent hover:text-trade-accent/80 font-medium py-1"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

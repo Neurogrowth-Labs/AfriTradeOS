@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { getLogisticsInfo } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
+import { enterpriseExporterService, ShipmentTracking } from '../services/enterpriseExporterService';
 
 // Shipment type definition
 interface Shipment {
@@ -141,33 +142,72 @@ export const Logistics: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const userLocation = { lat: -1.2921, lng: 36.8219 }; // Nairobi
 
-  // Fetch shipments from database on mount
+  // Fetch shipments from database on mount - Supabase first, fallback to mock
   useEffect(() => {
     const fetchShipments = async () => {
       setLoadingShipments(true);
       try {
-        // Fetch trades and convert to shipment format
-        const trades = await mockDatabase.getTrades();
-        const shipments: Shipment[] = trades
-          .filter(t => t.status === 'pending_execution' || t.status === 'pending_settlement')
-          .map(t => ({
-            id: t.id,
-            origin: t.origin_country || 'Origin',
-            destination: t.destination_country || 'Destination',
-            status: t.status === 'pending_execution' ? 'on_time' : 'pending',
-            eta: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-            progress: t.status === 'pending_execution' ? 50 : 10,
-            mode: 'Road',
-            carrier: 'Pending Assignment',
-            timeline: [
-              { location: t.origin_country || 'Origin', date: new Date(t.created_at || Date.now()).toLocaleDateString(), status: 'completed', label: 'Picked Up' },
-              { location: 'In Transit', date: 'Current', status: 'active', label: 'In Transit' },
-              { location: t.destination_country || 'Destination', date: 'Est.', status: 'pending', label: 'Delivery' },
-            ]
-          }));
-        setLiveShipments(shipments);
-        if (shipments.length > 0) {
-          setSelectedShipment(shipments[0]);
+        // Try to fetch from Supabase first
+        const supabaseShipments = await enterpriseExporterService.getShipments();
+        
+        if (supabaseShipments.length > 0) {
+          // Convert Supabase shipments to local format
+          const shipments: Shipment[] = supabaseShipments.map((s: ShipmentTracking) => {
+            // Calculate progress based on status
+            const statusProgress: Record<string, number> = {
+              booked: 5, picked_up: 15, at_origin_port: 25, departed: 35,
+              in_transit: 55, at_destination_port: 75, customs_hold: 80,
+              cleared: 85, out_for_delivery: 92, delivered: 100
+            };
+            return {
+              id: s.id,
+              origin: s.origin_port || 'Origin',
+              destination: s.destination_port || 'Destination',
+              status: s.status === 'delivered' ? 'delivered' : s.status === 'customs_hold' ? 'delayed' : 'on_time',
+              eta: s.eta ? new Date(s.eta).toLocaleDateString() : 'TBD',
+              progress: statusProgress[s.status] || 50,
+              mode: s.transport_mode === 'sea' ? 'Sea' : s.transport_mode === 'air' ? 'Air' : 'Road',
+              carrier: s.carrier_name || 'Pending Assignment',
+              timeline: s.timeline && Array.isArray(s.timeline) ? s.timeline.map((t: { date: string; event: string; location: string }) => ({
+                location: t.location || '',
+                date: t.date || '',
+                status: 'completed',
+                label: t.event || ''
+              })) : [
+                { location: s.origin_port || 'Origin', date: s.departure_date || 'Pending', status: 'completed', label: 'Departed' },
+                { location: s.current_location || 'In Transit', date: 'Current', status: 'active', label: 'In Transit' },
+                { location: s.destination_port || 'Destination', date: s.eta || 'Est.', status: 'pending', label: 'Arrival' },
+              ]
+            };
+          });
+          setLiveShipments(shipments);
+          if (shipments.length > 0) {
+            setSelectedShipment(shipments[0]);
+          }
+        } else {
+          // Fallback to mock database
+          const trades = await mockDatabase.getTrades();
+          const shipments: Shipment[] = trades
+            .filter(t => t.status === 'pending_execution' || t.status === 'pending_settlement')
+            .map(t => ({
+              id: t.id,
+              origin: t.origin_country || 'Origin',
+              destination: t.destination_country || 'Destination',
+              status: t.status === 'pending_execution' ? 'on_time' : 'pending',
+              eta: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+              progress: t.status === 'pending_execution' ? 50 : 10,
+              mode: 'Road',
+              carrier: 'Pending Assignment',
+              timeline: [
+                { location: t.origin_country || 'Origin', date: new Date(t.created_at || Date.now()).toLocaleDateString(), status: 'completed', label: 'Picked Up' },
+                { location: 'In Transit', date: 'Current', status: 'active', label: 'In Transit' },
+                { location: t.destination_country || 'Destination', date: 'Est.', status: 'pending', label: 'Delivery' },
+              ]
+            }));
+          setLiveShipments(shipments);
+          if (shipments.length > 0) {
+            setSelectedShipment(shipments[0]);
+          }
         }
       } catch (e) {
         console.error('Failed to fetch shipments:', e);

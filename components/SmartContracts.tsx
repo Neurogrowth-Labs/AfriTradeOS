@@ -37,6 +37,7 @@ import {
   FileDown
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { enterpriseExporterService, TradeContract } from '../services/enterpriseExporterService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 
 // Types
@@ -187,28 +188,64 @@ export const SmartContracts: React.FC = () => {
   const loadContracts = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('contracts')
-        .select(`
-          *,
-          buyer_org:buyer_org_id(name),
-          seller_org:seller_org_id(name)
-        `)
-        .order('created_at', { ascending: false });
+      // Try enterprise exporter service first (trade_contracts table)
+      const tradeContracts = await enterpriseExporterService.getContracts({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+      });
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+      if (tradeContracts.length > 0) {
+        // Convert TradeContract to local Contract format
+        const converted: Contract[] = tradeContracts.map((c: TradeContract) => ({
+          id: c.id,
+          contract_number: c.contract_number,
+          title: c.title,
+          description: '',
+          status: c.status === 'pending_signature' ? 'pending_approval' : c.status as Contract['status'],
+          category: c.contract_type || 'General',
+          commodity: '',
+          quantity: 0,
+          unit: 'units',
+          unit_price: 0,
+          total_value: c.value || 0,
+          currency: c.currency,
+          incoterms: c.incoterm || 'FOB',
+          effective_date: c.effective_date || '',
+          expiry_date: c.expiry_date || '',
+          delivery_deadline: c.expiry_date || '',
+          buyer_org_name: '',
+          seller_org_name: c.counterparty_name,
+          buyer_signed_at: c.our_signature_date,
+          seller_signed_at: c.counterparty_signature_date,
+          milestones_count: c.milestones_total,
+          completed_milestones: c.milestones_completed,
+          created_at: c.created_at,
+        }));
+        setContracts(converted);
+      } else {
+        // Fallback to original contracts table
+        let query = supabase
+          .from('contracts')
+          .select(`
+            *,
+            buyer_org:buyer_org_id(name),
+            seller_org:seller_org_id(name)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (statusFilter !== 'all') {
+          query = query.eq('status', statusFilter);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        setContracts((data || []).map((c: any) => ({
+          ...c,
+          buyer_org_name: c.buyer_org?.name || c.metadata?.buyer_org_name || '',
+          seller_org_name: c.seller_org?.name || c.metadata?.seller_org_name || ''
+        })));
       }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      setContracts((data || []).map((c: any) => ({
-        ...c,
-        buyer_org_name: c.buyer_org?.name || c.metadata?.buyer_org_name || '',
-        seller_org_name: c.seller_org?.name || c.metadata?.seller_org_name || ''
-      })));
     } catch (e) {
       console.error('Failed to fetch contracts:', e);
       setContracts([]);

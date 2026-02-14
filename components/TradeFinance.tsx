@@ -38,6 +38,7 @@ import {
   Zap
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
+import { enterpriseExporterService, FXRate as SupabaseFXRate } from '../services/enterpriseExporterService';
 import { DbFinanceRequest } from '../types';
 
 // FX Rate data types
@@ -178,7 +179,62 @@ export const TradeFinance: React.FC = () => {
       setLoadingMetrics(true);
       
       try {
-        // Load financiers
+        // Try to load FX rates from Supabase first
+        const supabaseFxRates = await enterpriseExporterService.getFXRates('USD');
+        if (supabaseFxRates.length > 0) {
+          const ratesWithHistory: FXRate[] = supabaseFxRates.map((r: SupabaseFXRate) => ({
+            pair: `${r.base_currency}/${r.quote_currency}`,
+            rate: r.rate,
+            change: r.change_1d,
+            changePercent: (r.change_1d / r.rate) * 100,
+            history: Array.from({length: 30}, (_, i) => ({ 
+              time: `Day ${i+1}`, 
+              rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02) + (Math.random() - 0.5) * (r.rate * 0.01)
+            })),
+          }));
+          setFxRates(ratesWithHistory);
+          setSelectedFXPair(ratesWithHistory[0]);
+
+          // Generate hedging suggestions from Supabase FX data
+          const hedgingSuggestions: HedgingSuggestion[] = supabaseFxRates
+            .filter((r: SupabaseFXRate) => r.ai_hedge_recommendation)
+            .map((r: SupabaseFXRate, idx: number) => ({
+              id: `h${idx + 1}`,
+              type: r.volatility_30d > 5 ? 'forward' : 'option' as 'forward' | 'option' | 'swap',
+              pair: `${r.base_currency}/${r.quote_currency}`,
+              description: r.ai_hedge_recommendation || 'Consider hedging this currency pair',
+              savings: `$${Math.floor(r.volatility_30d * 500)}`,
+              risk: r.volatility_30d > 5 ? 'high' : r.volatility_30d > 3 ? 'medium' : 'low' as 'low' | 'medium' | 'high',
+              term: '90 days',
+            }));
+          if (hedgingSuggestions.length > 0) {
+            setHedgingSuggestions(hedgingSuggestions);
+          }
+        } else {
+          // Fallback to mock FX rates
+          const dbFxRates = await mockDatabase.getFXRates();
+          if (dbFxRates.length > 0) {
+            const ratesWithHistory: FXRate[] = await Promise.all(
+              dbFxRates.map(async (r) => {
+                const history = await mockDatabase.getFXRateHistory(r.pair);
+                return {
+                  ...r,
+                  history: history.length > 0 ? history : Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02) })),
+                };
+              })
+            );
+            setFxRates(ratesWithHistory);
+            setSelectedFXPair(ratesWithHistory[0]);
+          }
+
+          // Load hedging suggestions from mock DB
+          const dbHedging = await mockDatabase.getHedgingSuggestions();
+          if (dbHedging.length > 0) {
+            setHedgingSuggestions(dbHedging);
+          }
+        }
+
+        // Load financiers from mock (no Supabase table for this yet)
         const financiersData = await mockDatabase.getFinanciers();
         setFinanciers(financiersData.length > 0 ? financiersData : FALLBACK_FUNDING_OPTIONS);
         
@@ -191,33 +247,11 @@ export const TradeFinance: React.FC = () => {
         const risks = await mockDatabase.calculateCountryRiskExposure();
         setCountryRisks(risks);
 
-        // Load FX rates from DB
-        const dbFxRates = await mockDatabase.getFXRates();
-        if (dbFxRates.length > 0) {
-          // Load history for each rate
-          const ratesWithHistory: FXRate[] = await Promise.all(
-            dbFxRates.map(async (r) => {
-              const history = await mockDatabase.getFXRateHistory(r.pair);
-              return {
-                ...r,
-                history: history.length > 0 ? history : Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02) })),
-              };
-            })
-          );
-          setFxRates(ratesWithHistory);
-          setSelectedFXPair(ratesWithHistory[0]);
-        }
-
-        // Load hedging suggestions from DB
-        const dbHedging = await mockDatabase.getHedgingSuggestions();
-        if (dbHedging.length > 0) {
-          setHedgingSuggestions(dbHedging);
-        }
-
         // Load finance summary from DB
         const summary = await mockDatabase.getFinanceSummary();
         setFinanceSummary(summary);
       } catch (e) {
+        console.error('Failed to load finance data:', e);
         setFinanciers(FALLBACK_FUNDING_OPTIONS);
         setReadinessScore(50);
       } finally {

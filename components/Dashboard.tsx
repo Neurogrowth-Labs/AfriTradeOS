@@ -50,7 +50,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { fastChatResponse } from '../services/geminiService';
-import { mockDatabase } from '../services/mockDatabase'; // Import DB
+import { mockDatabase } from '../services/mockDatabase';
+import { enterpriseExporterService, ExportProject, ShipmentTracking } from '../services/enterpriseExporterService';
 import { UserPersona, AppView, DbTrade } from '../types';
 
 // --- Types & Mock Data ---
@@ -231,63 +232,124 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
     const fetchAllData = async () => {
         setLoadingData(true);
         try {
-            // Fetch trades
+            // Fetch from Supabase via enterpriseExporterService
+            const [kpis, projects, shipments] = await Promise.all([
+                enterpriseExporterService.getDashboardKPIs(),
+                enterpriseExporterService.getProjects(),
+                enterpriseExporterService.getShipments(),
+            ]);
+
+            // Also fetch legacy trades for backward compatibility
             const trades = await mockDatabase.getTrades();
             if (isMounted) {
                 setMyTrades(trades);
                 
-                // Generate trade lanes from real trades
-                const tradeLanes: TradeLane[] = trades.slice(0, 4).map((t) => ({
-                    id: t.id,
-                    from: t.origin_country || 'Origin',
-                    to: t.destination_country || 'Destination',
-                    coords: { x1: 320, y1: 350, x2: 550, y2: 80, cx: 400, cy: 200 },
-                    volume: `${Math.floor((t.value || 0) / 1000)} Tons`,
-                    value: `$${((t.value || 0) / 1000).toFixed(1)}K`,
-                    status: t.status === 'completed' ? 'optimal' : t.status === 'paused' ? 'blocked' : 'delayed',
-                    commodity: t.product || 'Goods'
+                // Generate trade lanes from export projects (Supabase) or fallback to trades
+                const projectLanes: TradeLane[] = projects.slice(0, 4).map((p: ExportProject, idx: number) => ({
+                    id: p.id,
+                    from: p.origin_country || 'Origin',
+                    to: p.destination_country || 'Destination',
+                    coords: { 
+                        x1: 320 + idx * 30, 
+                        y1: 350 - idx * 50, 
+                        x2: 550 - idx * 20, 
+                        y2: 80 + idx * 40, 
+                        cx: 400, 
+                        cy: 200 
+                    },
+                    volume: `${p.quantity || 0} ${p.unit || 'KG'}`,
+                    value: `$${((p.value || 0) / 1000).toFixed(1)}K`,
+                    status: p.status === 'completed' || p.status === 'delivered' ? 'optimal' 
+                          : p.status === 'on_hold' || p.status === 'cancelled' ? 'blocked' 
+                          : 'delayed',
+                    commodity: p.product || 'Goods'
                 }));
-                setLanes(tradeLanes);
+                
+                // Use project lanes if available, otherwise fall back to trades
+                if (projectLanes.length > 0) {
+                    setLanes(projectLanes);
+                } else {
+                    const tradeLanes: TradeLane[] = trades.slice(0, 4).map((t) => ({
+                        id: t.id,
+                        from: t.origin_country || 'Origin',
+                        to: t.destination_country || 'Destination',
+                        coords: { x1: 320, y1: 350, x2: 550, y2: 80, cx: 400, cy: 200 },
+                        volume: `${Math.floor((t.value || 0) / 1000)} Tons`,
+                        value: `$${((t.value || 0) / 1000).toFixed(1)}K`,
+                        status: t.status === 'completed' ? 'optimal' : t.status === 'paused' ? 'blocked' : 'delayed',
+                        commodity: t.product || 'Goods'
+                    }));
+                    setLanes(tradeLanes);
+                }
             }
             
-            // Fetch finance requests
-            const financeReqs = await mockDatabase.getFinanceRequests('');
-            
-            // Fetch KYC requests for declarations
-            const kycReqs = await mockDatabase.getKYCRequests();
+            // Generate declarations from shipments
             if (isMounted) {
-                const decls = kycReqs.map(k => ({
-                    id: k.id,
-                    exporter: k.entity_name || 'Unknown',
-                    origin: k.country || 'Unknown',
-                    commodity: 'Trade Goods',
-                    risk: k.risk_level === 'High' ? 80 : k.risk_level === 'Medium' ? 50 : 20,
-                    status: k.status === 'Approved' ? 'Cleared' : k.status === 'Rejected' ? 'Flagged' : 'Review'
+                const decls = shipments.map((s: ShipmentTracking) => ({
+                    id: s.id,
+                    exporter: s.carrier_name || 'Unknown',
+                    origin: s.origin_port || 'Unknown',
+                    commodity: s.container_type || 'Cargo',
+                    risk: s.risk_level === 'high' ? 80 : s.risk_level === 'medium' ? 50 : 20,
+                    status: s.status === 'delivered' ? 'Cleared' : s.status === 'customs_hold' ? 'Flagged' : 'Review'
                 }));
                 setDeclarations(decls);
             }
             
-            // Calculate real metrics
+            // Set metrics from Supabase KPIs
             if (isMounted) {
-                const pendingTrades = trades.filter(t => t.status !== 'completed').length;
-                const completedTrades = trades.filter(t => t.status === 'completed').length;
-                const totalValue = trades.reduce((sum, t) => sum + (t.value || 0), 0);
-                
                 setMetrics({
-                    activeShipments: trades.length,
-                    complianceScore: trades.length > 0 ? Math.min(100, 70 + completedTrades * 5) : 0,
-                    pendingDocs: pendingTrades,
-                    avgClearance: trades.length > 0 ? 2.5 : 0,
-                    dailyRevenue: totalValue / 1000000,
-                    pendingDeclarations: kycReqs.length,
-                    financeRequests: financeReqs.length,
-                    activeLCs: financeReqs.reduce((sum, f) => sum + (f.amount || 0), 0) / 1000000,
-                    totalExports: totalValue / 1000000000,
-                    tradeBalance: totalValue / 1000000,
+                    activeShipments: kpis.shipmentsInTransit || projects.length,
+                    complianceScore: kpis.complianceScore || 0,
+                    pendingDocs: kpis.pendingComplianceChecks || 0,
+                    avgClearance: kpis.avgTransitDays || 0,
+                    dailyRevenue: kpis.receivedPayments / 1000000 || 0,
+                    pendingDeclarations: kpis.activeProjects || 0,
+                    financeRequests: kpis.pendingPayments > 0 ? 1 : 0,
+                    activeLCs: kpis.outstandingCredit / 1000000 || 0,
+                    totalExports: kpis.totalExportValue / 1000000000 || 0,
+                    tradeBalance: kpis.totalExportValue / 1000000 || 0,
                 });
+
+                // Set alerts from AI risk alerts
+                if (kpis.aiRiskAlerts && kpis.aiRiskAlerts.length > 0) {
+                    const aiAlerts: Alert[] = kpis.aiRiskAlerts.map((a, idx) => ({
+                        id: Date.now() + idx,
+                        title: a.type === 'currency' ? 'Currency Alert' : a.type === 'compliance' ? 'Compliance Update' : 'Trade Alert',
+                        message: a.message,
+                        time: 'Just now',
+                        severity: a.severity === 'high' ? 'high' : a.severity === 'medium' ? 'medium' : 'low',
+                        category: a.type === 'currency' ? 'currency' : a.type === 'compliance' ? 'compliance' : 'general' as AlertCategory,
+                        read: false,
+                        actionable: true,
+                    }));
+                    setAlerts(prev => [...aiAlerts, ...prev].slice(0, 10));
+                }
             }
         } catch (e) {
             console.error('Failed to fetch dashboard data:', e);
+            // Fallback to mock data on error
+            try {
+                const trades = await mockDatabase.getTrades();
+                if (isMounted) {
+                    setMyTrades(trades);
+                    const totalValue = trades.reduce((sum, t) => sum + (t.value || 0), 0);
+                    setMetrics({
+                        activeShipments: trades.length,
+                        complianceScore: 75,
+                        pendingDocs: trades.filter(t => t.status !== 'completed').length,
+                        avgClearance: 2.5,
+                        dailyRevenue: totalValue / 1000000,
+                        pendingDeclarations: 0,
+                        financeRequests: 0,
+                        activeLCs: 0,
+                        totalExports: totalValue / 1000000000,
+                        tradeBalance: totalValue / 1000000,
+                    });
+                }
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+            }
         } finally {
             if (isMounted) setLoadingData(false);
         }

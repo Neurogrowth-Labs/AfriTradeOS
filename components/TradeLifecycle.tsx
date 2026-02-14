@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { analyzeCompliance } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
+import { enterpriseExporterService, ExportProject } from '../services/enterpriseExporterService';
 import { DbTrade } from '../types';
 
 type Step = 'create' | 'compliance' | 'execution' | 'settlement';
@@ -233,12 +234,13 @@ export const TradeLifecycle: React.FC = () => {
     { id: 'act_6', user: 'Logistics', action: 'Shipment booked', detail: 'Maersk Line booking confirmed for Lagos-Mombasa', timestamp: '5 min ago', type: 'trade' },
   ]);
 
-  // Load trades into Kanban on mount
+  // Load trades into Kanban on mount - fetch from Supabase first, fallback to mock
   useEffect(() => {
     const loadKanban = async () => {
       try {
-        const trades = await mockDatabase.getTrades();
-        setAllTrades(trades);
+        // Try to fetch from Supabase first
+        const projects = await enterpriseExporterService.getProjects();
+        
         const cols: KanbanColumn[] = [
           { id: 'draft', title: 'Draft', color: 'bg-gray-400', cards: [] },
           { id: 'compliance', title: 'Compliance Review', color: 'bg-purple-500', cards: [] },
@@ -246,22 +248,67 @@ export const TradeLifecycle: React.FC = () => {
           { id: 'settlement', title: 'Settlement', color: 'bg-amber-500', cards: [] },
           { id: 'completed', title: 'Completed', color: 'bg-emerald-500', cards: [] },
         ];
-        trades.forEach(t => {
-          const card: KanbanCard = {
-            id: t.id,
-            title: `${t.product || 'Trade'} → ${t.destination_country || '?'}`,
-            product: t.product || 'General',
-            value: t.value || 0,
-            destination: t.destination_country || '',
-            priority: (t.value || 0) > 50000 ? 'high' : (t.value || 0) > 10000 ? 'medium' : 'low',
-          };
-          const colMap: Record<string, string> = { draft: 'draft', pending_compliance: 'compliance', pending_execution: 'execution', pending_settlement: 'settlement', completed: 'completed', paused: 'draft' };
-          const colId = colMap[t.status] || 'draft';
-          const col = cols.find(c => c.id === colId);
-          if (col) col.cards.push(card);
-        });
-        setKanbanColumns(cols);
-      } catch (e) { /* use defaults */ }
+
+        if (projects.length > 0) {
+          // Use Supabase export projects
+          projects.forEach((p: ExportProject) => {
+            const card: KanbanCard = {
+              id: p.id,
+              title: `${p.product || 'Trade'} → ${p.destination_country || '?'}`,
+              product: p.product || 'General',
+              value: p.value || 0,
+              destination: p.destination_country || '',
+              priority: p.priority === 'critical' ? 'high' : p.priority,
+            };
+            // Map project status to kanban columns
+            const statusColMap: Record<string, string> = {
+              planning: 'draft',
+              documentation: 'draft',
+              compliance_review: 'compliance',
+              finance_pending: 'compliance',
+              production: 'execution',
+              quality_check: 'execution',
+              ready_to_ship: 'execution',
+              in_transit: 'execution',
+              customs_clearance: 'settlement',
+              delivered: 'completed',
+              completed: 'completed',
+              on_hold: 'draft',
+              cancelled: 'draft',
+            };
+            const colId = statusColMap[p.status] || 'draft';
+            const col = cols.find(c => c.id === colId);
+            if (col) col.cards.push(card);
+          });
+          setKanbanColumns(cols);
+        } else {
+          // Fallback to mock database
+          const trades = await mockDatabase.getTrades();
+          setAllTrades(trades);
+          trades.forEach(t => {
+            const card: KanbanCard = {
+              id: t.id,
+              title: `${t.product || 'Trade'} → ${t.destination_country || '?'}`,
+              product: t.product || 'General',
+              value: t.value || 0,
+              destination: t.destination_country || '',
+              priority: (t.value || 0) > 50000 ? 'high' : (t.value || 0) > 10000 ? 'medium' : 'low',
+            };
+            const colMap: Record<string, string> = { draft: 'draft', pending_compliance: 'compliance', pending_execution: 'execution', pending_settlement: 'settlement', completed: 'completed', paused: 'draft' };
+            const colId = colMap[t.status] || 'draft';
+            const col = cols.find(c => c.id === colId);
+            if (col) col.cards.push(card);
+          });
+          setKanbanColumns(cols);
+        }
+      } catch (e) {
+        console.error('Failed to load kanban data:', e);
+        // Fallback to mock on error
+        try {
+          const trades = await mockDatabase.getTrades();
+          setAllTrades(trades);
+        } catch { /* use defaults */ }
+      }
     };
     loadKanban();
   }, []);

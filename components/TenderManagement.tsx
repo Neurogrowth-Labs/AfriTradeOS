@@ -24,6 +24,7 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { enterpriseExporterService, TradeTender } from '../services/enterpriseExporterService';
 
 interface Tender {
   id: string;
@@ -78,30 +79,71 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
     const loadTenders = async () => {
       setLoading(true);
       try {
-        let query = supabase
-          .from('tenders')
-          .select('*, organizations(name)')
-          .order('created_at', { ascending: false });
+        // Try enterprise exporter service first (trade_tenders table)
+        const tradeTenders = await enterpriseExporterService.getTenders({
+          status: statusFilter !== 'all' && statusFilter !== 'closing_soon' ? statusFilter : undefined,
+        });
 
-        if (statusFilter === 'closing_soon') {
-          const sevenDaysFromNow = new Date();
-          sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-          query = query
-            .eq('status', 'published')
-            .lte('submission_deadline', sevenDaysFromNow.toISOString())
-            .gte('submission_deadline', new Date().toISOString());
-        } else if (statusFilter !== 'all') {
-          query = query.eq('status', statusFilter);
+        if (tradeTenders.length > 0) {
+          // Convert TradeTender to local Tender format
+          const converted: Tender[] = tradeTenders.map((t: TradeTender) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description || '',
+            category: t.product_category || 'General',
+            quantity: t.quantity || 0,
+            unit: t.unit || 'units',
+            budget_min: (t.estimated_value || 0) * 0.8,
+            budget_max: t.estimated_value || 0,
+            currency: t.currency,
+            delivery_location: t.issuer_country,
+            submission_deadline: t.deadline || '',
+            status: t.status === 'closing_soon' ? 'published' : t.status as Tender['status'],
+            bids_count: 0,
+            views_count: 0,
+            organization_name: t.issuer_name,
+            created_at: t.created_at,
+          }));
+          
+          // Filter for closing_soon if needed
+          if (statusFilter === 'closing_soon') {
+            const sevenDaysFromNow = new Date();
+            sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+            const filtered = converted.filter(t => {
+              const deadline = new Date(t.submission_deadline);
+              return deadline >= new Date() && deadline <= sevenDaysFromNow;
+            });
+            setTenders(filtered);
+          } else {
+            setTenders(converted);
+          }
+        } else {
+          // Fallback to original tenders table
+          let query = supabase
+            .from('tenders')
+            .select('*, organizations(name)')
+            .order('created_at', { ascending: false });
+
+          if (statusFilter === 'closing_soon') {
+            const sevenDaysFromNow = new Date();
+            sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+            query = query
+              .eq('status', 'published')
+              .lte('submission_deadline', sevenDaysFromNow.toISOString())
+              .gte('submission_deadline', new Date().toISOString());
+          } else if (statusFilter !== 'all') {
+            query = query.eq('status', statusFilter);
+          }
+
+          const { data, error } = await query;
+
+          if (error) throw error;
+
+          setTenders((data || []).map((t: Tender & { organizations?: { name: string } }) => ({
+            ...t,
+            organization_name: t.organizations?.name
+          })));
         }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-
-        setTenders((data || []).map((t: Tender & { organizations?: { name: string } }) => ({
-          ...t,
-          organization_name: t.organizations?.name
-        })));
       } catch (e) {
         console.error('Failed to fetch tenders:', e);
         setTenders([]);

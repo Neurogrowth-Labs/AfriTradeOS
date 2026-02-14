@@ -160,30 +160,9 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
   // Customs Authority - Focus on compliance, verification, oversight
   [UserPersona.CUSTOMS]: [
     {
-      title: 'Oversight',
+      title: 'Command Center',
       items: [
-        { view: AppView.REGULATOR, icon: Building, label: 'Customs Dashboard', description: 'Overview of trade volumes, compliance rates, and alerts' },
-      ]
-    },
-    {
-      title: 'Declarations',
-      items: [
-        { view: AppView.COMPLIANCE, icon: ClipboardCheck, label: 'Declaration Review', description: 'Review and approve customs declarations' },
-        { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'Trade Verification', description: 'Verify trade documents and certificates' },
-      ]
-    },
-    {
-      title: 'Records',
-      items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Trader Registry', description: 'Registered traders and verification status' },
-        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Trade Records', description: 'Historical trade records and audit trail' },
-      ]
-    },
-    {
-      title: 'Intelligence',
-      items: [
-        { view: AppView.MARKET_INTEL, icon: Globe, label: 'Trade Analytics', description: 'Trade patterns and risk analysis' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Shipment Monitoring', description: 'Real-time cargo tracking' },
+        { view: AppView.CUSTOMS, icon: Shield, label: 'Customs Panel', description: 'Full customs authority mission control' },
       ]
     },
     {
