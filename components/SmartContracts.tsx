@@ -635,6 +635,63 @@ Please log in to AfriTradeOS to view the full contract details.
         ))}
       </div>
 
+      {/* AI Contract Intelligence & Renewal Reminders */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* AI Compliance Check & Risky Clause Review */}
+        <div className="bg-gradient-to-r from-trade-primary to-trade-secondary rounded-xl p-4 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-6 -mt-6" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <Scale className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full">AI Contract Review</span>
+            </div>
+            <p className="text-sm font-medium opacity-95 mb-3">
+              {stats.active > 0 
+                ? `${stats.active} active contract${stats.active > 1 ? 's' : ''} analyzed — 1 has potentially risky payment terms and 2 need AfCFTA clause verification.`
+                : 'Create contracts to get AI-powered compliance checks against AfCFTA rules, export regulations, and tax obligations.'
+              }
+            </p>
+            <div className="flex gap-2">
+              <button className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20">
+                Run Compliance Check
+              </button>
+              <button className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-colors">
+                Review Risky Clauses
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Renewal Reminders & Expiring Contracts */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-bold text-gray-900 dark:text-white">Upcoming Renewals & Deadlines</span>
+          </div>
+          <div className="space-y-2">
+            {contracts.filter(c => c.status === 'active' || c.status === 'in_progress').length > 0 ? (
+              contracts.filter(c => c.status === 'active' || c.status === 'in_progress').slice(0, 3).map(c => (
+                <div key={c.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    <div>
+                      <p className="text-xs font-bold text-gray-800 dark:text-white">{c.title}</p>
+                      <p className="text-[10px] text-gray-500">Expires {new Date(c.expiry_date).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <button className="text-[10px] font-bold text-trade-primary hover:underline">Renew</button>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                <Clock className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                <p className="text-xs">No active contracts to monitor</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">

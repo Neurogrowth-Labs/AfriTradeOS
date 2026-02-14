@@ -171,6 +171,47 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
         )}
       </div>
 
+      {/* AI Bid Suggestions & Collaborative Bidding */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-gradient-to-r from-trade-primary to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-6 -mt-6" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full">AI Bid Assistant</span>
+            </div>
+            <p className="text-sm font-medium opacity-95 mb-3">
+              {filteredTenders.length > 0
+                ? `We found ${Math.min(filteredTenders.length, 3)} tender${filteredTenders.length > 1 ? 's' : ''} matching your product portfolio. AI suggests competitive pricing at 12-15% below budget ceiling for highest win probability.`
+                : 'Submit bids to get AI-powered pricing recommendations, payment term suggestions, and documentation checklists.'}
+            </p>
+            <button className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20">
+              View AI Recommendations
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="w-4 h-4 text-indigo-500" />
+            <span className="text-sm font-bold text-gray-900 dark:text-white">Collaborative Bidding</span>
+          </div>
+          <p className="text-xs text-gray-500 mb-3">Pool resources with other SMEs to meet large tender requirements together.</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2.5 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-900/30">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-indigo-200 dark:bg-indigo-800 flex items-center justify-center text-[10px] font-bold text-indigo-700 dark:text-indigo-300">3</div>
+                <p className="text-xs font-medium text-gray-800 dark:text-white">Active bid coalitions</p>
+              </div>
+              <button className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline">Join</button>
+            </div>
+            <button className="w-full py-2 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold transition-colors">
+              + Create Bid Coalition
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* B6: SMART SEARCH FILTERS */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col md:flex-row gap-4">

@@ -123,14 +123,14 @@ export const CoPilot: React.FC<CoPilotProps> = ({ currentView }) => {
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
           <button 
             onClick={() => setIsMinimized(!isMinimized)} 
-            className="p-1 hover:bg-white/20 rounded transition-colors"
+            className="p-1 hover:bg-white/20 rounded-full transition-colors"
             aria-label={isMinimized ? "Maximize" : "Minimize"}
           >
             {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
           </button>
           <button 
             onClick={() => setIsOpen(false)} 
-            className="p-1 hover:bg-white/20 rounded transition-colors"
+            className="p-1 hover:bg-white/20 rounded-full transition-colors"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -167,17 +167,48 @@ export const CoPilot: React.FC<CoPilotProps> = ({ currentView }) => {
             )}
           </div>
 
-          {/* Suggestions (Context Aware) */}
-          <div className="px-4 py-2 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-700 flex gap-2 overflow-x-auto custom-scrollbar">
-             {['Explain this view', 'Summarize risks', 'Draft report'].map(s => (
-               <button 
-                 key={s}
-                 onClick={() => handleSend(s)}
-                 className="whitespace-nowrap px-3 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-trade-primary/5 dark:hover:bg-trade-primary/20 text-xs font-medium text-gray-600 dark:text-gray-300 rounded-full transition-colors border border-transparent hover:border-trade-primary/20"
-               >
-                 {s}
-               </button>
-             ))}
+          {/* Contextual Suggestions (Module-Aware) */}
+          <div className="px-4 py-2 bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-700">
+             <div className="flex gap-2 overflow-x-auto custom-scrollbar mb-2">
+               {((): string[] => {
+                 const moduleMap: Record<string, string[]> = {
+                   'Dashboard': ['Summarize my KPIs', 'Show trade opportunities', 'Export performance report'],
+                   'Trade Lifecycle': ['Check compliance status', 'Draft commercial invoice', 'Estimate shipping cost'],
+                   'Trade Finance': ['Compare financing options', 'Calculate duties for my trade', 'Draft L/C application'],
+                   'Logistics': ['Optimize my route', 'Track shipment delays', 'Pre-fill customs form'],
+                   'Market Intelligence': ['Analyze market trends', 'Find emerging markets', 'Compare AfCFTA tariffs'],
+                   'Marketplace': ['Find matching partners', 'Draft RFQ message', 'Verify partner KYC'],
+                   'Compliance': ['Check my compliance gaps', 'Explain AfCFTA rules of origin', 'Draft certificate of origin'],
+                   'Contracts': ['Review contract risks', 'Draft trade contract', 'Check AfCFTA compliance'],
+                 };
+                 return moduleMap[currentView] || ['Explain this view', 'Summarize risks', 'Draft a document'];
+               })().map(s => (
+                 <button 
+                   key={s}
+                   onClick={() => handleSend(s)}
+                   className="whitespace-nowrap px-3 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-trade-primary/5 dark:hover:bg-trade-primary/20 text-xs font-medium text-gray-600 dark:text-gray-300 rounded-full transition-colors border border-transparent hover:border-trade-primary/20"
+                 >
+                   {s}
+                 </button>
+               ))}
+             </div>
+             {/* Document Drafting Quick Actions */}
+             <div className="flex gap-1.5">
+               {[
+                 { label: 'Invoice', action: 'Draft a commercial invoice for my latest trade' },
+                 { label: 'Contract', action: 'Generate a standard trade contract template' },
+                 { label: 'Letter', action: 'Draft a formal trade inquiry letter' },
+               ].map(doc => (
+                 <button
+                   key={doc.label}
+                   onClick={() => handleSend(doc.action)}
+                   className="flex items-center gap-1 px-2 py-1 bg-trade-primary/5 dark:bg-trade-primary/10 hover:bg-trade-primary/10 dark:hover:bg-trade-primary/20 text-[10px] font-bold text-trade-primary rounded-lg transition-colors"
+                 >
+                   <HelpCircle className="w-2.5 h-2.5" />
+                   {doc.label}
+                 </button>
+               ))}
+             </div>
           </div>
 
           {/* Input */}

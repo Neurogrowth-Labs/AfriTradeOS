@@ -105,8 +105,8 @@ const FALLBACK_FUNDING_OPTIONS: Financier[] = [
   { id: 'opt_6', name: 'ATI', type: 'Insurer', product: 'Supplier Credit Insurance', interest_rate: 1.2, term: 'Annual', min_score: 55, logo_initial: 'AT' },
 ];
 
-// Mock FX rates data
-const MOCK_FX_RATES: FXRate[] = [
+// Fallback FX rates (used when DB is empty)
+const FALLBACK_FX_RATES: FXRate[] = [
   { pair: 'USD/NGN', rate: 1550.25, change: -12.50, changePercent: -0.80, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 1530 + Math.sin(i * 0.3) * 40 + Math.random() * 20 })) },
   { pair: 'USD/KES', rate: 129.45, change: 0.85, changePercent: 0.66, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 127 + Math.sin(i * 0.2) * 3 + Math.random() * 2 })) },
   { pair: 'USD/ZAR', rate: 18.72, change: -0.15, changePercent: -0.80, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 18.2 + Math.sin(i * 0.25) * 0.8 + Math.random() * 0.3 })) },
@@ -114,7 +114,7 @@ const MOCK_FX_RATES: FXRate[] = [
   { pair: 'USD/EGP', rate: 50.85, change: -0.35, changePercent: -0.68, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 49.5 + Math.sin(i * 0.18) * 1.5 + Math.random() * 0.5 })) },
 ];
 
-const MOCK_HEDGING: HedgingSuggestion[] = [
+const FALLBACK_HEDGING: HedgingSuggestion[] = [
   { id: 'h1', type: 'forward', pair: 'USD/NGN', description: 'Lock in current rate of 1,550.25 for 90 days to protect against Naira depreciation', savings: '$4,200', risk: 'low', term: '90 days' },
   { id: 'h2', type: 'option', pair: 'USD/KES', description: 'Buy a put option at 130 KES strike for downside protection with upside flexibility', savings: '$1,800', risk: 'medium', term: '60 days' },
   { id: 'h3', type: 'swap', pair: 'USD/ZAR', description: 'Currency swap arrangement for recurring ZAR payments, reducing transaction costs', savings: '$3,500', risk: 'low', term: '180 days' },
@@ -139,9 +139,21 @@ export const TradeFinance: React.FC = () => {
   const [loadingMetrics, setLoadingMetrics] = useState(true);
 
   // FX & Calculator state
-  const [selectedFXPair, setSelectedFXPair] = useState<FXRate>(MOCK_FX_RATES[0]);
+  const [fxRates, setFxRates] = useState<FXRate[]>(FALLBACK_FX_RATES);
+  const [selectedFXPair, setSelectedFXPair] = useState<FXRate>(FALLBACK_FX_RATES[0]);
+  const [hedgingSuggestions, setHedgingSuggestions] = useState<HedgingSuggestion[]>(FALLBACK_HEDGING);
   const [calcForm, setCalcForm] = useState({ cifValue: 10000, hsCode: '0709.93', origin: 'Ghana', destination: 'Kenya', isAfcfta: true });
   const [calcResult, setCalcResult] = useState<TariffResult | null>(null);
+
+  // Finance summary state (from DB)
+  const [financeSummary, setFinanceSummary] = useState({
+    approvedCredit: 0,
+    avgInterestRate: 0,
+    nextRepaymentDate: null as string | null,
+    nextRepaymentAmount: 0,
+    fxExposure: 0,
+    hedgedAmount: 0,
+  });
 
   // Calculate tariff
   const calculateTariff = () => {
@@ -159,7 +171,7 @@ export const TradeFinance: React.FC = () => {
     });
   };
 
-  // Load financiers and metrics on mount
+  // Load all finance data from database on mount
   useEffect(() => {
     const loadData = async () => {
       setLoadingFinanciers(true);
@@ -178,6 +190,33 @@ export const TradeFinance: React.FC = () => {
         // Load country risk exposure
         const risks = await mockDatabase.calculateCountryRiskExposure();
         setCountryRisks(risks);
+
+        // Load FX rates from DB
+        const dbFxRates = await mockDatabase.getFXRates();
+        if (dbFxRates.length > 0) {
+          // Load history for each rate
+          const ratesWithHistory: FXRate[] = await Promise.all(
+            dbFxRates.map(async (r) => {
+              const history = await mockDatabase.getFXRateHistory(r.pair);
+              return {
+                ...r,
+                history: history.length > 0 ? history : Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02) })),
+              };
+            })
+          );
+          setFxRates(ratesWithHistory);
+          setSelectedFXPair(ratesWithHistory[0]);
+        }
+
+        // Load hedging suggestions from DB
+        const dbHedging = await mockDatabase.getHedgingSuggestions();
+        if (dbHedging.length > 0) {
+          setHedgingSuggestions(dbHedging);
+        }
+
+        // Load finance summary from DB
+        const summary = await mockDatabase.getFinanceSummary();
+        setFinanceSummary(summary);
       } catch (e) {
         setFinanciers(FALLBACK_FUNDING_OPTIONS);
         setReadinessScore(50);
@@ -253,8 +292,56 @@ export const TradeFinance: React.FC = () => {
          </div>
          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600">
             <ShieldAlert className="w-4 h-4 text-orange-500" />
-            <span>FX Exposure: <span className="font-bold text-gray-900 dark:text-white">$124,500</span></span>
+            <span>FX Exposure: <span className="font-bold text-gray-900 dark:text-white">${financeSummary.fxExposure > 0 ? financeSummary.fxExposure.toLocaleString() : '0'}</span></span>
          </div>
+      </div>
+
+      {/* AI-Powered Finance Recommendations */}
+      <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-4 rounded-xl shadow-lg text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-8 -mb-8" />
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm border border-white/10 shrink-0">
+            <Zap className="w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">AI Recommendation</span>
+            </div>
+            <p className="text-sm font-medium leading-relaxed opacity-95">
+              Based on your trade history and credit score of <span className="font-bold">{readinessScore}/100</span>, we recommend 
+              <span className="font-bold"> {financiers.length > 0 ? `${financiers[0].product} with ${financiers[0].name}` : 'Invoice Factoring with Ecobank'}</span> at {financiers.length > 0 ? financiers[0].interest_rate : 2.5}% — you could unlock up to <span className="font-bold">${financeSummary.approvedCredit > 0 ? `$${financeSummary.approvedCredit.toLocaleString()}` : '$45,000'}</span> in 
+              working capital within 48 hours.
+            </p>
+          </div>
+          <button className="shrink-0 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold transition-colors backdrop-blur-sm border border-white/20">
+            Apply Now
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Finance Overview Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Approved Credit</p>
+          <p className="text-xl font-bold text-green-600 mt-1">${financeSummary.approvedCredit > 0 ? financeSummary.approvedCredit.toLocaleString() : '0'}</p>
+          <p className="text-[10px] text-green-600">{financeSummary.approvedCredit > 0 ? 'Available to draw' : 'No approved credit'}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Pending Requests</p>
+          <p className="text-xl font-bold text-amber-600 mt-1">{applications.length}</p>
+          <p className="text-[10px] text-amber-600">Under review</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Avg Interest Rate</p>
+          <p className="text-xl font-bold text-indigo-600 mt-1">{financeSummary.avgInterestRate > 0 ? `${financeSummary.avgInterestRate}%` : '—'}</p>
+          <p className="text-[10px] text-gray-500">Across products</p>
+        </div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+          <p className="text-[10px] font-bold text-gray-400 uppercase">Next Repayment</p>
+          <p className="text-xl font-bold text-trade-primary mt-1">{financeSummary.nextRepaymentDate ? new Date(financeSummary.nextRepaymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</p>
+          <p className="text-[10px] text-gray-500">{financeSummary.nextRepaymentAmount > 0 ? `$${financeSummary.nextRepaymentAmount.toLocaleString()} due` : 'No upcoming payments'}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
@@ -419,7 +506,7 @@ export const TradeFinance: React.FC = () => {
                 <div className="space-y-6">
                   {/* Rate Cards */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {MOCK_FX_RATES.map(fx => (
+                    {fxRates.map(fx => (
                       <button
                         key={fx.pair}
                         onClick={() => setSelectedFXPair(fx)}
@@ -603,7 +690,7 @@ export const TradeFinance: React.FC = () => {
                   </div>
                   <p className="text-sm text-gray-500">Based on your trade portfolio exposure and current FX volatility</p>
                   <div className="space-y-3">
-                    {MOCK_HEDGING.map(h => (
+                    {hedgingSuggestions.map(h => (
                       <div key={h.id} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 transition-all">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-3">
@@ -646,15 +733,15 @@ export const TradeFinance: React.FC = () => {
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-xs text-gray-500">Total Exposure</p>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">$124,500</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">${financeSummary.fxExposure > 0 ? financeSummary.fxExposure.toLocaleString() : '0'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Hedged</p>
-                        <p className="text-lg font-bold text-green-600">$45,200</p>
+                        <p className="text-lg font-bold text-green-600">${financeSummary.hedgedAmount > 0 ? financeSummary.hedgedAmount.toLocaleString() : '0'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Unhedged</p>
-                        <p className="text-lg font-bold text-red-600">$79,300</p>
+                        <p className="text-lg font-bold text-red-600">${(financeSummary.fxExposure - financeSummary.hedgedAmount) > 0 ? (financeSummary.fxExposure - financeSummary.hedgedAmount).toLocaleString() : '0'}</p>
                       </div>
                     </div>
                   </div>
@@ -694,8 +781,8 @@ export const TradeFinance: React.FC = () => {
                              <div>
                                 <p className="text-xs text-gray-400 uppercase">Readiness</p>
                                 <div className="flex items-center gap-1">
-                                    <span className={`font-semibold ${78 >= opt.min_score ? 'text-emerald-500' : 'text-red-500'}`}>
-                                        {78 >= opt.min_score ? 'Qualified' : `Need ${opt.min_score}`}
+                                    <span className={`font-semibold ${readinessScore >= opt.min_score ? 'text-emerald-500' : 'text-red-500'}`}>
+                                        {readinessScore >= opt.min_score ? 'Qualified' : `Need ${opt.min_score}`}
                                     </span>
                                 </div>
                              </div>
