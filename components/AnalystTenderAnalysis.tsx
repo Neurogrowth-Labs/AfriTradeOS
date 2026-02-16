@@ -15,7 +15,18 @@ import {
   Search,
   ChevronRight,
   BarChart3,
-  BrainCircuit
+  BrainCircuit,
+  MessageSquare,
+  UserPlus,
+  Send,
+  Paperclip,
+  FolderOpen,
+  Calendar,
+  CheckSquare,
+  Plus,
+  MoreVertical,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import {
   BarChart,
@@ -67,12 +78,68 @@ const CATEGORY_STATS = [
   { category: 'Construction', count: 1, value: 5 },
 ];
 
+// Collaboration Workspace Data
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string;
+  status: 'online' | 'away' | 'offline';
+}
+
+interface CollabNote {
+  id: string;
+  tenderId: string;
+  author: string;
+  content: string;
+  timestamp: string;
+  type: 'note' | 'task' | 'comment';
+  completed?: boolean;
+}
+
+interface CollabMessage {
+  id: string;
+  author: string;
+  avatar: string;
+  content: string;
+  timestamp: string;
+  tenderId?: string;
+}
+
+const TEAM_MEMBERS: TeamMember[] = [
+  { id: 'tm1', name: 'Amara Okonkwo', role: 'Lead Analyst', avatar: 'AO', status: 'online' },
+  { id: 'tm2', name: 'Kwame Asante', role: 'Bid Manager', avatar: 'KA', status: 'online' },
+  { id: 'tm3', name: 'Fatima Hassan', role: 'Compliance Officer', avatar: 'FH', status: 'away' },
+  { id: 'tm4', name: 'David Mwangi', role: 'Finance Analyst', avatar: 'DM', status: 'offline' },
+  { id: 'tm5', name: 'Sarah Mensah', role: 'Legal Counsel', avatar: 'SM', status: 'online' },
+];
+
+const COLLAB_NOTES: CollabNote[] = [
+  { id: 'cn1', tenderId: 't1', author: 'Amara Okonkwo', content: 'Verified supplier certifications - all requirements met for Kenya tender', timestamp: '2 hours ago', type: 'note' },
+  { id: 'cn2', tenderId: 't2', author: 'Kwame Asante', content: 'Prepare pricing proposal by Feb 25', timestamp: '4 hours ago', type: 'task', completed: false },
+  { id: 'cn3', tenderId: 't1', author: 'Fatima Hassan', content: 'AfCFTA Rules of Origin documentation complete', timestamp: '1 day ago', type: 'note' },
+  { id: 'cn4', tenderId: 't3', author: 'David Mwangi', content: 'Review financial projections for port equipment bid', timestamp: '1 day ago', type: 'task', completed: true },
+  { id: 'cn5', tenderId: 't2', author: 'Sarah Mensah', content: 'Contract terms reviewed - recommend negotiation on payment terms', timestamp: '2 days ago', type: 'comment' },
+];
+
+const COLLAB_MESSAGES: CollabMessage[] = [
+  { id: 'cm1', author: 'Amara Okonkwo', avatar: 'AO', content: 'Team, the Kenya Agriculture tender deadline is approaching. Let\'s sync on final pricing.', timestamp: '10:30 AM', tenderId: 't1' },
+  { id: 'cm2', author: 'Kwame Asante', avatar: 'KA', content: 'I\'ve updated the bid document with the latest cost estimates. Ready for review.', timestamp: '10:45 AM', tenderId: 't1' },
+  { id: 'cm3', author: 'Fatima Hassan', avatar: 'FH', content: 'Compliance check complete for Cocoa tender. All certifications verified.', timestamp: '11:00 AM', tenderId: 't2' },
+  { id: 'cm4', author: 'Sarah Mensah', avatar: 'SM', content: 'Legal review done. Recommend we proceed with the Ghana Ports tender.', timestamp: '11:15 AM', tenderId: 't3' },
+];
+
 export const AnalystTenderAnalysis: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [eligibilityFilter, setEligibilityFilter] = useState('all');
   const [selectedTender, setSelectedTender] = useState<AnalystTender | null>(null);
-  const [activeTab, setActiveTab] = useState<'feed' | 'analytics' | 'matched'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'analytics' | 'matched' | 'workspace'>('feed');
+  const [workspaceTab, setWorkspaceTab] = useState<'chat' | 'notes' | 'tasks'>('chat');
+  const [chatMessage, setChatMessage] = useState('');
+  const [notes, setNotes] = useState(COLLAB_NOTES);
+  const [messages, setMessages] = useState(COLLAB_MESSAGES);
+  const [newNote, setNewNote] = useState('');
 
   const filtered = TENDERS.filter(t => {
     const matchesSearch = searchQuery === '' ||
@@ -97,7 +164,7 @@ export const AnalystTenderAnalysis: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-trade-primary dark:text-white">Tender Analysis</h2>
-              <p className="text-[10px] text-gray-500">Live tender feed • Eligibility checker • Bid probability • AI summaries</p>
+              <p className="text-[10px] text-gray-500">Live tender feed • Eligibility checker • Bid probability • AI summaries • Collaboration</p>
             </div>
           </div>
           <div className="relative w-full md:w-80">
@@ -112,6 +179,7 @@ export const AnalystTenderAnalysis: React.FC = () => {
             { id: 'feed' as const, label: 'Tender Feed', icon: FileText },
             { id: 'matched' as const, label: 'AI Matched', icon: Zap },
             { id: 'analytics' as const, label: 'Analytics', icon: BarChart3 },
+            { id: 'workspace' as const, label: 'Collaboration', icon: Users },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
@@ -395,6 +463,232 @@ export const AnalystTenderAnalysis: React.FC = () => {
                     }`}>{t.bidProbability}%</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* COLLABORATION WORKSPACE */}
+      {activeTab === 'workspace' && (
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0 overflow-hidden">
+          {/* Left: Team Members + Notes */}
+          <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto">
+            {/* Team Members */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                  <Users className="w-4 h-4 text-rose-500" /> Team Members
+                </h3>
+                <button className="p-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-lg hover:bg-rose-100 transition-colors">
+                  <UserPlus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {TEAM_MEMBERS.map(member => (
+                  <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-xs font-bold">
+                        {member.avatar}
+                      </div>
+                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-800 ${
+                        member.status === 'online' ? 'bg-green-500' : member.status === 'away' ? 'bg-amber-500' : 'bg-gray-400'
+                      }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-900 dark:text-white truncate">{member.name}</p>
+                      <p className="text-[10px] text-gray-500">{member.role}</p>
+                    </div>
+                    <button className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors">
+                      <MessageSquare className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Workspace Tabs */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex-1 flex flex-col">
+              <div className="flex gap-2 mb-3">
+                {[
+                  { id: 'notes' as const, label: 'Notes', icon: Edit3 },
+                  { id: 'tasks' as const, label: 'Tasks', icon: CheckSquare },
+                ].map(tab => (
+                  <button key={tab.id} onClick={() => setWorkspaceTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      workspaceTab === tab.id ? 'bg-rose-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
+                    }`}>
+                    <tab.icon className="w-3 h-3" /> {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Notes */}
+              {workspaceTab === 'notes' && (
+                <div className="flex-1 flex flex-col">
+                  <div className="flex-1 space-y-2 overflow-y-auto mb-3">
+                    {notes.filter(n => n.type === 'note' || n.type === 'comment').map(note => (
+                      <div key={note.id} className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">{note.author}</span>
+                          <span className="text-[9px] text-gray-400">{note.timestamp}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">{note.content}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[9px] bg-rose-100 dark:bg-rose-900/20 text-rose-600 px-2 py-0.5 rounded-full">
+                            {TENDERS.find(t => t.id === note.tenderId)?.title.slice(0, 25)}...
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={newNote}
+                      onChange={e => setNewNote(e.target.value)}
+                      placeholder="Add a note..."
+                      className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs dark:text-white outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                    <button 
+                      onClick={() => {
+                        if (newNote.trim()) {
+                          setNotes(prev => [...prev, {
+                            id: `cn${Date.now()}`,
+                            tenderId: 't1',
+                            author: 'You',
+                            content: newNote,
+                            timestamp: 'Just now',
+                            type: 'note'
+                          }]);
+                          setNewNote('');
+                        }
+                      }}
+                      className="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tasks */}
+              {workspaceTab === 'tasks' && (
+                <div className="flex-1 space-y-2 overflow-y-auto">
+                  {notes.filter(n => n.type === 'task').map(task => (
+                    <div key={task.id} className={`p-3 rounded-lg border transition-all ${
+                      task.completed 
+                        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800' 
+                        : 'bg-white dark:bg-slate-700/50 border-gray-100 dark:border-slate-600'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        <button 
+                          onClick={() => setNotes(prev => prev.map(n => 
+                            n.id === task.id ? { ...n, completed: !n.completed } : n
+                          ))}
+                          className={`mt-0.5 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                            task.completed 
+                              ? 'bg-green-500 border-green-500 text-white' 
+                              : 'border-gray-300 dark:border-slate-500 hover:border-rose-500'
+                          }`}
+                        >
+                          {task.completed && <CheckCircle className="w-3 h-3" />}
+                        </button>
+                        <div className="flex-1">
+                          <p className={`text-xs font-medium ${task.completed ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-white'}`}>
+                            {task.content}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[9px] text-gray-400">{task.author}</span>
+                            <span className="text-[9px] text-gray-400">•</span>
+                            <span className="text-[9px] text-gray-400">{task.timestamp}</span>
+                          </div>
+                        </div>
+                        <button className="p-1 text-gray-400 hover:text-red-500 transition-colors">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Team Chat */}
+          <div className="lg:col-span-8 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 flex flex-col overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-slate-700">
+              <h3 className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-rose-500" /> Team Chat
+              </h3>
+              <p className="text-[10px] text-gray-500">Collaborate on tender bids in real-time</p>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+              {messages.map(msg => (
+                <div key={msg.id} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                    {msg.avatar}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{msg.author}</span>
+                      <span className="text-[9px] text-gray-400">{msg.timestamp}</span>
+                      {msg.tenderId && (
+                        <span className="text-[9px] bg-blue-100 dark:bg-blue-900/20 text-blue-600 px-2 py-0.5 rounded-full">
+                          {TENDERS.find(t => t.id === msg.tenderId)?.title.slice(0, 20)}...
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-4 border-t border-gray-100 dark:border-slate-700">
+              <div className="flex gap-2">
+                <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                  <Paperclip className="w-4 h-4" />
+                </button>
+                <input 
+                  type="text" 
+                  value={chatMessage}
+                  onChange={e => setChatMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm dark:text-white outline-none focus:ring-2 focus:ring-rose-500"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && chatMessage.trim()) {
+                      setMessages(prev => [...prev, {
+                        id: `cm${Date.now()}`,
+                        author: 'You',
+                        avatar: 'YO',
+                        content: chatMessage,
+                        timestamp: 'Just now'
+                      }]);
+                      setChatMessage('');
+                    }
+                  }}
+                />
+                <button 
+                  onClick={() => {
+                    if (chatMessage.trim()) {
+                      setMessages(prev => [...prev, {
+                        id: `cm${Date.now()}`,
+                        author: 'You',
+                        avatar: 'YO',
+                        content: chatMessage,
+                        timestamp: 'Just now'
+                      }]);
+                      setChatMessage('');
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>

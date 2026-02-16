@@ -53,6 +53,7 @@ import { fastChatResponse } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
 import { enterpriseExporterService, ExportProject, ShipmentTracking } from '../services/enterpriseExporterService';
 import { UserPersona, AppView, DbTrade } from '../types';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 // --- Types & Mock Data ---
 
@@ -124,6 +125,7 @@ const AFRICAN_HUBS: Hub[] = [
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) => {
+  const { currencySymbol, formatCurrency } = useCurrency();
   const [insight, setInsight] = useState("Loading AI strategic brief...");
   const [selectedLane, setSelectedLane] = useState<TradeLane | null>(null);
   const [myTrades, setMyTrades] = useState<DbTrade[]>([]);
@@ -589,21 +591,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
       case UserPersona.EXPORTER_SME:
         return [
           { label: 'Export Volume', value: metrics.activeShipments.toString(), sub: `${metrics.activeShipments > 0 ? '+' + Math.min(metrics.activeShipments * 3, 24) + '% vs last month' : 'No shipments yet'}`, icon: Package, color: 'text-trade-primary', bg: 'bg-blue-50', trend: 'up' as const },
-          { label: 'Revenue', value: `$${(metrics.dailyRevenue * 30).toFixed(0)}K`, sub: `$${metrics.dailyRevenue.toFixed(1)}M pipeline`, icon: DollarSign, color: 'text-trade-success', bg: 'bg-green-50', trend: 'up' as const },
+          { label: 'Revenue', value: formatCurrency(metrics.dailyRevenue * 30 * 1000), sub: `${formatCurrency(metrics.dailyRevenue * 1000000)} pipeline`, icon: DollarSign, color: 'text-trade-success', bg: 'bg-green-50', trend: 'up' as const },
           { label: 'Shipment Status', value: `${metrics.activeShipments - metrics.pendingDocs}/${metrics.activeShipments}`, sub: `${metrics.pendingDocs} pending action`, icon: Truck, color: 'text-teal-600', bg: 'bg-teal-50', trend: 'neutral' as const },
-          { label: 'Trade Balance', value: `+$${metrics.tradeBalance.toFixed(0)}K`, sub: `Score: ${metrics.complianceScore}/100`, icon: Scale, color: 'text-trade-secondary', bg: 'bg-indigo-50', trend: metrics.tradeBalance > 0 ? 'up' as const : 'down' as const },
+          { label: 'Trade Balance', value: `+${formatCurrency(metrics.tradeBalance * 1000)}`, sub: `Score: ${metrics.complianceScore}/100`, icon: Scale, color: 'text-trade-secondary', bg: 'bg-indigo-50', trend: metrics.tradeBalance > 0 ? 'up' as const : 'down' as const },
         ];
       case UserPersona.CUSTOMS:
         return [
           { label: 'Pending Declarations', value: metrics.pendingDeclarations.toString(), sub: '+12% Vol', icon: FileText, color: 'text-trade-primary', bg: 'bg-blue-50' },
           { label: 'High Risk Flags', value: '18', sub: 'Action Req', icon: AlertOctagon, color: 'text-trade-error', bg: 'bg-red-50' },
-          { label: 'Revenue (Daily)', value: `$${metrics.dailyRevenue}M`, sub: 'Duties & Taxes', icon: Activity, color: 'text-trade-success', bg: 'bg-green-50' },
+          { label: 'Revenue (Daily)', value: formatCurrency(metrics.dailyRevenue * 1000000), sub: 'Duties & Taxes', icon: Activity, color: 'text-trade-success', bg: 'bg-green-50' },
           { label: 'Insp. Efficiency', value: '94%', sub: '+2% vs Target', icon: CheckCircle, color: 'text-trade-secondary', bg: 'bg-purple-50' },
         ];
       case UserPersona.BANK:
         return [
           { label: 'Finance Requests', value: metrics.financeRequests.toString(), sub: '8 Pending', icon: Briefcase, color: 'text-trade-primary', bg: 'bg-blue-50' },
-          { label: 'Active LCs', value: `$${metrics.activeLCs}M`, sub: 'Across 12 Trades', icon: Activity, color: 'text-trade-success', bg: 'bg-green-50' },
+          { label: 'Active LCs', value: formatCurrency(metrics.activeLCs * 1000000), sub: 'Across 12 Trades', icon: Activity, color: 'text-trade-success', bg: 'bg-green-50' },
           { label: 'Credit Risk', value: 'Medium', sub: 'Nigeria Exposure', icon: AlertTriangle, color: 'text-trade-warning', bg: 'bg-orange-50' },
           { label: 'FX Rate (NGN)', value: '1,650', sub: '+0.5% Today', icon: TrendingUp, color: 'text-trade-secondary', bg: 'bg-purple-50' },
         ];
@@ -616,8 +618,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) =>
         ];
       case UserPersona.GOVERNMENT:
         return [
-          { label: 'Total Exports', value: `$${metrics.totalExports}B`, sub: 'YTD 2024', icon: ArrowUpRight, color: 'text-trade-success', bg: 'bg-green-50' },
-          { label: 'Trade Balance', value: `+$${metrics.tradeBalance}M`, sub: 'Surplus', icon: Scale, color: 'text-trade-primary', bg: 'bg-blue-50' },
+          { label: 'Total Exports', value: formatCurrency(metrics.totalExports * 1000000000), sub: 'YTD 2024', icon: ArrowUpRight, color: 'text-trade-success', bg: 'bg-green-50' },
+          { label: 'Trade Balance', value: `+${formatCurrency(metrics.tradeBalance * 1000000)}`, sub: 'Surplus', icon: Scale, color: 'text-trade-primary', bg: 'bg-blue-50' },
           { label: 'Intra-Africa', value: '18%', sub: 'Target: 25%', icon: MapIcon, color: 'text-trade-secondary', bg: 'bg-purple-50' },
           { label: 'SME Participation', value: '45%', sub: '+5% YoY', icon: Users, color: 'text-trade-accent', bg: 'bg-yellow-50' },
         ];

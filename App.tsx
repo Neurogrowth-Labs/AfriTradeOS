@@ -23,6 +23,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
+import { useCurrency, CURRENCIES } from './contexts/CurrencyContext';
 import { Dashboard } from './components/Dashboard';
 import { TradeLifecycle } from './components/TradeLifecycle';
 import { MarketIntel } from './components/MarketIntel';
@@ -275,7 +276,9 @@ export default function App() {
 
   // Localization State
   const [language, setLanguage] = useState('EN');
-  const [currency, setCurrency] = useState('USD');
+  const { currency, setCurrency } = useCurrency();
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const currencyRef = useRef<HTMLDivElement>(null);
 
   // Notifications State
   interface Notification {
@@ -375,11 +378,14 @@ export default function App() {
     }
   }, [userProfile?.id, fetchNotifications]);
 
-  // Close notifications dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
+      }
+      if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
+        setShowCurrencyDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -794,13 +800,62 @@ export default function App() {
                    {language}
                </button>
                <div className="w-px h-3 bg-gray-200 dark:bg-slate-700" />
-               <button 
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
-                  title="Switch Currency"
-               >
-                   <Coins className="w-3 h-3 text-trade-accent" />
-                   {currency}
-               </button>
+               <div className="relative" ref={currencyRef}>
+                  <button 
+                    onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
+                    title="Switch Currency"
+                  >
+                    <Coins className="w-3 h-3 text-trade-accent" />
+                    <span>{CURRENCIES.find(c => c.code === currency)?.flag}</span>
+                    {currency}
+                  </button>
+                  {showCurrencyDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Select Currency</span>
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        <div className="px-2 py-1.5">
+                          <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">African Currencies</span>
+                        </div>
+                        {CURRENCIES.filter(c => ['NGN', 'KES', 'ZAR', 'EGP', 'GHS', 'XOF', 'MAD'].includes(c.code)).map(c => (
+                          <button
+                            key={c.code}
+                            onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
+                          >
+                            <span className="text-base">{c.flag}</span>
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
+                            </div>
+                            <span className="text-xs text-gray-400">{c.symbol}</span>
+                            {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                          </button>
+                        ))}
+                        <div className="px-2 py-1.5 border-t border-gray-100 dark:border-slate-700">
+                          <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">International</span>
+                        </div>
+                        {CURRENCIES.filter(c => ['USD', 'EUR', 'GBP', 'CNY', 'INR'].includes(c.code)).map(c => (
+                          <button
+                            key={c.code}
+                            onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
+                          >
+                            <span className="text-base">{c.flag}</span>
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
+                            </div>
+                            <span className="text-xs text-gray-400">{c.symbol}</span>
+                            {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+               </div>
             </div>
 
             <button 

@@ -12,7 +12,16 @@ import {
   Package,
   Anchor,
   X,
-  BarChart3
+  BarChart3,
+  Warehouse,
+  Search,
+  Star,
+  Phone,
+  Mail,
+  ExternalLink,
+  ThermometerSnowflake,
+  Shield,
+  Clock
 } from 'lucide-react';
 import {
   BarChart,
@@ -23,6 +32,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 // --- DATA ---
 interface PortData {
@@ -57,6 +67,25 @@ interface CorridorScore {
   border: number;
   cost: number;
   trend: 'improving' | 'stable' | 'declining';
+}
+
+interface WarehouseData {
+  id: string;
+  name: string;
+  operator: string;
+  country: string;
+  city: string;
+  type: 'bonded' | 'general' | 'cold_storage' | 'hazmat';
+  capacity: string;
+  available: number;
+  pricePerSqm: number;
+  rating: number;
+  reviews: number;
+  certifications: string[];
+  features: string[];
+  contact: { phone: string; email: string };
+  x: number;
+  y: number;
 }
 
 const PORTS: PortData[] = [
@@ -96,6 +125,24 @@ const FREIGHT_ESTIMATES = [
   { route: 'Casablanca → Dakar', sea: 2100, air: 6800, road: 3200, rail: null },
 ];
 
+const WAREHOUSES: WarehouseData[] = [
+  { id: 'wh1', name: 'Lagos Free Zone Warehouse A', operator: 'Bolloré Logistics', country: 'Nigeria', city: 'Lagos', type: 'bonded', capacity: '25,000 sqm', available: 35, pricePerSqm: 12, rating: 4.6, reviews: 89, certifications: ['ISO 9001', 'AEO', 'TAPA'], features: ['24/7 Security', 'CCTV', 'Fire Suppression', 'Loading Docks'], contact: { phone: '+234 1 234 5678', email: 'lagos@bollore.com' }, x: 320, y: 350 },
+  { id: 'wh2', name: 'Tema Port Logistics Hub', operator: 'Maersk Warehousing', country: 'Ghana', city: 'Tema', type: 'general', capacity: '18,000 sqm', available: 60, pricePerSqm: 9, rating: 4.8, reviews: 124, certifications: ['ISO 14001', 'C-TPAT'], features: ['Rail Access', 'Container Yard', 'Cross-Docking'], contact: { phone: '+233 30 212 3456', email: 'tema@maersk.com' }, x: 280, y: 330 },
+  { id: 'wh3', name: 'Mombasa Cold Chain Center', operator: 'Kuehne+Nagel', country: 'Kenya', city: 'Mombasa', type: 'cold_storage', capacity: '8,000 sqm', available: 25, pricePerSqm: 22, rating: 4.7, reviews: 67, certifications: ['HACCP', 'GDP', 'ISO 22000'], features: ['-25°C to +15°C', 'Pharma Grade', 'Reefer Plugs'], contact: { phone: '+254 41 234 5678', email: 'mombasa@kuehne-nagel.com' }, x: 600, y: 460 },
+  { id: 'wh4', name: 'Durban Industrial Park', operator: 'Imperial Logistics', country: 'South Africa', city: 'Durban', type: 'general', capacity: '45,000 sqm', available: 40, pricePerSqm: 8, rating: 4.5, reviews: 156, certifications: ['ISO 9001', 'BEE Level 2'], features: ['Automated WMS', 'E-commerce Fulfillment', 'Value-Added Services'], contact: { phone: '+27 31 234 5678', email: 'durban@imperiallogistics.com' }, x: 520, y: 720 },
+  { id: 'wh5', name: 'Djibouti Free Trade Zone', operator: 'DP World', country: 'Djibouti', city: 'Djibouti City', type: 'bonded', capacity: '32,000 sqm', available: 55, pricePerSqm: 11, rating: 4.4, reviews: 45, certifications: ['ISO 28000', 'AEO'], features: ['Duty Free', 'Re-export Hub', 'Multi-modal'], contact: { phone: '+253 21 35 1234', email: 'djibouti@dpworld.com' }, x: 650, y: 310 },
+  { id: 'wh6', name: 'Tangier Med Logistics Platform', operator: 'TMSA', country: 'Morocco', city: 'Tangier', type: 'bonded', capacity: '55,000 sqm', available: 45, pricePerSqm: 10, rating: 4.9, reviews: 198, certifications: ['ISO 9001', 'ISO 14001', 'AEO'], features: ['EU Gateway', 'Automotive Hub', 'Pharma Zone'], contact: { phone: '+212 539 33 7000', email: 'logistics@tmsa.ma' }, x: 270, y: 80 },
+  { id: 'wh7', name: 'Cairo Hazmat Storage Facility', operator: 'Agility', country: 'Egypt', city: 'Cairo', type: 'hazmat', capacity: '5,000 sqm', available: 30, pricePerSqm: 28, rating: 4.3, reviews: 34, certifications: ['ADR', 'IMDG', 'ISO 45001'], features: ['Hazmat Licensed', 'Spill Containment', 'Emergency Response'], contact: { phone: '+20 2 2345 6789', email: 'cairo@agility.com' }, x: 560, y: 100 },
+  { id: 'wh8', name: 'Dar es Salaam Gateway', operator: 'Bollore Africa', country: 'Tanzania', city: 'Dar es Salaam', type: 'general', capacity: '15,000 sqm', available: 50, pricePerSqm: 7, rating: 4.2, reviews: 56, certifications: ['ISO 9001'], features: ['Inland Container Depot', 'Customs Clearance', 'Transit Storage'], contact: { phone: '+255 22 211 2345', email: 'dar@bollore.com' }, x: 610, y: 510 },
+];
+
+const WAREHOUSE_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
+  bonded: { label: 'Bonded', color: 'text-blue-600', bg: 'bg-blue-100', icon: Shield },
+  general: { label: 'General', color: 'text-gray-600', bg: 'bg-gray-100', icon: Package },
+  cold_storage: { label: 'Cold Storage', color: 'text-cyan-600', bg: 'bg-cyan-100', icon: ThermometerSnowflake },
+  hazmat: { label: 'Hazmat', color: 'text-red-600', bg: 'bg-red-100', icon: Shield },
+};
+
 const getModeIcon = (mode: string) => {
   switch (mode) {
     case 'sea': return Ship;
@@ -107,8 +154,22 @@ const getModeIcon = (mode: string) => {
 };
 
 export const AnalystLogisticsData: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ports' | 'routes' | 'freight' | 'corridors'>('ports');
+  const { currencySymbol, formatCurrency } = useCurrency();
+  const [activeTab, setActiveTab] = useState<'ports' | 'routes' | 'freight' | 'corridors' | 'warehouses'>('ports');
   const [selectedPort, setSelectedPort] = useState<PortData | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseData | null>(null);
+  const [warehouseSearch, setWarehouseSearch] = useState('');
+  const [warehouseTypeFilter, setWarehouseTypeFilter] = useState<string>('all');
+
+  const filteredWarehouses = WAREHOUSES.filter(w => {
+    const matchesSearch = warehouseSearch === '' ||
+      w.name.toLowerCase().includes(warehouseSearch.toLowerCase()) ||
+      w.city.toLowerCase().includes(warehouseSearch.toLowerCase()) ||
+      w.country.toLowerCase().includes(warehouseSearch.toLowerCase()) ||
+      w.operator.toLowerCase().includes(warehouseSearch.toLowerCase());
+    const matchesType = warehouseTypeFilter === 'all' || w.type === warehouseTypeFilter;
+    return matchesSearch && matchesType;
+  });
 
   return (
     <div className="h-full flex flex-col gap-4 animate-fade-in pb-4">
@@ -121,7 +182,7 @@ export const AnalystLogisticsData: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-trade-primary dark:text-white">Logistics Data</h2>
-              <p className="text-[10px] text-gray-500">Port congestion • Route optimization • Freight estimator • Corridor scoring</p>
+              <p className="text-[10px] text-gray-500">Port congestion • Route optimization • Freight estimator • Corridor scoring • Warehouse locator</p>
             </div>
           </div>
         </div>
@@ -131,6 +192,7 @@ export const AnalystLogisticsData: React.FC = () => {
             { id: 'routes' as const, label: 'Route Options', icon: MapPin },
             { id: 'freight' as const, label: 'Freight Estimator', icon: DollarSign },
             { id: 'corridors' as const, label: 'Corridor Scores', icon: BarChart3 },
+            { id: 'warehouses' as const, label: 'Warehouse Locator', icon: Warehouse },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
@@ -364,6 +426,171 @@ export const AnalystLogisticsData: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* WAREHOUSE LOCATOR */}
+      {activeTab === 'warehouses' && (
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+          {/* Search & Filters */}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative flex-1">
+              <input 
+                type="text" 
+                value={warehouseSearch} 
+                onChange={e => setWarehouseSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm dark:text-white focus:ring-2 focus:ring-teal-500 outline-none"
+                placeholder="Search warehouses by name, city, country, or operator..." 
+              />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+            <div className="flex gap-2">
+              {['all', 'bonded', 'general', 'cold_storage', 'hazmat'].map(type => (
+                <button 
+                  key={type} 
+                  onClick={() => setWarehouseTypeFilter(type)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap ${
+                    warehouseTypeFilter === type 
+                      ? 'bg-teal-600 text-white' 
+                      : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
+                  {type === 'all' ? 'All Types' : type === 'cold_storage' ? 'Cold Storage' : type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Map + List */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0">
+            {/* Map */}
+            <div className="lg:col-span-7 bg-slate-900 rounded-xl border border-slate-700 relative overflow-hidden min-h-[400px]">
+              <div className="absolute top-3 left-3 z-10 bg-slate-800/90 backdrop-blur p-2 rounded-lg border border-slate-700">
+                <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">Warehouse Locations</span>
+              </div>
+              <svg viewBox="0 0 800 800" className="w-full h-full">
+                <rect width="800" height="800" fill="#0f172a" />
+                <path d="M 280 60 Q 200 100 150 250 Q 130 350 160 450 Q 200 550 300 620 Q 350 680 420 750 Q 480 780 520 720 Q 560 650 580 550 Q 620 450 650 350 Q 660 250 600 150 Q 550 80 450 60 Q 370 50 280 60 Z"
+                  fill="#1e293b" stroke="#334155" strokeWidth="1" />
+                {filteredWarehouses.map(w => {
+                  const config = WAREHOUSE_TYPE_CONFIG[w.type];
+                  const color = w.type === 'bonded' ? '#3b82f6' : w.type === 'cold_storage' ? '#06b6d4' : w.type === 'hazmat' ? '#ef4444' : '#6b7280';
+                  return (
+                    <g key={w.id} onClick={() => setSelectedWarehouse(selectedWarehouse?.id === w.id ? null : w)} className="cursor-pointer">
+                      <circle cx={w.x} cy={w.y} r={16} fill={`${color}30`}>
+                        <animate attributeName="r" values="14;18;14" dur="3s" repeatCount="indefinite" />
+                      </circle>
+                      <rect x={w.x - 8} y={w.y - 8} width="16" height="16" rx="3" fill={color} stroke="#0f172a" strokeWidth="2" />
+                      <text x={w.x} y={w.y - 16} fill="#94a3b8" fontSize="7" textAnchor="middle" fontWeight="bold">{w.city}</text>
+                    </g>
+                  );
+                })}
+              </svg>
+              {selectedWarehouse && (
+                <div className="absolute bottom-3 left-3 right-3 md:right-auto md:w-80 bg-white/95 dark:bg-slate-800/95 backdrop-blur rounded-xl p-4 border shadow-2xl z-20">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-bold text-gray-900 dark:text-white text-sm">{selectedWarehouse.name}</h4>
+                      <p className="text-[10px] text-gray-500">{selectedWarehouse.operator} • {selectedWarehouse.city}, {selectedWarehouse.country}</p>
+                    </div>
+                    <button onClick={() => setSelectedWarehouse(null)}><X className="w-4 h-4 text-gray-400" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="p-2 bg-gray-50 dark:bg-slate-700 rounded-lg text-center">
+                      <p className="text-[9px] text-gray-400">Capacity</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">{selectedWarehouse.capacity}</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 dark:bg-slate-700 rounded-lg text-center">
+                      <p className="text-[9px] text-gray-400">Available</p>
+                      <p className="text-xs font-bold text-green-600">{selectedWarehouse.available}%</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 dark:bg-slate-700 rounded-lg text-center">
+                      <p className="text-[9px] text-gray-400">Price/sqm</p>
+                      <p className="text-xs font-bold text-gray-900 dark:text-white">{currencySymbol}{selectedWarehouse.pricePerSqm}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {selectedWarehouse.features.map(f => (
+                      <span key={f} className="text-[9px] bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 px-2 py-0.5 rounded-full">{f}</span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <a href={`tel:${selectedWarehouse.contact.phone}`} className="flex-1 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1">
+                      <Phone className="w-3 h-3" /> Call
+                    </a>
+                    <a href={`mailto:${selectedWarehouse.contact.email}`} className="flex-1 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1">
+                      <Mail className="w-3 h-3" /> Email
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Warehouse List */}
+            <div className="lg:col-span-5 flex flex-col gap-3 overflow-y-auto">
+              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider px-1">
+                {filteredWarehouses.length} warehouses found
+              </div>
+              {filteredWarehouses.map(w => {
+                const config = WAREHOUSE_TYPE_CONFIG[w.type];
+                const TypeIcon = config.icon;
+                return (
+                  <div 
+                    key={w.id} 
+                    onClick={() => setSelectedWarehouse(w)}
+                    className={`bg-white dark:bg-slate-800 rounded-xl border p-4 hover:shadow-md transition-all cursor-pointer ${
+                      selectedWarehouse?.id === w.id ? 'border-teal-400 ring-1 ring-teal-200' : 'border-gray-100 dark:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-1.5 rounded-lg ${config.bg}`}>
+                          <TypeIcon className={`w-3.5 h-3.5 ${config.color}`} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900 dark:text-white">{w.name}</h4>
+                          <p className="text-[10px] text-gray-500">{w.operator}</p>
+                        </div>
+                      </div>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${config.bg} ${config.color}`}>
+                        {config.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] mb-2">
+                      <span className="text-gray-500 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {w.city}, {w.country}
+                      </span>
+                      <span className="flex items-center gap-1 text-amber-500">
+                        <Star className="w-3 h-3 fill-amber-400" /> {w.rating} ({w.reviews})
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                        <p className="text-[9px] text-gray-400">Capacity</p>
+                        <p className="text-[10px] font-bold text-gray-800 dark:text-white">{w.capacity}</p>
+                      </div>
+                      <div className="text-center p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                        <p className="text-[9px] text-gray-400">Available</p>
+                        <p className={`text-[10px] font-bold ${w.available >= 50 ? 'text-green-600' : w.available >= 25 ? 'text-amber-600' : 'text-red-600'}`}>{w.available}%</p>
+                      </div>
+                      <div className="text-center p-1.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                        <p className="text-[9px] text-gray-400">{currencySymbol}/sqm/mo</p>
+                        <p className="text-[10px] font-bold text-gray-800 dark:text-white">{currencySymbol}{w.pricePerSqm}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {w.certifications.slice(0, 3).map(cert => (
+                        <span key={cert} className="text-[8px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-1.5 py-0.5 rounded">{cert}</span>
+                      ))}
+                      {w.certifications.length > 3 && (
+                        <span className="text-[8px] text-gray-400">+{w.certifications.length - 3} more</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

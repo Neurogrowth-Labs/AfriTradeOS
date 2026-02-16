@@ -37,8 +37,10 @@ import {
   Server,
   Webhook,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  LogOut
 } from 'lucide-react';
+import { supabase } from '../services/supabase';
 
 interface UserAccount {
   id: string;
@@ -101,6 +103,7 @@ interface AuditLog {
 
 interface BankAccountSettingsProps {
   userRole?: string;
+  onSignOut?: () => void;
 }
 
 const MOCK_USERS: UserAccount[] = [
@@ -197,7 +200,22 @@ const MOCK_AUDIT_LOGS: AuditLog[] = [
 
 type SettingsTab = 'users' | 'roles' | 'currencies' | 'integrations' | 'audit';
 
-export const BankAccountSettings: React.FC<BankAccountSettingsProps> = () => {
+export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSignOut }) => {
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      if (onSignOut) {
+        onSignOut();
+      }
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setSigningOut(false);
+    }
+  };
   const [activeTab, setActiveTab] = useState<SettingsTab>('users');
   const [users, setUsers] = useState<UserAccount[]>(MOCK_USERS);
   const [currencies, setCurrencies] = useState<Currency[]>(MOCK_CURRENCIES);
@@ -665,16 +683,26 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = () => {
     <div className="min-h-screen bg-slate-950 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 bg-slate-700 rounded-lg">
-              <Settings className="w-8 h-8 text-slate-300" />
-            </div>
-            Account Settings
-          </h1>
-          <p className="text-slate-400 mt-2">
-            Manage users, roles, currencies, integrations, and system configuration
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <div className="p-2 bg-slate-700 rounded-lg">
+                <Settings className="w-8 h-8 text-slate-300" />
+              </div>
+              Account Settings
+            </h1>
+            <p className="text-slate-400 mt-2">
+              Manage users, roles, currencies, integrations, and system configuration
+            </p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30 border border-red-600/30 transition-colors disabled:opacity-50"
+          >
+            <LogOut className="w-4 h-4" />
+            {signingOut ? 'Signing out...' : 'Sign Out'}
+          </button>
         </div>
 
         {/* Tabs */}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   BarChart3,
   TrendingUp,
@@ -16,7 +16,12 @@ import {
   Truck,
   Scale,
   Package,
-  PieChart as PieIcon
+  PieChart as PieIcon,
+  GripVertical,
+  Eye,
+  EyeOff,
+  RotateCcw,
+  Settings2
 } from 'lucide-react';
 import {
   AreaChart,
@@ -32,6 +37,7 @@ import {
 } from 'recharts';
 import { mockDatabase } from '../services/mockDatabase';
 import { fastChatResponse } from '../services/geminiService';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 // --- TYPES ---
 interface KPI {
@@ -56,6 +62,27 @@ interface RiskItem {
 
 type TimeRange = 'month' | 'quarter' | 'year';
 type DashboardPreset = 'analyst' | 'policy' | 'investor';
+
+// Widget configuration for drag & drop
+interface Widget {
+  id: string;
+  title: string;
+  type: 'trade_balance' | 'sector_index' | 'demand_forecast' | 'heatmap' | 'ai_brief' | 'risk_engine' | 'corridor' | 'tariff_impact';
+  visible: boolean;
+  column: 'left' | 'center' | 'right';
+  order: number;
+}
+
+const DEFAULT_WIDGETS: Widget[] = [
+  { id: 'w1', title: 'Trade Balance', type: 'trade_balance', visible: true, column: 'left', order: 0 },
+  { id: 'w2', title: 'Sector Performance', type: 'sector_index', visible: true, column: 'left', order: 1 },
+  { id: 'w3', title: 'AI Demand Forecast', type: 'demand_forecast', visible: true, column: 'left', order: 2 },
+  { id: 'w4', title: 'AfCFTA Heatmap', type: 'heatmap', visible: true, column: 'center', order: 0 },
+  { id: 'w5', title: 'AI Strategic Brief', type: 'ai_brief', visible: true, column: 'center', order: 1 },
+  { id: 'w6', title: 'Risk Score Engine', type: 'risk_engine', visible: true, column: 'right', order: 0 },
+  { id: 'w7', title: 'Corridor Performance', type: 'corridor', visible: true, column: 'right', order: 1 },
+  { id: 'w8', title: 'Tariff Impact', type: 'tariff_impact', visible: true, column: 'right', order: 2 },
+];
 
 // --- MOCK DATA ---
 const TRADE_BALANCE_DATA = [
@@ -127,6 +154,7 @@ const DEMAND_FORECAST = [
 ];
 
 export const AnalyticsHub: React.FC = () => {
+  const { currencySymbol, formatCurrency } = useCurrency();
   const [timeRange, setTimeRange] = useState<TimeRange>('quarter');
   const [preset, setPreset] = useState<DashboardPreset>('analyst');
   const [selectedCountry, setSelectedCountry] = useState('All Africa');
@@ -138,8 +166,88 @@ export const AnalyticsHub: React.FC = () => {
   const [scenarioReduction, setScenarioReduction] = useState(5);
   const [_loadingData, setLoadingData] = useState(true);
   const [tradeData, setTradeData] = useState(TRADE_BALANCE_DATA);
+  
+  // Drag & Drop Widget State
+  const [widgets, setWidgets] = useState<Widget[]>(() => {
+    const saved = localStorage.getItem('analyticsHubWidgets');
+    return saved ? JSON.parse(saved) : DEFAULT_WIDGETS;
+  });
+  const [draggedWidget, setDraggedWidget] = useState<string | null>(null);
+  const [showWidgetConfig, setShowWidgetConfig] = useState(false);
+
+  // Save widget configuration to localStorage
+  useEffect(() => {
+    localStorage.setItem('analyticsHubWidgets', JSON.stringify(widgets));
+  }, [widgets]);
+
+  const handleDragStart = useCallback((e: React.DragEvent, widgetId: string) => {
+    setDraggedWidget(widgetId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', widgetId);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetColumn: 'left' | 'center' | 'right', targetOrder: number) => {
+    e.preventDefault();
+    const widgetId = e.dataTransfer.getData('text/plain');
+    if (!widgetId) return;
+
+    setWidgets(prev => {
+      const updated = [...prev];
+      const widgetIndex = updated.findIndex(w => w.id === widgetId);
+      if (widgetIndex === -1) return prev;
+
+      const widget = updated[widgetIndex];
+      const oldColumn = widget.column;
+      const oldOrder = widget.order;
+
+      // Update the dragged widget
+      widget.column = targetColumn;
+      widget.order = targetOrder;
+
+      // Reorder other widgets in the target column
+      updated.forEach(w => {
+        if (w.id !== widgetId && w.column === targetColumn && w.order >= targetOrder) {
+          w.order += 1;
+        }
+      });
+
+      // Reorder widgets in the old column if different
+      if (oldColumn !== targetColumn) {
+        updated.forEach(w => {
+          if (w.id !== widgetId && w.column === oldColumn && w.order > oldOrder) {
+            w.order -= 1;
+          }
+        });
+      }
+
+      return updated;
+    });
+    setDraggedWidget(null);
+  }, []);
+
+  const toggleWidgetVisibility = useCallback((widgetId: string) => {
+    setWidgets(prev => prev.map(w => 
+      w.id === widgetId ? { ...w, visible: !w.visible } : w
+    ));
+  }, []);
+
+  const resetWidgets = useCallback(() => {
+    setWidgets(DEFAULT_WIDGETS);
+    localStorage.removeItem('analyticsHubWidgets');
+  }, []);
+
+  const getColumnWidgets = useCallback((column: 'left' | 'center' | 'right') => {
+    return widgets
+      .filter(w => w.column === column && w.visible)
+      .sort((a, b) => a.order - b.order);
+  }, [widgets]);
   const [metrics, setMetrics] = useState({
-    totalTrade: '$48.2B',
+    totalTradeValue: 48.2, // Store raw value in billions USD
     tradeGrowth: '+12.4%',
     intraAfrica: '18.3%',
     corridorScore: 72,
@@ -148,6 +256,9 @@ export const AnalyticsHub: React.FC = () => {
     riskIndex: 48,
     forecastAccuracy: '89%',
   });
+
+  // Format total trade with selected currency
+  const formattedTotalTrade = formatCurrency(metrics.totalTradeValue * 1e9);
 
   useEffect(() => {
     let mounted = true;
@@ -159,7 +270,7 @@ export const AnalyticsHub: React.FC = () => {
           setMetrics(prev => ({
             ...prev,
             activeDeals: trades.length,
-            totalTrade: `$${(total / 1e9).toFixed(1)}B`,
+            totalTradeValue: total / 1e9, // Store in billions
           }));
         }
       } catch (e) { console.warn('Data fetch error:', e); } finally {
@@ -191,7 +302,7 @@ export const AnalyticsHub: React.FC = () => {
   }, []);
 
   const kpis: KPI[] = [
-    { id: 'k1', label: 'Total Trade Volume', value: metrics.totalTrade, change: metrics.tradeGrowth, up: true, icon: BarChart3, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { id: 'k1', label: 'Total Trade Volume', value: formattedTotalTrade, change: metrics.tradeGrowth, up: true, icon: BarChart3, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
     { id: 'k2', label: 'Intra-Africa Share', value: metrics.intraAfrica, change: '+2.1pp', up: true, icon: Globe, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
     { id: 'k3', label: 'Corridor Score', value: `${metrics.corridorScore}/100`, change: '+4pts', up: true, icon: Truck, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
     { id: 'k4', label: 'Risk Index', value: `${metrics.riskIndex}`, change: '-3pts', up: false, icon: Shield, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
@@ -278,8 +389,56 @@ export const AnalyticsHub: React.FC = () => {
           <button className="flex items-center gap-1 px-3 py-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 rounded-lg text-[11px] font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
             <Download className="w-3 h-3" /> Export
           </button>
+
+          <button onClick={() => setShowWidgetConfig(!showWidgetConfig)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-colors ${
+              showWidgetConfig 
+                ? 'bg-blue-600 text-white border-blue-600' 
+                : 'bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:bg-gray-100'
+            }`}>
+            <Settings2 className="w-3 h-3" /> Widgets
+          </button>
         </div>
       </div>
+
+      {/* Widget Configuration Panel */}
+      {showWidgetConfig && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Settings2 className="w-4 h-4 text-blue-500" />
+              <h3 className="text-sm font-bold text-trade-primary dark:text-white">Configure Dashboard Widgets</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={resetWidgets}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <RotateCcw className="w-3 h-3" /> Reset Layout
+              </button>
+              <button onClick={() => setShowWidgetConfig(false)}>
+                <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-500 mb-3">Drag widgets to reorder. Click the eye icon to show/hide widgets.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+            {widgets.map(widget => (
+              <div key={widget.id}
+                className={`p-2 rounded-lg border transition-all cursor-pointer ${
+                  widget.visible 
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' 
+                    : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600 opacity-60'
+                }`}
+                onClick={() => toggleWidgetVisibility(widget.id)}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300 truncate">{widget.title}</span>
+                  {widget.visible ? <Eye className="w-3 h-3 text-blue-500" /> : <EyeOff className="w-3 h-3 text-gray-400" />}
+                </div>
+                <span className="text-[9px] text-gray-400 capitalize">{widget.column} column</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Scenario Modelling Bar */}
       {showScenario && (
@@ -340,12 +499,22 @@ export const AnalyticsHub: React.FC = () => {
 
       {/* Main Grid: Chart + Map + Risk */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-0">
-        {/* Left: Trade Balance Chart + Sector Index */}
-        <div className="lg:col-span-5 flex flex-col gap-4 overflow-y-auto">
+        {/* Left Column */}
+        <div 
+          className="lg:col-span-5 flex flex-col gap-4 overflow-y-auto"
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, 'left', getColumnWidgets('left').length)}
+        >
           {/* Trade Balance Chart */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          {widgets.find(w => w.type === 'trade_balance')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w1')}
+            className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 transition-all ${draggedWidget === 'w1' ? 'opacity-50 scale-95' : ''}`}
+          >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                <GripVertical className="w-3 h-3 text-gray-300 cursor-grab active:cursor-grabbing" />
                 <Activity className="w-4 h-4 text-blue-500" /> Trade Balance (USD M)
               </h3>
               <span className="text-[10px] bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
@@ -375,10 +544,17 @@ export const AnalyticsHub: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
+          )}
 
           {/* Sector Performance Index */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          {widgets.find(w => w.type === 'sector_index')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w2')}
+            className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 transition-all ${draggedWidget === 'w2' ? 'opacity-50 scale-95' : ''}`}
+          >
             <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-3 flex items-center gap-2">
+              <GripVertical className="w-3 h-3 text-gray-300 cursor-grab active:cursor-grabbing" />
               <PieIcon className="w-4 h-4 text-purple-500" /> Sector Performance Index
             </h3>
             <div className="space-y-2.5">
@@ -397,11 +573,18 @@ export const AnalyticsHub: React.FC = () => {
               ))}
             </div>
           </div>
+          )}
 
           {/* Predictive Demand Forecast */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          {widgets.find(w => w.type === 'demand_forecast')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w3')}
+            className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 transition-all ${draggedWidget === 'w3' ? 'opacity-50 scale-95' : ''}`}
+          >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-2">
+                <GripVertical className="w-3 h-3 text-gray-300 cursor-grab active:cursor-grabbing" />
                 <Zap className="w-4 h-4 text-amber-500" /> AI Demand Forecast
               </h3>
               <span className="text-[10px] bg-purple-100 dark:bg-purple-900/20 text-purple-600 px-2 py-0.5 rounded-full font-bold">Predictive</span>
@@ -427,12 +610,23 @@ export const AnalyticsHub: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
+          )}
         </div>
 
-        {/* Center: AfCFTA Heatmap */}
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="bg-slate-900 rounded-xl border border-slate-700 relative overflow-hidden flex-1 min-h-[400px]">
-            <div className="absolute top-3 left-3 z-10 bg-slate-800/90 backdrop-blur p-2 rounded-lg border border-slate-700">
+        {/* Center Column */}
+        <div 
+          className="lg:col-span-4 flex flex-col gap-4"
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, 'center', getColumnWidgets('center').length)}
+        >
+          {widgets.find(w => w.type === 'heatmap')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w4')}
+            className={`bg-slate-900 rounded-xl border border-slate-700 relative overflow-hidden flex-1 min-h-[400px] transition-all ${draggedWidget === 'w4' ? 'opacity-50 scale-95' : ''}`}
+          >
+            <div className="absolute top-3 left-3 z-10 bg-slate-800/90 backdrop-blur p-2 rounded-lg border border-slate-700 flex items-center gap-2">
+              <GripVertical className="w-3 h-3 text-slate-400 cursor-grab active:cursor-grabbing" />
               <span className="text-[10px] font-bold text-slate-200 uppercase tracking-wider">AfCFTA Corridor Heatmap</span>
             </div>
             <svg viewBox="0 0 800 800" className="w-full h-full">
@@ -479,10 +673,17 @@ export const AnalyticsHub: React.FC = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* AI Strategic Brief */}
-          <div className="bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl p-4 text-white">
+          {widgets.find(w => w.type === 'ai_brief')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w5')}
+            className={`bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl p-4 text-white transition-all ${draggedWidget === 'w5' ? 'opacity-50 scale-95' : ''}`}
+          >
             <div className="flex items-center gap-2 mb-2">
+              <GripVertical className="w-3 h-3 text-blue-200 cursor-grab active:cursor-grabbing" />
               <Zap className="w-4 h-4 text-amber-300" />
               <span className="text-xs font-bold uppercase tracking-wider text-blue-200">AI Strategic Brief</span>
             </div>
@@ -492,13 +693,24 @@ export const AnalyticsHub: React.FC = () => {
               <span className="text-[9px] bg-white/20 px-2 py-0.5 rounded-full">Updated: Just now</span>
             </div>
           </div>
+          )}
         </div>
 
-        {/* Right: Risk Engine + Corridor Performance */}
-        <div className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto">
+        {/* Right Column */}
+        <div 
+          className="lg:col-span-3 flex flex-col gap-4 overflow-y-auto"
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, 'right', getColumnWidgets('right').length)}
+        >
           {/* Risk Score Engine */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          {widgets.find(w => w.type === 'risk_engine')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w6')}
+            className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 transition-all ${draggedWidget === 'w6' ? 'opacity-50 scale-95' : ''}`}
+          >
             <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-3 flex items-center gap-2">
+              <GripVertical className="w-3 h-3 text-gray-300 cursor-grab active:cursor-grabbing" />
               <Shield className="w-4 h-4 text-red-500" /> Risk Score Engine
             </h3>
             <div className="space-y-2">
@@ -539,10 +751,17 @@ export const AnalyticsHub: React.FC = () => {
               ))}
             </div>
           </div>
+          )}
 
           {/* Corridor Performance */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          {widgets.find(w => w.type === 'corridor')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w7')}
+            className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 transition-all ${draggedWidget === 'w7' ? 'opacity-50 scale-95' : ''}`}
+          >
             <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-3 flex items-center gap-2">
+              <GripVertical className="w-3 h-3 text-gray-300 cursor-grab active:cursor-grabbing" />
               <Truck className="w-4 h-4 text-teal-500" /> Corridor Performance
             </h3>
             <div className="space-y-2">
@@ -567,10 +786,17 @@ export const AnalyticsHub: React.FC = () => {
               ))}
             </div>
           </div>
+          )}
 
           {/* Tariff Before/After */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+          {widgets.find(w => w.type === 'tariff_impact')?.visible && (
+          <div 
+            draggable
+            onDragStart={(e) => handleDragStart(e, 'w8')}
+            className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 transition-all ${draggedWidget === 'w8' ? 'opacity-50 scale-95' : ''}`}
+          >
             <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-3 flex items-center gap-2">
+              <GripVertical className="w-3 h-3 text-gray-300 cursor-grab active:cursor-grabbing" />
               <Scale className="w-4 h-4 text-amber-500" /> Tariff Impact
             </h3>
             <div className="h-36">
@@ -585,6 +811,7 @@ export const AnalyticsHub: React.FC = () => {
               </ResponsiveContainer>
             </div>
           </div>
+          )}
         </div>
       </div>
     </div>
