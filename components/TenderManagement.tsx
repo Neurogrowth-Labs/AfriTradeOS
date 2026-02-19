@@ -14,14 +14,17 @@ import {
   Building,
   Send,
   Award,
-  Filter,
   SlidersHorizontal,
   Zap,
   CheckCircle,
   DollarSign,
   Globe,
   Calendar,
-  X
+  X,
+  Download,
+  ArrowUpDown,
+  FileSpreadsheet,
+  File
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { enterpriseExporterService, TradeTender } from '../services/enterpriseExporterService';
@@ -79,7 +82,135 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
   const [showAIRecommendations, setShowAIRecommendations] = useState(false);
   const [coalitionForm, setCoalitionForm] = useState({ name: '', description: '', targetTender: '' });
   const [joinedCoalitions, setJoinedCoalitions] = useState<string[]>([]);
+  // Export and sort state
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [sortField, setSortField] = useState<'deadline' | 'budget' | 'title' | 'created'>('deadline');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Export functions
+  const exportToCSV = () => {
+    const headers = ['Title', 'Organization', 'Category', 'Budget Min', 'Budget Max', 'Currency', 'Deadline', 'Status', 'Location'];
+    const rows = filteredTenders.map(t => [
+      t.title,
+      t.organization_name || '',
+      t.category,
+      t.budget_min,
+      t.budget_max,
+      t.currency,
+      t.submission_deadline,
+      t.status,
+      t.delivery_location
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `tenders_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    setShowExportMenu(false);
+  };
+
+  const exportToXLS = () => {
+    // Generate XLS-compatible HTML table
+    const headers = ['Title', 'Organization', 'Category', 'Budget Min', 'Budget Max', 'Currency', 'Deadline', 'Status', 'Location'];
+    const rows = filteredTenders.map(t => [
+      t.title,
+      t.organization_name || '',
+      t.category,
+      t.budget_min,
+      t.budget_max,
+      t.currency,
+      t.submission_deadline,
+      t.status,
+      t.delivery_location
+    ]);
+    let tableHtml = '<table><thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+    rows.forEach(row => {
+      tableHtml += '<tr>' + row.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+    const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `tenders_export_${new Date().toISOString().split('T')[0]}.xls`;
+    link.click();
+    setShowExportMenu(false);
+  };
+
+  const exportToPDF = () => {
+    // Create printable HTML for PDF
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Tenders Export - ${new Date().toLocaleDateString()}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #1e3a5f; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }
+          th { background-color: #1e3a5f; color: white; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          .status { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; }
+          .published { background: #dcfce7; color: #166534; }
+          .closed { background: #fed7aa; color: #c2410c; }
+          .awarded { background: #dbeafe; color: #1e40af; }
+          .footer { margin-top: 30px; font-size: 10px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <h1>AfriTradeOS - Tenders & RFQ Export</h1>
+        <p>Generated: ${new Date().toLocaleString()}</p>
+        <p>Total Records: ${filteredTenders.length}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Organization</th>
+              <th>Category</th>
+              <th>Budget</th>
+              <th>Deadline</th>
+              <th>Status</th>
+              <th>Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredTenders.map(t => `
+              <tr>
+                <td>${t.title}</td>
+                <td>${t.organization_name || '-'}</td>
+                <td>${t.category}</td>
+                <td>${t.currency} ${t.budget_min.toLocaleString()} - ${t.budget_max.toLocaleString()}</td>
+                <td>${new Date(t.submission_deadline).toLocaleDateString()}</td>
+                <td><span class="status ${t.status}">${t.status.toUpperCase()}</span></td>
+                <td>${t.delivery_location}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="footer">
+          <p>AfriTradeOS - Pan-African Trade Platform</p>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
+    setShowExportMenu(false);
+  };
+
+  // Sort function
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
   useEffect(() => {
     const loadTenders = async () => {
@@ -189,11 +320,39 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
     return `${formatter.format(min)} - ${formatter.format(max)}`;
   };
 
-  const filteredTenders = tenders.filter(t =>
-    t.title.toLowerCase().includes(search.toLowerCase()) ||
-    t.category.toLowerCase().includes(search.toLowerCase()) ||
-    t.organization_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTenders = tenders
+    .filter(t =>
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
+      t.category.toLowerCase().includes(search.toLowerCase()) ||
+      t.organization_name?.toLowerCase().includes(search.toLowerCase())
+    )
+    // Apply advanced filters
+    .filter(t => {
+      if (filterCountry && !t.delivery_location.toLowerCase().includes(filterCountry.toLowerCase())) return false;
+      if (filterMinBudget && t.budget_max < parseFloat(filterMinBudget)) return false;
+      if (filterMaxBudget && t.budget_min > parseFloat(filterMaxBudget)) return false;
+      if (filterDeadline && new Date(t.submission_deadline) > new Date(filterDeadline)) return false;
+      return true;
+    })
+    // Apply sorting
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'deadline':
+          comparison = new Date(a.submission_deadline).getTime() - new Date(b.submission_deadline).getTime();
+          break;
+        case 'budget':
+          comparison = a.budget_max - b.budget_max;
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'created':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
 
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
@@ -208,15 +367,54 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
             {mode === 'manage' ? 'Create, track, and manage your requests for quotation' : 'Browse RFQs and procurement opportunities with AI-suggested competitive pricing'}
           </p>
         </div>
-        {mode === 'manage' && (
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Create RFQ
-          </button>
-        )}
+        {/* Export & Create Actions */}
+        <div className="flex items-center gap-3">
+          {/* Export Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 z-20 overflow-hidden">
+                <button
+                  onClick={exportToCSV}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-green-600" />
+                  Export as CSV
+                </button>
+                <button
+                  onClick={exportToXLS}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-t border-gray-100 dark:border-slate-700"
+                >
+                  <File className="w-4 h-4 text-blue-600" />
+                  Export as XLS
+                </button>
+                <button
+                  onClick={exportToPDF}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors border-t border-gray-100 dark:border-slate-700"
+                >
+                  <FileText className="w-4 h-4 text-red-600" />
+                  Export as PDF
+                </button>
+              </div>
+            )}
+          </div>
+          
+          {mode === 'manage' && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Create RFQ
+            </button>
+          )}
+        </div>
       </div>
 
       {/* AI Bid Suggestions & Collaborative Bidding */}
@@ -302,6 +500,31 @@ export const TenderManagement: React.FC<TenderManagementProps> = ({ mode = 'brow
                 }`}
               >
                 {status === 'all' ? 'All' : status === 'closing_soon' ? 'Closing Soon' : status}
+              </button>
+            ))}
+          </div>
+          {/* Sort Controls */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500 dark:text-gray-400">Sort:</span>
+            {[
+              { field: 'deadline' as const, label: 'Deadline' },
+              { field: 'budget' as const, label: 'Budget' },
+              { field: 'title' as const, label: 'Title' },
+              { field: 'created' as const, label: 'Date' },
+            ].map(sort => (
+              <button
+                key={sort.field}
+                onClick={() => handleSort(sort.field)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  sortField === sort.field
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                    : 'bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-600'
+                }`}
+              >
+                {sort.label}
+                {sortField === sort.field && (
+                  <ArrowUpDown className={`w-3 h-3 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />
+                )}
               </button>
             ))}
           </div>

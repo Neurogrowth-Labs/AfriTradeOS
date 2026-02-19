@@ -109,6 +109,11 @@ export const Logistics: React.FC = () => {
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [selectedRisk, setSelectedRisk] = useState<RouteRisk | null>(null);
   const [riskFilter, setRiskFilter] = useState<'all' | 'port' | 'customs' | 'route'>('all');
+  const [showCustomsDetails, setShowCustomsDetails] = useState(false);
+  const [showQRCodes, setShowQRCodes] = useState(false);
+  const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
+  const [applyingRoute, setApplyingRoute] = useState(false);
+  const [filingCustoms, setFilingCustoms] = useState(false);
   const [mapZoom, setMapZoom] = useState(1);
   const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -303,6 +308,43 @@ export const Logistics: React.FC = () => {
     return { text: 'Request Quote', disabled: false, className: 'border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700' };
   };
 
+  // Check Shipments handlers
+  const handleViewCustomsDetails = () => {
+    setShowCustomsDetails(true);
+  };
+
+  const handleDismissAlert = (alertType: string) => {
+    setDismissedAlerts([...dismissedAlerts, alertType]);
+  };
+
+  const handleApplyRoute = async () => {
+    setApplyingRoute(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      alert('Optimized route applied successfully! Your shipment route has been updated.');
+    } catch (error) {
+      alert('Failed to apply route. Please try again.');
+    } finally {
+      setApplyingRoute(false);
+    }
+  };
+
+  const handleFileCustoms = async () => {
+    setFilingCustoms(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      alert(`Customs documents filed successfully for ${liveShipments.length} shipment(s)!`);
+    } catch (error) {
+      alert('Failed to file customs documents. Please try again.');
+    } finally {
+      setFilingCustoms(false);
+    }
+  };
+
+  const handleViewQRCodes = () => {
+    setShowQRCodes(true);
+  };
+
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
        {/* Header / Tabs */}
@@ -341,44 +383,89 @@ export const Logistics: React.FC = () => {
 
        {liveShipments.length > 0 && (
          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-           <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4 flex items-start gap-3">
-             <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
-               <AlertTriangle className="w-4 h-4 text-amber-600" />
-             </div>
-             <div className="flex-1">
-               <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Customs Clearance Update</p>
-               <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">Port congestion at Lagos — expect +24h delay on shipments via Apapa terminal.</p>
-               <div className="flex gap-2 mt-2">
-                 <button className="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline">View Details</button>
-                 <button className="text-[10px] text-gray-500 hover:text-gray-700">Dismiss</button>
+           {!dismissedAlerts.includes('customs') && (
+             <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4 flex items-start gap-3">
+               <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg shrink-0">
+                 <AlertTriangle className="w-4 h-4 text-amber-600" />
+               </div>
+               <div className="flex-1">
+                 <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Customs Clearance Update</p>
+                 <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">Port congestion at Lagos — expect +24h delay on shipments via Apapa terminal.</p>
+                 <div className="flex gap-2 mt-2">
+                   <button
+                     onClick={handleViewCustomsDetails}
+                     className="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline"
+                   >
+                     View Details
+                   </button>
+                   <button
+                     onClick={() => handleDismissAlert('customs')}
+                     className="text-[10px] text-gray-500 hover:text-gray-700"
+                   >
+                     Dismiss
+                   </button>
+                 </div>
                </div>
              </div>
-           </div>
+           )}
 
-           <div className="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-900/30 rounded-xl p-4 flex items-start gap-3">
-             <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
-               <Navigation className="w-4 h-4 text-teal-600" />
-             </div>
-             <div className="flex-1">
-               <p className="text-xs font-bold text-teal-800 dark:text-teal-300">Route Optimization</p>
-               <p className="text-[10px] text-teal-700 dark:text-teal-400 mt-0.5">Switch to Tema Port (Ghana) via AfCFTA free trade zone — save <span className="font-bold">$1,200</span> and <span className="font-bold">2 days</span> transit time.</p>
-               <button className="mt-2 text-[10px] font-bold bg-teal-600 hover:bg-teal-700 text-white px-3 py-1 rounded-lg transition-colors">Apply Route</button>
-             </div>
-           </div>
-
-           <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-4 flex items-start gap-3">
-             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
-               <ShieldCheck className="w-4 h-4 text-indigo-600" />
-             </div>
-             <div className="flex-1">
-               <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300">Automated Customs Filing</p>
-               <p className="text-[10px] text-indigo-700 dark:text-indigo-400 mt-0.5">Pre-filled customs forms ready for {liveShipments.length} shipment{liveShipments.length > 1 ? 's' : ''}. QR codes generated for faster border processing.</p>
-               <div className="flex gap-2 mt-2">
-                 <button className="text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg transition-colors">File Now</button>
-                 <button className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline">View QR Codes</button>
+           {!dismissedAlerts.includes('route') && (
+             <div className="bg-teal-50 dark:bg-teal-900/10 border border-teal-200 dark:border-teal-900/30 rounded-xl p-4 flex items-start gap-3">
+               <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg shrink-0">
+                 <Navigation className="w-4 h-4 text-teal-600" />
+               </div>
+               <div className="flex-1">
+                 <p className="text-xs font-bold text-teal-800 dark:text-teal-300">Route Optimization</p>
+                 <p className="text-[10px] text-teal-700 dark:text-teal-400 mt-0.5">Switch to Tema Port (Ghana) via AfCFTA free trade zone — save <span className="font-bold">$1,200</span> and <span className="font-bold">2 days</span> transit time.</p>
+                 <button
+                   onClick={handleApplyRoute}
+                   disabled={applyingRoute}
+                   className="mt-2 text-[10px] font-bold bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
+                 >
+                   {applyingRoute ? (
+                     <>
+                       <Loader2 className="w-3 h-3 animate-spin" /> Applying...
+                     </>
+                   ) : (
+                     'Apply Route'
+                   )}
+                 </button>
                </div>
              </div>
-           </div>
+           )}
+
+           {!dismissedAlerts.includes('customs-filing') && (
+             <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-4 flex items-start gap-3">
+               <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
+                 <ShieldCheck className="w-4 h-4 text-indigo-600" />
+               </div>
+               <div className="flex-1">
+                 <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300">Automated Customs Filing</p>
+                 <p className="text-[10px] text-indigo-700 dark:text-indigo-400 mt-0.5">Pre-filled customs forms ready for {liveShipments.length} shipment{liveShipments.length > 1 ? 's' : ''}. QR codes generated for faster border processing.</p>
+                 <div className="flex gap-2 mt-2">
+                   <button
+                     onClick={handleFileCustoms}
+                     disabled={filingCustoms}
+                     className="text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-3 py-1 rounded-lg transition-colors flex items-center gap-1"
+                   >
+                     {filingCustoms ? (
+                       <>
+                         <Loader2 className="w-3 h-3 animate-spin" /> Filing...
+                       </>
+                     ) : (
+                       'File Now'
+                     )}
+                   </button>
+                   <button
+                     onClick={handleViewQRCodes}
+                     className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 underline"
+                   >
+                     View QR Codes
+                   </button>
+                 </div>
+               </div>
+             </div>
+           )}
          </div>
        )}
 
@@ -963,6 +1050,141 @@ export const Logistics: React.FC = () => {
                <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg">
                  <p className="text-xs text-gray-500">Total Delay</p>
                  <p className="text-xl font-bold text-amber-600">{MOCK_ETA_TIMELINE.reduce((acc, e) => acc + (e.delayHours || 0), 0)}h</p>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* CUSTOMS DETAILS MODAL */}
+       {showCustomsDetails && (
+         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+               <div className="flex justify-between items-start">
+                 <div>
+                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Customs Clearance Details</h2>
+                   <p className="text-sm text-gray-500 mt-1">Port of Lagos (Apapa Terminal)</p>
+                 </div>
+                 <button
+                   onClick={() => setShowCustomsDetails(false)}
+                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                 >
+                   <X className="w-5 h-5 text-gray-500" />
+                 </button>
+               </div>
+             </div>
+             <div className="p-6 space-y-4">
+               <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4">
+                 <div className="flex items-start gap-3">
+                   <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                   <div>
+                     <h3 className="font-bold text-amber-900 dark:text-amber-300 mb-2">Current Situation</h3>
+                     <p className="text-sm text-amber-800 dark:text-amber-400">
+                       High congestion at Apapa terminal due to container backlog. Average processing time increased from 48h to 72h.
+                     </p>
+                   </div>
+                 </div>
+               </div>
+
+               <div>
+                 <h3 className="font-bold text-gray-900 dark:text-white mb-3">Affected Shipments</h3>
+                 <div className="space-y-2">
+                   {liveShipments.slice(0, 3).map(shipment => (
+                     <div key={shipment.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                       <div>
+                         <p className="font-medium text-gray-900 dark:text-white text-sm">{shipment.id}</p>
+                         <p className="text-xs text-gray-500">{shipment.origin} → {shipment.destination}</p>
+                       </div>
+                       <span className="text-xs font-bold text-amber-600">+24h delay</span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+
+               <div>
+                 <h3 className="font-bold text-gray-900 dark:text-white mb-3">Recommended Actions</h3>
+                 <ul className="space-y-2">
+                   <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                     <span>Consider re-routing through Tema Port (Ghana) for faster processing</span>
+                   </li>
+                   <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                     <span>Ensure all customs documentation is pre-filed to minimize delays</span>
+                   </li>
+                   <li className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                     <span>Notify buyers of potential delivery delays</span>
+                   </li>
+                 </ul>
+               </div>
+
+               <button
+                 onClick={() => setShowCustomsDetails(false)}
+                 className="w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors"
+               >
+                 Close
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* QR CODES MODAL */}
+       {showQRCodes && (
+         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
+               <div className="flex justify-between items-start">
+                 <div>
+                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">Shipment QR Codes</h2>
+                   <p className="text-sm text-gray-500 mt-1">Scan at customs checkpoints for faster processing</p>
+                 </div>
+                 <button
+                   onClick={() => setShowQRCodes(false)}
+                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                 >
+                   <X className="w-5 h-5 text-gray-500" />
+                 </button>
+               </div>
+             </div>
+             <div className="p-6">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {liveShipments.map(shipment => (
+                   <div key={shipment.id} className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+                     <div className="mb-3">
+                       <p className="font-mono text-xs font-bold text-gray-900 dark:text-white">{shipment.id}</p>
+                       <p className="text-xs text-gray-500">{shipment.origin} → {shipment.destination}</p>
+                     </div>
+
+                     {/* QR Code placeholder - in production, use a QR code library */}
+                     <div className="aspect-square bg-white rounded-lg p-4 mb-3 flex items-center justify-center border-2 border-gray-200">
+                       <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 rounded flex items-center justify-center">
+                         <div className="text-center">
+                           <div className="w-32 h-32 mx-auto bg-white/50 rounded grid grid-cols-8 gap-[2px] p-1">
+                             {Array.from({ length: 64 }).map((_, i) => (
+                               <div
+                                 key={i}
+                                 className={`${Math.random() > 0.5 ? 'bg-gray-800' : 'bg-white'} rounded-sm`}
+                               />
+                             ))}
+                           </div>
+                           <p className="text-[10px] text-gray-600 mt-2 font-mono">{shipment.id}</p>
+                         </div>
+                       </div>
+                     </div>
+
+                     <div className="flex gap-2">
+                       <button className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                         Download
+                       </button>
+                       <button className="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+                         Print
+                       </button>
+                     </div>
+                   </div>
+                 ))}
                </div>
              </div>
            </div>

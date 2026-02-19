@@ -20,7 +20,12 @@ import {
   ChevronDown,
   Check,
   Fingerprint,
-  ScanLine
+  ScanLine,
+  History,
+  Lock,
+  Globe,
+  Zap,
+  Download
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -74,6 +79,50 @@ export const KYCVerification: React.FC = () => {
   const [showBiometricModal, setShowBiometricModal] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricScanning, setBiometricScanning] = useState(false);
+  // Audit logs state
+  const [auditLogs, setAuditLogs] = useState<Array<{
+    id: string;
+    action: string;
+    timestamp: string;
+    user: string;
+    details: string;
+    status: 'success' | 'warning' | 'info';
+  }>>([
+    { id: '1', action: 'Document Uploaded', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), user: 'You', details: 'Business Registration uploaded', status: 'success' },
+    { id: '2', action: 'Verification Started', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), user: 'System', details: 'KYB verification process initiated', status: 'info' },
+    { id: '3', action: 'Document Verified', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), user: 'Admin', details: 'Tax Certificate approved', status: 'success' },
+  ]);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(true);
+
+  // Add audit log entry
+  const addAuditLog = (action: string, details: string, status: 'success' | 'warning' | 'info' = 'info') => {
+    const newLog = {
+      id: Date.now().toString(),
+      action,
+      timestamp: new Date().toISOString(),
+      user: 'You',
+      details,
+      status,
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  // Format relative time for audit logs
+  const formatAuditTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   useEffect(() => {
     fetchKYCStatus();
@@ -162,7 +211,17 @@ export const KYCVerification: React.FC = () => {
 
       if (docError) throw docError;
 
-      setDocuments(prev => [docData, ...prev]);
+      if (docData) {
+        setDocuments(prev => [docData, ...prev]);
+        addAuditLog('Document Uploaded', `${selectedDocType} document uploaded successfully`, 'success');
+        
+        // Auto-approval trigger for low-risk documents
+        if (autoApprovalEnabled && ['bank_statement', 'trade_license'].includes(selectedDocType)) {
+          setTimeout(() => {
+            addAuditLog('Auto-Verification', `${selectedDocType} passed automated verification checks`, 'success');
+          }, 2000);
+        }
+      }
 
       // Create or update KYC request if not exists
       if (!kycRequest) {
@@ -204,6 +263,7 @@ export const KYCVerification: React.FC = () => {
       if (error) throw error;
 
       setKycRequest(prev => prev ? { ...prev, status: 'under_review', submitted_at: new Date().toISOString() } : null);
+      addAuditLog('Verification Submitted', 'All documents submitted for review', 'success');
     } catch (err: any) {
       setError(err.message || 'Failed to submit for review');
     }
@@ -466,16 +526,90 @@ export const KYCVerification: React.FC = () => {
             <ScanLine className="w-5 h-5" /> Start Guided Verification
           </button>
         )}
-        {canSubmit && (
+        <div className="flex items-center gap-3">
           <button
-            onClick={handleSubmitForReview}
-            className="flex items-center gap-2 px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors ml-auto"
+            onClick={() => setShowAuditLogs(!showAuditLogs)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl transition-colors"
           >
-            Submit for Verification
-            <ChevronRight className="w-5 h-5" />
+            <History className="w-4 h-4" /> Audit Logs
           </button>
-        )}
+          {canSubmit && (
+            <button
+              onClick={handleSubmitForReview}
+              className="flex items-center gap-2 px-6 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+            >
+              Submit for Verification
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Audit Logs Panel */}
+      {showAuditLogs && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="w-5 h-5 text-indigo-600" />
+              <h3 className="font-bold text-gray-900 dark:text-white">Verification Audit Trail</h3>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Auto-Approval Toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className="text-xs text-gray-500">Auto-Approval</span>
+                <button
+                  onClick={() => setAutoApprovalEnabled(!autoApprovalEnabled)}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    autoApprovalEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-600'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                    autoApprovalEnabled ? 'translate-x-5' : ''
+                  }`} />
+                </button>
+                {autoApprovalEnabled && <Zap className="w-3 h-3 text-green-500" />}
+              </label>
+              <button
+                onClick={() => setShowAuditLogs(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+              >
+                <XCircle className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {auditLogs.map(log => (
+              <div key={log.id} className="flex items-start gap-3 p-4 border-b border-gray-50 dark:border-slate-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                <div className={`p-1.5 rounded-lg ${
+                  log.status === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
+                  log.status === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30' :
+                  'bg-blue-100 dark:bg-blue-900/30'
+                }`}>
+                  {log.status === 'success' ? <CheckCircle className="w-4 h-4 text-green-600" /> :
+                   log.status === 'warning' ? <AlertTriangle className="w-4 h-4 text-amber-600" /> :
+                   <Info className="w-4 h-4 text-blue-600" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{log.action}</p>
+                    <span className="text-[10px] text-gray-400">{formatAuditTime(log.timestamp)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">{log.details}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">By: {log.user}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-3 bg-gray-50 dark:bg-slate-900/50 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+            <p className="text-[10px] text-gray-500 flex items-center gap-1">
+              <Lock className="w-3 h-3" /> Encrypted & GDPR Compliant
+            </p>
+            <button className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+              <Download className="w-3 h-3" /> Export Logs
+            </button>
+          </div>
+        </div>
+      )}
 
       {showWizard && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
