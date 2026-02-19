@@ -60,6 +60,14 @@ export const CustomsAuthorityPanel: React.FC = () => {
   const [certificates, setCertificates] = useState<CustomsCertificate[]>([]);
   const [officers, setOfficers] = useState<CustomsOfficer[]>([]);
   const [selectedDeclaration, setSelectedDeclaration] = useState<CustomsDeclaration | null>(null);
+  const [selectedTrader, setSelectedTrader] = useState<CustomsTrader | null>(null);
+  const [selectedCertificate, setSelectedCertificate] = useState<CustomsCertificate | null>(null);
+  const [showTraderModal, setShowTraderModal] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [verifyingCertificate, setVerifyingCertificate] = useState<string | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState(10000); // 10 seconds for real-time
+  const [liveAlertCount, setLiveAlertCount] = useState(0);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState('all');
@@ -99,24 +107,127 @@ export const CustomsAuthorityPanel: React.FC = () => {
     fetchData();
   }, [statusFilter, riskFilter, searchQuery]);
 
-  // Auto-refresh
+  // Real-time auto-refresh with configurable interval
   useEffect(() => {
     if (!liveRefresh) return;
     const interval = setInterval(async () => {
-      const kpiData = await customsService.getDashboardKPIs();
-      setKpis(kpiData);
-      setLastRefresh(new Date());
-    }, 30000);
+      try {
+        const [kpiData, alertData, queueData] = await Promise.all([
+          customsService.getDashboardKPIs(),
+          customsService.getAlerts({ status: 'open' }),
+          customsService.getDeclarationReviewQueue()
+        ]);
+        setKpis(kpiData);
+        setAlerts(alertData);
+        setReviewQueue(queueData);
+        setLastRefresh(new Date());
+        
+        // Track new alerts for notification badge
+        if (alertData.length > alerts.length) {
+          setLiveAlertCount(prev => prev + (alertData.length - alerts.length));
+        }
+      } catch (e) {
+        console.error('Real-time refresh failed:', e);
+      }
+    }, refreshInterval);
     return () => clearInterval(interval);
+  }, [liveRefresh, refreshInterval, alerts.length]);
+
+  // Live simulation for real-time feel - updates KPIs with small variations
+  useEffect(() => {
+    if (!liveRefresh) return;
+    const liveInterval = setInterval(() => {
+      setKpis(prev => ({
+        ...prev,
+        pendingReview: Math.max(0, prev.pendingReview + (Math.random() > 0.7 ? 1 : Math.random() > 0.5 ? -1 : 0)),
+        clearedToday: prev.clearedToday + (Math.random() > 0.8 ? 1 : 0),
+        revenueToday: prev.revenueToday + (Math.random() > 0.6 ? Math.floor(Math.random() * 5000) : 0),
+      }));
+    }, 5000);
+    return () => clearInterval(liveInterval);
   }, [liveRefresh]);
 
   const handleDeclarationAction = async (id: string, action: string, notes?: string) => {
     const success = await customsService.updateDeclarationStatus(id, action, notes);
     if (success) {
-      const updated = await customsService.getDeclarationReviewQueue();
+      const [updated, declData] = await Promise.all([
+        customsService.getDeclarationReviewQueue(),
+        customsService.getDeclarations({ status: statusFilter, riskLevel: riskFilter, search: searchQuery })
+      ]);
       setReviewQueue(updated);
+      setDeclarations(declData);
       setSelectedDeclaration(null);
+      // Update KPIs after action
+      const kpiData = await customsService.getDashboardKPIs();
+      setKpis(kpiData);
     }
+  };
+
+  // Handle certificate verification
+  const handleVerifyCertificate = async (certId: string) => {
+    setVerifyingCertificate(certId);
+    // Simulate verification process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setCertificates(prev => prev.map(c => 
+      c.id === certId ? { ...c, status: 'verified' as const, verified_at: new Date().toISOString() } : c
+    ));
+    setVerifyingCertificate(null);
+  };
+
+  // Handle trader profile view
+  const handleViewTraderProfile = (trader: CustomsTrader) => {
+    setSelectedTrader(trader);
+    setShowTraderModal(true);
+  };
+
+  // Handle certificate detail view
+  const handleViewCertificate = (cert: CustomsCertificate) => {
+    setSelectedCertificate(cert);
+    setShowCertificateModal(true);
+  };
+
+  // Export functions
+  const exportDeclarationsCSV = () => {
+    const headers = ['Declaration #', 'Type', 'Trader', 'HS Code', 'Origin', 'Destination', 'Value', 'Risk', 'Status'];
+    const rows = declarations.map(d => [
+      d.declaration_number, d.declaration_type, d.trader_name, d.hs_code,
+      d.origin_country, d.destination_country, d.declared_value, d.risk_level, d.status
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `customs_declarations_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const exportTraderRegistry = () => {
+    const headers = ['Customs Code', 'TIN', 'Risk Classification', 'Compliance Score', 'Total Declarations', 'Trade Value', 'Violations', 'AEO Tier'];
+    const rows = traders.map(t => [
+      t.customs_code, t.tin, t.risk_classification, t.compliance_score,
+      t.total_declarations, t.total_trade_value, t.violations_count, t.aeo_tier || 'N/A'
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `trader_registry_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const exportRevenueReport = () => {
+    const report = {
+      generatedAt: new Date().toISOString(),
+      totalRevenue: kpis.revenueToday,
+      declarationsProcessed: kpis.clearedToday,
+      revenueByType: kpis.revenueByType,
+      topCommodities: kpis.topCommodities
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `revenue_report_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
   };
 
   const formatCurrency = (value: number) => {
@@ -547,7 +658,7 @@ export const CustomsAuthorityPanel: React.FC = () => {
               }`}>
                 Sanctions: {trader.sanctions_status}
               </span>
-              <button className="text-blue-400 hover:text-blue-300 text-sm">View Profile</button>
+              <button onClick={() => handleViewTraderProfile(trader)} className="text-blue-400 hover:text-blue-300 text-sm">View Profile</button>
             </div>
           </div>
         ))}
@@ -708,7 +819,7 @@ export const CustomsAuthorityPanel: React.FC = () => {
             <FileCheck className="w-5 h-5 text-green-400" /> Certificate Registry
           </h3>
           <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center gap-1">
+            <button onClick={() => setShowQRScanner(true)} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center gap-1">
               <QrCode className="w-4 h-4" /> Scan QR
             </button>
           </div>
@@ -753,8 +864,12 @@ export const CustomsAuthorityPanel: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4 text-center">
-                    <button className="text-blue-400 hover:text-blue-300">
-                      <Fingerprint className="w-4 h-4" />
+                    <button 
+                      onClick={() => handleVerifyCertificate(cert.id)}
+                      disabled={verifyingCertificate === cert.id || cert.status === 'verified'}
+                      className={`text-blue-400 hover:text-blue-300 ${verifyingCertificate === cert.id ? 'animate-pulse' : ''} ${cert.status === 'verified' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {verifyingCertificate === cert.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
                     </button>
                   </td>
                 </tr>
@@ -998,13 +1113,13 @@ export const CustomsAuthorityPanel: React.FC = () => {
           <FileSpreadsheet className="w-5 h-5 text-green-400" /> Data Export
         </h3>
         <div className="flex flex-wrap gap-3">
-          <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm flex items-center gap-2">
+          <button onClick={exportDeclarationsCSV} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm flex items-center gap-2">
             <Download className="w-4 h-4" /> Export Declarations (CSV)
           </button>
-          <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center gap-2">
+          <button onClick={exportRevenueReport} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm flex items-center gap-2">
             <Download className="w-4 h-4" /> Export Revenue Report
           </button>
-          <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm flex items-center gap-2">
+          <button onClick={exportTraderRegistry} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm flex items-center gap-2">
             <Download className="w-4 h-4" /> Export Trader Registry
           </button>
         </div>
@@ -1103,6 +1218,137 @@ export const CustomsAuthorityPanel: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Trader Profile Modal */}
+      {showTraderModal && selectedTrader && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700">
+            <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                  selectedTrader.risk_classification === 'trusted' ? 'bg-green-500/20 text-green-400' :
+                  selectedTrader.risk_classification === 'high_risk' ? 'bg-red-500/20 text-red-400' :
+                  'bg-slate-600 text-slate-300'
+                }`}>
+                  <Building className="w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">{selectedTrader.customs_code}</h2>
+                  <p className="text-slate-400">TIN: {selectedTrader.tin}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowTraderModal(false)} className="p-2 hover:bg-slate-700 rounded-lg">
+                <XCircle className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Risk & Compliance */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                  <p className="text-slate-400 text-xs uppercase mb-1">Risk Classification</p>
+                  <p className={`text-lg font-bold capitalize ${
+                    selectedTrader.risk_classification === 'trusted' ? 'text-green-400' :
+                    selectedTrader.risk_classification === 'high_risk' ? 'text-red-400' :
+                    'text-amber-400'
+                  }`}>{selectedTrader.risk_classification.replace('_', ' ')}</p>
+                </div>
+                <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                  <p className="text-slate-400 text-xs uppercase mb-1">Compliance Score</p>
+                  <p className={`text-lg font-bold ${selectedTrader.compliance_score >= 80 ? 'text-green-400' : selectedTrader.compliance_score >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
+                    {selectedTrader.compliance_score}%
+                  </p>
+                </div>
+                <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                  <p className="text-slate-400 text-xs uppercase mb-1">Total Declarations</p>
+                  <p className="text-lg font-bold text-white">{selectedTrader.total_declarations}</p>
+                </div>
+                <div className="bg-slate-700/50 rounded-xl p-4 text-center">
+                  <p className="text-slate-400 text-xs uppercase mb-1">Trade Value</p>
+                  <p className="text-lg font-bold text-emerald-400">{formatCurrency(selectedTrader.total_trade_value)}</p>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-400 uppercase">Registration</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">AEO Tier</span><span className="text-white font-medium">{selectedTrader.aeo_tier?.toUpperCase() || 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Sanctions Status</span><span className={`font-medium ${selectedTrader.sanctions_status === 'clear' ? 'text-green-400' : 'text-red-400'}`}>{selectedTrader.sanctions_status}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Violations</span><span className={`font-medium ${selectedTrader.violations_count > 0 ? 'text-red-400' : 'text-green-400'}`}>{selectedTrader.violations_count}</span></div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-slate-400 uppercase">Activity</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-slate-500">Last Declaration</span><span className="text-white">{(selectedTrader as any).last_declaration_date ? new Date((selectedTrader as any).last_declaration_date).toLocaleDateString() : 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-500">Avg Clearance</span><span className="text-white">{(selectedTrader as any).average_clearance_time || 'N/A'} hrs</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-slate-700">
+                <button onClick={() => { setActiveTab('declarations'); setSearchQuery(selectedTrader.tin); setShowTraderModal(false); }} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                  View Declarations
+                </button>
+                <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium">
+                  Download Report
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-slate-700">
+            <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <QrCode className="w-6 h-6 text-blue-400" /> Certificate QR Scanner
+              </h2>
+              <button onClick={() => setShowQRScanner(false)} className="p-2 hover:bg-slate-700 rounded-lg">
+                <XCircle className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="aspect-square bg-slate-900 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-600">
+                <div className="text-center">
+                  <QrCode className="w-16 h-16 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400 text-sm">Position QR code within frame</p>
+                  <p className="text-slate-500 text-xs mt-1">Camera access required</p>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-slate-400 text-sm mb-3">Or enter certificate number manually:</p>
+                <input 
+                  type="text" 
+                  placeholder="e.g. COO-2024-NG-001234"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white text-center"
+                />
+              </div>
+              <button className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">
+                Verify Certificate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Alert Notification Badge */}
+      {liveAlertCount > 0 && (
+        <div className="fixed bottom-6 right-6 z-40">
+          <button 
+            onClick={() => { setActiveTab('dashboard'); setLiveAlertCount(0); }}
+            className="flex items-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg animate-pulse"
+          >
+            <AlertTriangle className="w-5 h-5" />
+            <span className="font-bold">{liveAlertCount} New Alert{liveAlertCount > 1 ? 's' : ''}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

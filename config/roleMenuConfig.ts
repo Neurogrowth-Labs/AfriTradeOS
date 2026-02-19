@@ -124,31 +124,12 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     }
   ],
 
-  // Importer - Focus on sourcing, suppliers, compliance
+  // Importer - Dedicated Importer Panel with comprehensive import management
   [UserPersona.IMPORTER]: [
     {
-      title: 'Operations',
+      title: 'Command Center',
       items: [
-        { view: AppView.DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
-        { view: AppView.TRADE_LIFECYCLE, icon: Package, label: 'Import Orders' },
-        { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Trade Finance' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Shipment Tracking' },
-      ]
-    },
-    {
-      title: 'Sourcing',
-      items: [
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Find Suppliers' },
-        { view: AppView.TENDERS, icon: FileText, label: 'My RFQs' },
-        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
-        { view: AppView.MARKET_INTEL, icon: Globe, label: 'Market Prices' },
-      ]
-    },
-    {
-      title: 'Compliance',
-      items: [
-        { view: AppView.COMPLIANCE, icon: Scale, label: 'Import Compliance' },
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Documents' },
+        { view: AppView.IMPORTER_PANEL, icon: Package, label: 'Importer Panel', description: 'Complete import operations, shipments, compliance & analytics' },
       ]
     },
     {

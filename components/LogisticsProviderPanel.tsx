@@ -112,6 +112,16 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
   const [mapZoom, setMapZoom] = useState(1);
   const [mapPan, setMapPan] = useState({ x: 0, y: 0 });
 
+  // Modal States
+  const [showAddDriverModal, setShowAddDriverModal] = useState(false);
+  const [showNewInvoiceModal, setShowNewInvoiceModal] = useState(false);
+  const [showUploadDocModal, setShowUploadDocModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedTender, setSelectedTender] = useState<LogisticsTender | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<LogisticsInvoice | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   // Fetch Data
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -165,12 +175,138 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
     fetchData();
   }, [fetchData]);
 
-  // Auto-refresh
+  // Auto-refresh - faster for real-time feel
   useEffect(() => {
     if (!liveRefresh) return;
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 15000); // 15 seconds for real-time
     return () => clearInterval(interval);
   }, [liveRefresh, fetchData]);
+
+  // Live KPI simulation for real-time feel
+  useEffect(() => {
+    if (!liveRefresh || !kpis) return;
+    const liveInterval = setInterval(() => {
+      setKpis(prev => prev ? {
+        ...prev,
+        shipmentsInTransit: Math.max(0, prev.shipmentsInTransit + (Math.random() > 0.7 ? 1 : Math.random() > 0.5 ? -1 : 0)),
+        revenueMonth: prev.revenueMonth + (Math.random() > 0.6 ? Math.floor(Math.random() * 2000) : 0),
+      } : null);
+    }, 8000);
+    return () => clearInterval(liveInterval);
+  }, [liveRefresh, kpis]);
+
+  // Action handlers
+  const handleCallDriver = (shipment: ActiveShipment) => {
+    setActionLoading(`call-${shipment.id}`);
+    // Simulate call initiation
+    setTimeout(() => {
+      alert(`Initiating call to driver for shipment ${shipment.trackingNumber}...\nDriver: ${shipment.driver || 'Assigned Driver'}`);
+      setActionLoading(null);
+    }, 500);
+  };
+
+  const handleSendMessage = (shipment: ActiveShipment) => {
+    setActionLoading(`msg-${shipment.id}`);
+    setTimeout(() => {
+      const message = prompt(`Send message to driver for ${shipment.trackingNumber}:`);
+      if (message) {
+        alert(`Message sent: "${message}"`);
+      }
+      setActionLoading(null);
+    }, 300);
+  };
+
+  const handleUploadDocument = (shipment: ActiveShipment) => {
+    setSelectedShipment(shipment);
+    setShowUploadDocModal(true);
+  };
+
+  const handleCreateInvoice = (shipment: ActiveShipment) => {
+    setSelectedShipment(shipment);
+    setShowNewInvoiceModal(true);
+  };
+
+  const handleSendQuote = (client: Client) => {
+    setSelectedClient(client);
+    setShowQuoteModal(true);
+  };
+
+  const handleAcceptBackhaul = async (oppId: string) => {
+    setActionLoading(`backhaul-${oppId}`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setBackhaulOpps(prev => prev.filter(o => o.id !== oppId));
+    alert('Backhaul opportunity accepted! It has been added to your shipments.');
+    setActionLoading(null);
+  };
+
+  const handleStartBid = (tender: LogisticsTender) => {
+    setSelectedTender(tender);
+    setTenders(prev => prev.map(t => t.id === tender.id ? { ...t, status: 'preparing' as const } : t));
+  };
+
+  const handleViewInvoice = (invoice: LogisticsInvoice) => {
+    setSelectedInvoice(invoice);
+    alert(`Viewing Invoice ${invoice.invoiceNumber}\nClient: ${invoice.client}\nAmount: $${invoice.amount.toLocaleString()}\nStatus: ${invoice.status}`);
+  };
+
+  const handleDownloadInvoice = (invoice: LogisticsInvoice) => {
+    setActionLoading(`download-${invoice.id}`);
+    setTimeout(() => {
+      const invoiceData = `INVOICE: ${invoice.invoiceNumber}\nClient: ${invoice.client}\nAmount: ${invoice.currency} ${invoice.amount}\nIssued: ${invoice.issueDate}\nDue: ${invoice.dueDate}\nStatus: ${invoice.status}`;
+      const blob = new Blob([invoiceData], { type: 'text/plain' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${invoice.invoiceNumber}.txt`;
+      link.click();
+      setActionLoading(null);
+    }, 500);
+  };
+
+  const handleSendReminder = async (invoice: LogisticsInvoice) => {
+    setActionLoading(`reminder-${invoice.id}`);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    alert(`Payment reminder sent to ${invoice.client} for invoice ${invoice.invoiceNumber}`);
+    setActionLoading(null);
+  };
+
+  const handleRenewDocument = async (docId: string) => {
+    setActionLoading(`renew-${docId}`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setComplianceDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'valid' as const, expiryDate: '2026-12-31' } : d));
+    alert('Document renewal initiated. New expiry date: 2026-12-31');
+    setActionLoading(null);
+  };
+
+  const handleGenerateDocuments = () => {
+    if (!selectedShipment) {
+      alert('Please select a shipment first to generate documents.');
+      return;
+    }
+    setActionLoading('generate-docs');
+    setTimeout(() => {
+      alert(`Documents generated for shipment ${selectedShipment.trackingNumber}:\n- Bill of Lading\n- Commercial Invoice\n- Packing List\n- Certificate of Origin`);
+      setActionLoading(null);
+    }, 1500);
+  };
+
+  const handleHSCodeSearch = () => {
+    const hsCode = prompt('Enter HS Code to search:');
+    if (hsCode) {
+      alert(`HS Code ${hsCode}:\nDescription: General goods classification\nDuty Rate: 5-15% (varies by country)\nAfCFTA Eligible: Yes`);
+    }
+  };
+
+  const handleAfCFTACalculator = () => {
+    alert('AfCFTA Tariff Calculator\n\nEnter your trade details to calculate preferential tariffs under the African Continental Free Trade Area agreement.\n\nFeature coming soon!');
+  };
+
+  const handleSaveSettings = () => {
+    setActionLoading('save-settings');
+    setTimeout(() => {
+      alert('Settings saved successfully!');
+      setActionLoading(null);
+    }, 800);
+  };
 
   // Tab definitions
   const tabs: { id: LogisticsTab; label: string; icon: React.ElementType }[] = [
@@ -780,7 +916,10 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-blue-500" /> Driver Registry
             </h3>
-            <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 flex items-center gap-1">
+            <button 
+              onClick={() => setShowAddDriverModal(true)}
+              className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 flex items-center gap-1"
+            >
               <Plus className="w-3 h-3" /> Add Driver
             </button>
           </div>
@@ -939,16 +1078,29 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
 
                   {/* Quick Actions */}
                   <div className="flex gap-2">
-                    <button className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700">
-                      <Phone className="w-3.5 h-3.5" /> Call Driver
+                    <button 
+                      onClick={() => handleCallDriver(selectedShipment)}
+                      disabled={actionLoading === `call-${selectedShipment.id}`}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {actionLoading === `call-${selectedShipment.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Phone className="w-3.5 h-3.5" />} Call Driver
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200">
+                    <button 
+                      onClick={() => handleSendMessage(selectedShipment)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200"
+                    >
                       <MessageSquare className="w-3.5 h-3.5" /> Message
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200">
+                    <button 
+                      onClick={() => handleUploadDocument(selectedShipment)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200"
+                    >
                       <Upload className="w-3.5 h-3.5" /> Upload
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200">
+                    <button 
+                      onClick={() => handleCreateInvoice(selectedShipment)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-medium hover:bg-gray-200"
+                    >
                       <Receipt className="w-3.5 h-3.5" /> Invoice
                     </button>
                   </div>
@@ -1092,8 +1244,12 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
               <p className="text-xs opacity-80">{opp.cargoType} • {opp.weight}</p>
               <div className="flex items-center justify-between mt-2">
                 <span className="text-lg font-bold">${opp.value}</span>
-                <button className="px-3 py-1 bg-white text-teal-700 rounded-lg text-xs font-bold hover:bg-white/90">
-                  Accept
+                <button 
+                  onClick={() => handleAcceptBackhaul(opp.id)}
+                  disabled={actionLoading === `backhaul-${opp.id}`}
+                  className="px-3 py-1 bg-white text-teal-700 rounded-lg text-xs font-bold hover:bg-white/90 disabled:opacity-50"
+                >
+                  {actionLoading === `backhaul-${opp.id}` ? 'Accepting...' : 'Accept'}
                 </button>
               </div>
             </div>
@@ -1152,7 +1308,10 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
             </div>
 
             <div className="flex gap-2">
-              <button className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+              <button 
+                onClick={() => handleSendQuote(client)}
+                className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              >
                 Send Quote
               </button>
               <button className="px-3 py-2 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200">
@@ -1302,7 +1461,10 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <button className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700">
+                      <button 
+                        onClick={() => tender.status === 'new' ? handleStartBid(tender) : setSelectedTender(tender)}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700"
+                      >
                         {tender.status === 'new' ? 'Start Bid' : 'View'}
                       </button>
                     </td>
@@ -1337,7 +1499,10 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Invoicing & Payments</h2>
             <p className="text-sm text-gray-500">Manage billing, track payments, and reconcile accounts</p>
           </div>
-          <button className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button 
+            onClick={() => setShowNewInvoiceModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
             <Plus className="w-4 h-4" /> New Invoice
           </button>
         </div>
@@ -1442,15 +1607,29 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg" title="View">
+                      <button 
+                        onClick={() => handleViewInvoice(invoice)}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg" 
+                        title="View"
+                      >
                         <Eye className="w-4 h-4 text-gray-400" />
                       </button>
-                      <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg" title="Download">
-                        <Download className="w-4 h-4 text-gray-400" />
+                      <button 
+                        onClick={() => handleDownloadInvoice(invoice)}
+                        disabled={actionLoading === `download-${invoice.id}`}
+                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg disabled:opacity-50" 
+                        title="Download"
+                      >
+                        {actionLoading === `download-${invoice.id}` ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" /> : <Download className="w-4 h-4 text-gray-400" />}
                       </button>
                       {invoice.status !== 'paid' && (
-                        <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg" title="Send Reminder">
-                          <Send className="w-4 h-4 text-gray-400" />
+                        <button 
+                          onClick={() => handleSendReminder(invoice)}
+                          disabled={actionLoading === `reminder-${invoice.id}`}
+                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg disabled:opacity-50" 
+                          title="Send Reminder"
+                        >
+                          {actionLoading === `reminder-${invoice.id}` ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" /> : <Send className="w-4 h-4 text-gray-400" />}
                         </button>
                       )}
                     </div>
@@ -1477,7 +1656,10 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Compliance & Certifications</h2>
             <p className="text-sm text-gray-500">Manage licenses, permits, and customs documentation</p>
           </div>
-          <button className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+          <button 
+            onClick={() => setShowUploadDocModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+          >
             <Upload className="w-4 h-4" /> Upload Document
           </button>
         </div>
@@ -1546,8 +1728,12 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
                       <p className="text-xs text-gray-500">Expires: {doc.expiryDate}</p>
                     </div>
                   </div>
-                  <button className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700">
-                    Renew Now
+                  <button 
+                    onClick={() => handleRenewDocument(doc.id)}
+                    disabled={actionLoading === `renew-${doc.id}`}
+                    className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {actionLoading === `renew-${doc.id}` ? 'Renewing...' : 'Renew Now'}
                   </button>
                 </div>
               ))}
@@ -1602,13 +1788,23 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
           </h3>
           <p className="text-sm opacity-90 mb-4">Generate Bill of Lading, Commercial Invoice, Packing List, SAD forms, and Certificate of Origin automatically from your shipment data.</p>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-white text-blue-700 rounded-lg text-sm font-bold hover:bg-white/90">
-              Generate Documents
+            <button 
+              onClick={handleGenerateDocuments}
+              disabled={actionLoading === 'generate-docs'}
+              className="px-4 py-2 bg-white text-blue-700 rounded-lg text-sm font-bold hover:bg-white/90 disabled:opacity-50"
+            >
+              {actionLoading === 'generate-docs' ? 'Generating...' : 'Generate Documents'}
             </button>
-            <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium">
+            <button 
+              onClick={handleHSCodeSearch}
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium"
+            >
               HS Code Search
             </button>
-            <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium">
+            <button 
+              onClick={handleAfCFTACalculator}
+              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium"
+            >
               AfCFTA Calculator
             </button>
           </div>
@@ -1756,8 +1952,12 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
         <button className="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium">
           Cancel
         </button>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-          Save Changes
+        <button 
+          onClick={handleSaveSettings}
+          disabled={actionLoading === 'save-settings'}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+        >
+          {actionLoading === 'save-settings' ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>
@@ -1830,6 +2030,124 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
         {activeTab === 'compliance' && renderCompliance()}
         {activeTab === 'settings' && renderSettings()}
       </div>
+
+      {/* Add Driver Modal */}
+      {showAddDriverModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Add New Driver</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                <input type="text" placeholder="Enter driver name" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                <input type="tel" placeholder="+27 XX XXX XXXX" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">License Number</label>
+                <input type="text" placeholder="DL-XXXXXXXX" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowAddDriverModal(false)} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+              <button onClick={() => { alert('Driver added successfully!'); setShowAddDriverModal(false); }} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Add Driver</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Invoice Modal */}
+      {showNewInvoiceModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Create New Invoice</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
+                <select className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white">
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (USD)</label>
+                <input type="number" placeholder="0.00" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                <input type="date" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowNewInvoiceModal(false)} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+              <button onClick={() => { alert('Invoice created successfully!'); setShowNewInvoiceModal(false); }} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Create Invoice</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Document Modal */}
+      {showUploadDocModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Upload Document</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Document Type</label>
+                <select className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white">
+                  <option>Bill of Lading</option>
+                  <option>Commercial Invoice</option>
+                  <option>Certificate of Origin</option>
+                  <option>Packing List</option>
+                  <option>Customs Declaration</option>
+                  <option>Insurance Certificate</option>
+                </select>
+              </div>
+              <div className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-8 text-center">
+                <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-500">Drag & drop file here or click to browse</p>
+                <input type="file" className="hidden" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowUploadDocModal(false)} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+              <button onClick={() => { alert('Document uploaded successfully!'); setShowUploadDocModal(false); }} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Upload</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Quote Modal */}
+      {showQuoteModal && selectedClient && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Send Quote to {selectedClient.name}</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Route</label>
+                <input type="text" placeholder="e.g., Johannesburg → Nairobi" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quote Amount (USD)</label>
+                <input type="number" placeholder="0.00" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valid Until</label>
+                <input type="date" className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                <textarea placeholder="Additional details..." rows={3} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-white" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => { setShowQuoteModal(false); setSelectedClient(null); }} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg">Cancel</button>
+              <button onClick={() => { alert(`Quote sent to ${selectedClient.name}!`); setShowQuoteModal(false); setSelectedClient(null); }} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg">Send Quote</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

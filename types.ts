@@ -25,6 +25,7 @@ export enum AppView {
   BANK_RISK_CLIENTS = 'BANK_RISK_CLIENTS', // Bank Risk & Client Directory
   BANK_SETTINGS = 'BANK_SETTINGS', // Bank Account Settings
   BANK_TRADE_TOOLS = 'BANK_TRADE_TOOLS', // Bank Trade Tools (Insurance, Blockchain, AfCFTA)
+  IMPORTER_PANEL = 'IMPORTER_PANEL', // Importer Dedicated Panel
 }
 
 export interface ChartData {

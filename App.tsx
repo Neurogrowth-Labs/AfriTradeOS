@@ -59,6 +59,7 @@ import { GovEntityVerification } from './components/GovEntityVerification';
 import { GovBusinessRegistry } from './components/GovBusinessRegistry';
 import { CustomsAuthorityPanel } from './components/CustomsAuthorityPanel';
 import { LogisticsProviderPanel } from './components/LogisticsProviderPanel';
+import ImporterPanel from './components/ImporterPanel';
 import BankFinanceDashboard from './components/BankFinanceDashboard';
 import BankFinanceApplications from './components/BankFinanceApplications';
 import BankDueDiligence from './components/BankDueDiligence';
@@ -173,6 +174,7 @@ const routeToView: Record<string, AppView> = {
   '/bank-risk-clients': AppView.BANK_RISK_CLIENTS,
   '/bank-settings': AppView.BANK_SETTINGS,
   '/bank-trade-tools': AppView.BANK_TRADE_TOOLS,
+  '/importer': AppView.IMPORTER_PANEL,
 };
 
 const viewToRoute: Record<AppView, string> = {
@@ -201,6 +203,7 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.BANK_RISK_CLIENTS]: '/bank-risk-clients',
   [AppView.BANK_SETTINGS]: '/bank-settings',
   [AppView.BANK_TRADE_TOOLS]: '/bank-trade-tools',
+  [AppView.IMPORTER_PANEL]: '/importer',
 };
 
 // Get default route for each role
@@ -218,6 +221,8 @@ const getDefaultRouteForRole = (role: UserPersona): string => {
       return '/dashboard';
     case UserPersona.BANK:
       return '/bank-dashboard';
+    case UserPersona.IMPORTER:
+      return '/importer';
     default:
       return '/dashboard';
   }
@@ -587,6 +592,14 @@ export default function App() {
       }
     }
 
+    if (userRole === UserPersona.IMPORTER) {
+      switch (currentView) {
+        case AppView.IMPORTER_PANEL: return <ImporterPanel userRole={userRole} navigateTo={setCurrentView} />;
+        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default: return <ImporterPanel userRole={userRole} navigateTo={setCurrentView} />;
+      }
+    }
+
     // Bank / Insurer gets dedicated bank-specific components
     if (userRole === UserPersona.BANK) {
       switch (currentView) {
@@ -721,7 +734,13 @@ export default function App() {
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
           <div 
             className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors"
-            onClick={() => setCurrentView(AppView.PROFILE)}
+            onClick={() => {
+              if (userRole === UserPersona.BANK) {
+                setCurrentView(AppView.BANK_SETTINGS);
+              } else {
+                setCurrentView(AppView.PROFILE);
+              }
+            }}
           >
             <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.userName || 'User')}&background=C9A24D&color=fff`} alt="User" className="w-7 h-7 rounded-full ring-2 ring-trade-accent" />
             <div className="overflow-hidden">
