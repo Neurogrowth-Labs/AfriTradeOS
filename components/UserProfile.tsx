@@ -2,35 +2,37 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  User,
-  Building2,
-  Shield,
-  CreditCard,
-  FileText,
-  CheckCircle,
-  AlertTriangle,
-  Globe,
-  Smartphone,
-  Mail,
-  Zap,
-  LogOut,
-  Users,
-  Download,
-  HelpCircle,
-  Loader2,
-  Key,
-  Save,
-  Plus,
-  Upload,
-  Eye,
-  EyeOff,
-  X
+  User, Building2, Shield, CreditCard, FileText, CheckCircle, AlertTriangle,
+  Globe, Smartphone, Mail, Zap, LogOut, Users, Download, HelpCircle, Loader2,
+  Key, Save, Plus, Upload, Eye, EyeOff, X, Settings, Bell, Lock, Link2,
+  Brain, BarChart3, Clock, Trash2, RefreshCw, Copy, ExternalLink, Check,
+  Camera, MapPin, Phone, AtSign, Briefcase, Calendar, Activity, Filter,
+  ChevronRight, ChevronDown, AlertCircle, Info, Database, FileCheck,
+  CreditCard as CardIcon, Building, Award, TrendingUp, Wallet, Receipt
 } from 'lucide-react';
-import { mockDatabase } from '../services/mockDatabase';
-import { DbAuditLog, UserPersona } from '../types';
+import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
+import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext';
+import {
+  getUserProfile, updateUserProfile, uploadProfilePhoto, verifyEmail,
+  getOrganization, updateOrganization, uploadOrganizationLogo,
+  getUserPreferences, updateUserPreferences,
+  getSecuritySettings, enableTwoFactor, disableTwoFactor, updatePassword,
+  getActiveSessions, revokeSession, revokeAllSessions, connectSSO,
+  getIntegrations, connectIntegration, disconnectIntegration,
+  getAPIKeys, generateAPIKey, revokeAPIKey,
+  getAIDataSettings, updateAIDataSettings, exportUserData, requestDataDeletion,
+  getBillingInfo, getUsageMetrics, getInvoices, downloadInvoice,
+  getAuditLogs, createAuditLog, exportAuditLogs,
+  getTeamMembers, inviteTeamMember, updateTeamMember, removeTeamMember,
+  getRoles, createRole, updateRole, deleteRole,
+  getTradeAssociations, connectTradeAssociation, syncCurrencyRates,
+  UserProfile as UserProfileType, Organization, UserPreferences, SecuritySettings,
+  Integration, APIKey, AIDataSettings, BillingInfo, AuditLog, TeamMember, Role,
+  TradeAssociation, UserSession
+} from '../services/settingsService';
 
-type Tab = 'general' | 'organization' | 'security' | 'ai' | 'billing' | 'audit' | 'integrations' | 'preferences';
+type Tab = 'identity' | 'organization' | 'preferences' | 'security' | 'integrations' | 'ai' | 'billing' | 'audit';
 
 interface UserProfileProps {
   profileData?: any;
@@ -38,1423 +40,2174 @@ interface UserProfileProps {
 }
 
 export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole }) => {
-  const [activeTab, setActiveTab] = useState<Tab>('general');
-  const [logs, setLogs] = useState<DbAuditLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('identity');
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Security & Compliance state
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
-  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [kycVerifying, setKycVerifying] = useState(false);
-  const [uploadType, setUploadType] = useState<'kyc' | 'tax' | 'kyb'>('kyc');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const { currency, setCurrency, formatCurrency } = useCurrency();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Data states
+  const [profile, setProfile] = useState<UserProfileType | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [security, setSecurity] = useState<SecuritySettings | null>(null);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [apiKeys, setApiKeys] = useState<APIKey[]>([]);
+  const [aiSettings, setAISettings] = useState<AIDataSettings | null>(null);
+  const [billingInfo, setBillingInfo] = useState<BillingInfo | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [associations, setAssociations] = useState<TradeAssociation[]>([]);
+
+  // Form states for editing
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [editingOrg, setEditingOrg] = useState(false);
+  const [profileForm, setProfileForm] = useState<Partial<UserProfileType>>({});
+  const [orgForm, setOrgForm] = useState<Partial<Organization>>({});
+
+  // Modal states
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showConnectModal, setShowConnectModal] = useState(false);
-  const [showSupportModal, setShowSupportModal] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('viewer');
-  
-  // Database-driven stats
-  const [stats, setStats] = useState({
-    tradesCount: 0,
-    completedTrades: 0,
-    trustScore: 0,
-    kycVerified: false,
-    kybVerified: false
-  });
+  const [showAPIKeyModal, setShowAPIKeyModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showIntegrationModal, setShowIntegrationModal] = useState(false);
+  const [showDeleteDataModal, setShowDeleteDataModal] = useState(false);
+  const [generatedApiKey, setGeneratedApiKey] = useState<string | null>(null);
 
-  // Initialize state from props or defaults
-  const [personalInfo, setPersonalInfo] = useState({
-    name: profileData?.userName || '',
-    email: profileData?.email || '',
-    phone: profileData?.phone || '',
-    role: userRole || UserPersona.EXPORTER_SME,
-    country: profileData?.country || '',
-    companyName: profileData?.companyName || '',
-    language: 'English',
-    timezone: 'GMT (Accra)'
-  });
+  // Password form
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
 
-  const [toggles, setToggles] = useState({
-    twoFactor: false,
-    emailNotifs: true,
-    smsNotifs: false,
-    aiDataShare: true,
-    aiExplain: true
-  });
+  // Invite form
+  const [inviteForm, setInviteForm] = useState({ email: '', role: 'member' as 'admin' | 'member' | 'viewer', department: '' });
 
-  // Sync state if props update
+  // API Key form
+  const [apiKeyForm, setApiKeyForm] = useState({ name: '', permissions: ['read:trades'] as string[] });
+
+  // Audit log filters
+  const [auditFilters, setAuditFilters] = useState<{
+    action?: string;
+    entityType?: string;
+    status?: 'success' | 'failed';
+  }>({});
+  const [auditPage, setAuditPage] = useState(0);
+
+  // Get current user ID
+  const userId = profileData?.id || 'user-001';
+  const organizationId = profile?.organizationId || organization?.id || 'org-001';
+
+  // Fetch all data on mount
   useEffect(() => {
-    if (profileData) {
-      setPersonalInfo(prev => ({
-        ...prev,
-        name: profileData.userName || prev.name,
-        email: profileData.email || prev.email,
-        phone: profileData.phone || prev.phone,
-        role: userRole || prev.role,
-        country: profileData.country || prev.country,
-        companyName: profileData.companyName || prev.companyName
-      }));
-    }
-  }, [profileData, userRole]);
+    fetchAllData();
+  }, [userId]);
 
-  // Fetch stats from database
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const trades = await mockDatabase.getTrades();
-        const kycReqs = await mockDatabase.getKYCRequests();
-        
-        const completedTrades = trades.filter(t => t.status === 'completed').length;
-        const kycApproved = kycReqs.some(k => k.status === 'Approved');
-        
-        // Calculate trust score based on real data
-        let trustScore = 50; // Base score
-        if (trades.length > 0) trustScore += 10;
-        if (completedTrades > 0) trustScore += completedTrades * 5;
-        if (kycApproved) trustScore += 20;
-        if (profileData?.companyName) trustScore += 10;
-        trustScore = Math.min(100, trustScore);
-        
-        setStats({
-          tradesCount: trades.length,
-          completedTrades,
-          trustScore,
-          kycVerified: kycApproved,
-          kybVerified: !!profileData?.companyName
-        });
-      } catch (e) {
-        console.error('Failed to fetch profile stats:', e);
-      }
-    };
-    fetchStats();
-  }, [profileData]);
-
+  // Fetch audit logs when filters change
   useEffect(() => {
     if (activeTab === 'audit') {
-      const fetchLogs = async () => {
-        setLoadingLogs(true);
-        const data = await mockDatabase.getAuditLogs();
-        setLogs(data);
-        setLoadingLogs(false);
-      };
-      fetchLogs();
+      fetchAuditLogs();
     }
-  }, [activeTab]);
+  }, [activeTab, auditFilters, auditPage]);
 
-  const handleSignOut = async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/';
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      const [
+        profileData,
+        preferencesData,
+        securityData,
+        integrationsData,
+        apiKeysData,
+        aiSettingsData,
+        billingData,
+        associationsData
+      ] = await Promise.all([
+        getUserProfile(userId),
+        getUserPreferences(userId),
+        getSecuritySettings(userId),
+        getIntegrations(userId),
+        getAPIKeys(userId),
+        getAIDataSettings(userId),
+        getBillingInfo(userId),
+        getTradeAssociations(userId)
+      ]);
+
+      setProfile(profileData);
+      setProfileForm(profileData || {});
+      setPreferences(preferencesData);
+      setSecurity(securityData);
+      setIntegrations(integrationsData);
+      setApiKeys(apiKeysData);
+      setAISettings(aiSettingsData);
+      setBillingInfo(billingData);
+      setAssociations(associationsData);
+
+      // Fetch organization if user has one
+      if (profileData?.organizationId) {
+        const orgData = await getOrganization(profileData.organizationId);
+        setOrganization(orgData);
+        setOrgForm(orgData || {});
+
+        // Fetch team members and roles
+        const [membersData, rolesData] = await Promise.all([
+          getTeamMembers(profileData.organizationId),
+          getRoles(profileData.organizationId)
+        ]);
+        setTeamMembers(membersData);
+        setRoles(rolesData);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const fetchAuditLogs = async () => {
+    try {
+      const { logs, total } = await getAuditLogs(userId, {
+        ...auditFilters,
+        limit: 20,
+        offset: auditPage * 20
+      });
+      setAuditLogs(logs);
+      setAuditTotal(total);
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    }
+  };
+
+  // Save handlers
   const handleSaveProfile = async () => {
-    if (!profileData?.id) return;
     setIsSaving(true);
-    setSaveSuccess(false);
-    
+    setSaveError(null);
     try {
-        const success = await mockDatabase.updateUserProfile(profileData.id, {
-            full_name: personalInfo.name,
-            phone: personalInfo.phone,
-            company_name: personalInfo.companyName,
-            country: personalInfo.country
-        });
-        if (success) {
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 3000);
-        } else {
-            alert("Failed to save profile. Please try again.");
-        }
-    } catch(e) {
-        console.error(e);
-        alert("An unexpected error occurred while saving.");
-    } finally {
-        setIsSaving(false);
-    }
-  };
-
-  const toggle = (key: keyof typeof toggles) => {
-    setToggles(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Handle KYC Verification
-  const handleKYCVerify = async () => {
-    setKycVerifying(true);
-    try {
-      // Create KYC request in database
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('kyc_requests').insert({
-          user_id: user.id,
-          status: 'pending',
-          verification_type: 'identity',
-          created_at: new Date().toISOString()
-        });
-      }
-      setUploadType('kyc');
-      setShowUploadModal(true);
-    } catch (e) {
-      console.error('KYC verification error:', e);
-      alert('Failed to start KYC verification. Please try again.');
-    } finally {
-      setKycVerifying(false);
-    }
-  };
-
-  // Handle password change
-  const handlePasswordChange = async () => {
-    if (passwordData.new !== passwordData.confirm) {
-      alert('New passwords do not match.');
-      return;
-    }
-    if (passwordData.new.length < 8) {
-      alert('Password must be at least 8 characters.');
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.new
-      });
-
-      if (error) throw error;
-
-      alert('Password updated successfully.');
-      setShowPasswordModal(false);
-      setPasswordData({ current: '', new: '', confirm: '' });
-    } catch (e: any) {
-      console.error('Password change error:', e);
-      alert(e.message || 'Failed to change password. Please try again.');
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
-
-  // Handle document upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const file = files[0];
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      alert('Please log in to upload documents.');
-      return;
-    }
-
-    try {
-      // Upload to Supabase storage
-      const fileName = `${user.id}/${uploadType}/${Date.now()}_${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // Create document record
-      await supabase.from('documents').insert({
-        user_id: user.id,
-        document_type: uploadType,
-        file_name: file.name,
-        file_path: fileName,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      });
-
-      alert('Document uploaded successfully. It will be reviewed shortly.');
-      setShowUploadModal(false);
-    } catch (e: any) {
-      console.error('Upload error:', e);
-      alert(e.message || 'Failed to upload document. Please try again.');
-    }
-  };
-
-  // Handle SSO connection
-  const handleSSOConnect = async (provider: 'google' | 'microsoft' | 'saml') => {
-    try {
-      if (provider === 'google') {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.origin }
-        });
-        if (error) throw error;
-      } else if (provider === 'microsoft') {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'azure',
-          options: { redirectTo: window.location.origin }
-        });
-        if (error) throw error;
+      const success = await updateUserProfile(userId, profileForm);
+      if (success) {
+        setProfile({ ...profile, ...profileForm } as UserProfileType);
+        setSaveSuccess(true);
+        setEditingProfile(false);
+        setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        alert('SAML/OIDC configuration requires enterprise setup. Contact support.');
+        setSaveError('Failed to save profile');
       }
-    } catch (e: any) {
-      console.error('SSO connection error:', e);
-      alert(e.message || 'Failed to connect SSO provider.');
+    } catch (error) {
+      setSaveError('An error occurred while saving');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const navItems = [
-    { id: 'general', label: 'Identity & Profile', icon: User },
-    { id: 'organization', label: 'Organization', icon: Building2 },
-    { id: 'preferences', label: 'Preferences', icon: Globe },
-    { id: 'security', label: 'Security & Compliance', icon: Shield },
-    { id: 'integrations', label: 'Integrations', icon: Globe },
-    { id: 'ai', label: 'AI & Data Control', icon: Zap },
-    { id: 'billing', label: 'Billing & Usage', icon: CreditCard },
-    { id: 'audit', label: 'Audit Logs', icon: FileText },
+  const handleSaveOrganization = async () => {
+    if (!organizationId) return;
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const success = await updateOrganization(organizationId, orgForm);
+      if (success) {
+        setOrganization({ ...organization, ...orgForm } as Organization);
+        setSaveSuccess(true);
+        setEditingOrg(false);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        setSaveError('Failed to save organization');
+      }
+    } catch (error) {
+      setSaveError('An error occurred while saving');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSavePreferences = async (updates: Partial<UserPreferences>) => {
+    setIsSaving(true);
+    try {
+      const success = await updateUserPreferences(userId, updates);
+      if (success) {
+        setPreferences({ ...preferences, ...updates } as UserPreferences);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsSaving(true);
+    try {
+      const url = await uploadProfilePhoto(userId, file);
+      if (url) {
+        setProfile({ ...profile, profilePhotoUrl: url } as UserProfileType);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !organizationId) return;
+
+    setIsSaving(true);
+    try {
+      const url = await uploadOrganizationLogo(organizationId, file);
+      if (url) {
+        setOrganization({ ...organization, logoUrl: url } as Organization);
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (passwordForm.new !== passwordForm.confirm) {
+      setSaveError('Passwords do not match');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const success = await updatePassword(passwordForm.current, passwordForm.new);
+      if (success) {
+        setShowPasswordModal(false);
+        setPasswordForm({ current: '', new: '', confirm: '' });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        setSaveError('Failed to update password');
+      }
+    } catch (error) {
+      setSaveError('An error occurred');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    setIsSaving(true);
+    try {
+      if (security?.twoFactorEnabled) {
+        await disableTwoFactor(userId);
+        setSecurity({ ...security, twoFactorEnabled: false } as SecuritySettings);
+      } else {
+        await enableTwoFactor(userId, 'authenticator');
+        setSecurity({ ...security, twoFactorEnabled: true } as SecuritySettings);
+      }
+    } catch (error) {
+      console.error('Error toggling 2FA:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      await revokeSession(userId, sessionId);
+      const sessions = security?.activeSessions.filter(s => s.id !== sessionId) || [];
+      setSecurity({ ...security, activeSessions: sessions } as SecuritySettings);
+    } catch (error) {
+      console.error('Error revoking session:', error);
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    try {
+      await revokeAllSessions(userId);
+      const currentSession = security?.activeSessions.find(s => s.isCurrent);
+      setSecurity({ ...security, activeSessions: currentSession ? [currentSession] : [] } as SecuritySettings);
+    } catch (error) {
+      console.error('Error revoking sessions:', error);
+    }
+  };
+
+  const handleInviteTeamMember = async () => {
+    if (!organizationId || !inviteForm.email) return;
+    setIsSaving(true);
+    try {
+      const newMember = await inviteTeamMember(organizationId, userId, inviteForm);
+      if (newMember) {
+        setTeamMembers([...teamMembers, newMember]);
+        setShowInviteModal(false);
+        setInviteForm({ email: '', role: 'member', department: '' });
+      }
+    } catch (error) {
+      console.error('Error inviting team member:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveTeamMember = async (memberId: string) => {
+    try {
+      await removeTeamMember(memberId, userId);
+      setTeamMembers(teamMembers.filter(m => m.id !== memberId));
+    } catch (error) {
+      console.error('Error removing team member:', error);
+    }
+  };
+
+  const handleGenerateAPIKey = async () => {
+    setIsSaving(true);
+    try {
+      const result = await generateAPIKey(userId, apiKeyForm.name, apiKeyForm.permissions);
+      if (result) {
+        setApiKeys([result.apiKey, ...apiKeys]);
+        setGeneratedApiKey(result.key);
+        setApiKeyForm({ name: '', permissions: ['read:trades'] });
+      }
+    } catch (error) {
+      console.error('Error generating API key:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRevokeAPIKey = async (keyId: string) => {
+    try {
+      await revokeAPIKey(userId, keyId);
+      setApiKeys(apiKeys.filter(k => k.id !== keyId));
+    } catch (error) {
+      console.error('Error revoking API key:', error);
+    }
+  };
+
+  const handleConnectIntegration = async (integration: Partial<Integration>) => {
+    setIsSaving(true);
+    try {
+      const result = await connectIntegration(userId, integration);
+      if (result) {
+        setIntegrations([result, ...integrations]);
+        setShowIntegrationModal(false);
+      }
+    } catch (error) {
+      console.error('Error connecting integration:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDisconnectIntegration = async (integrationId: string) => {
+    try {
+      await disconnectIntegration(userId, integrationId);
+      setIntegrations(integrations.map(i =>
+        i.id === integrationId ? { ...i, status: 'disconnected' as const } : i
+      ));
+    } catch (error) {
+      console.error('Error disconnecting integration:', error);
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsSaving(true);
+    try {
+      const url = await exportUserData(userId);
+      if (url) {
+        // In a real app, trigger download
+        alert('Data export initiated. You will receive an email with the download link.');
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteDataRequest = async () => {
+    setIsSaving(true);
+    try {
+      await requestDataDeletion(userId);
+      setShowDeleteDataModal(false);
+      alert('Data deletion request submitted. Our team will process this within 30 days.');
+    } catch (error) {
+      console.error('Error requesting data deletion:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleExportAuditLogs = async (format: 'csv' | 'pdf') => {
+    try {
+      const url = await exportAuditLogs(userId, format);
+      if (url) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `audit-logs.${format}`;
+        link.click();
+      }
+    } catch (error) {
+      console.error('Error exporting audit logs:', error);
+    }
+  };
+
+  const handleSyncCurrencyRates = async () => {
+    setIsSaving(true);
+    try {
+      await syncCurrencyRates();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error syncing rates:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Tab definitions
+  const tabs = [
+    { id: 'identity' as Tab, label: 'Identity & Profile', icon: User },
+    { id: 'organization' as Tab, label: 'Organization', icon: Building2 },
+    { id: 'preferences' as Tab, label: 'Preferences', icon: Settings },
+    { id: 'security' as Tab, label: 'Security & Compliance', icon: Shield },
+    { id: 'integrations' as Tab, label: 'Integrations', icon: Link2 },
+    { id: 'ai' as Tab, label: 'AI & Data Control', icon: Brain },
+    { id: 'billing' as Tab, label: 'Billing & Usage', icon: CreditCard },
+    { id: 'audit' as Tab, label: 'Audit Logs', icon: FileText }
   ];
 
-  return (
-    <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
-      
-      {/* 1. Header & Trust Hub */}
-      <div className="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center gap-3 md:gap-6">
-         <div className="relative">
-             <div className="w-14 h-14 md:w-24 md:h-24 rounded-full bg-gray-200 dark:bg-slate-700 overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg">
-                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(personalInfo.name)}&background=0B1F33&color=fff&size=200`} alt="Profile" className="w-full h-full object-cover" />
-             </div>
-             <div className="absolute bottom-0 right-0 bg-green-500 text-white p-1 md:p-1.5 rounded-full border-2 border-white dark:border-slate-800" title="Verified ID">
-                 <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
-             </div>
-         </div>
-         
-         <div className="flex-1 text-center md:text-left">
-             <h1 className="text-base md:text-2xl font-bold font-heading text-trade-primary dark:text-white mb-0.5 md:mb-1">{personalInfo.name}</h1>
-             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 text-xs md:text-sm text-gray-500 dark:text-gray-400 mb-2 md:mb-4">
-                 <span className="flex items-center gap-1"><Building2 className="w-3 h-3 md:w-3.5 md:h-3.5" /> {personalInfo.companyName}</span>
-                 <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                 <span className="flex items-center gap-1"><Globe className="w-3 h-3 md:w-3.5 md:h-3.5" /> {personalInfo.country}</span>
-             </div>
-             <div className="flex flex-wrap justify-center md:justify-start gap-1.5 md:gap-2">
-                 <span className="px-2 md:px-3 py-0.5 md:py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider">{personalInfo.role}</span>
-                 {stats.kycVerified ? (
-                   <span className="px-2 md:px-3 py-0.5 md:py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                       <Shield className="w-2.5 h-2.5 md:w-3 md:h-3" /> Verified
-                   </span>
-                 ) : (
-                   <span className="px-2 md:px-3 py-0.5 md:py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                       <AlertTriangle className="w-2.5 h-2.5 md:w-3 md:h-3" /> Pending Verification
-                   </span>
-                 )}
-             </div>
-         </div>
+  // ============================================================================
+  // RENDER FUNCTIONS
+  // ============================================================================
 
-         {/* Trust Score */}
-         <div className="bg-gray-50 dark:bg-slate-900 p-2.5 md:p-4 rounded-xl border border-gray-100 dark:border-slate-700 flex flex-col items-center min-w-[120px] md:min-w-[160px]">
-             <span className="text-[9px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5 md:mb-1">Trade Trust Score</span>
-             <div className="text-xl md:text-3xl font-black text-trade-primary dark:text-white font-mono">{stats.trustScore}<span className="text-[10px] md:text-sm text-gray-400 font-medium">/100</span></div>
-             <p className={`text-[9px] md:text-[10px] font-bold mt-0.5 md:mt-1 ${stats.trustScore >= 80 ? 'text-green-600' : stats.trustScore >= 60 ? 'text-amber-600' : 'text-gray-500'}`}>
-               {stats.trustScore >= 80 ? 'High Credibility' : stats.trustScore >= 60 ? 'Good Standing' : 'Building Trust'}
-             </p>
-         </div>
-      </div>
-
-      {/* Mobile Tab Bar */}
-      <div className="lg:hidden">
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-2">
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-            {navItems.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id as Tab)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
-                  activeTab === item.id
-                    ? 'bg-trade-primary text-white'
-                    : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                {item.label}
-              </button>
-            ))}
+  const renderIdentityTab = () => (
+    <div className="space-y-6">
+      {/* Profile Photo Section */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Profile Photo</h3>
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+              {profile?.profilePhotoUrl ? (
+                <img src={profile.profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                profile?.fullName?.charAt(0) || 'U'
+              )}
+            </div>
             <button
-              onClick={handleSignOut}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 bg-red-50 dark:bg-red-900/20 text-red-600"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 shadow-lg"
             >
-              <LogOut className="w-3.5 h-3.5" /> Sign Out
+              <Camera className="w-4 h-4" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.fullName || 'Your Name'}</p>
+            <p className="text-xs text-gray-500">{profile?.email}</p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Upload Photo
             </button>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
-         
-         {/* 2. Sidebar Navigation — Desktop only */}
-         <div className="hidden lg:block lg:col-span-3">
-             <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                 {navItems.map(item => (
-                     <button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id as Tab)}
-                        className={`w-full flex items-center gap-3 px-5 py-4 text-sm font-medium transition-all border-l-4 ${
-                            activeTab === item.id
-                            ? 'bg-blue-50 dark:bg-blue-900/10 text-trade-primary dark:text-blue-400 border-trade-primary'
-                            : 'bg-transparent text-gray-500 dark:text-gray-400 border-transparent hover:bg-gray-50 dark:hover:bg-slate-700'
-                        }`}
-                     >
-                         <item.icon className="w-5 h-5" />
-                         {item.label}
-                     </button>
-                 ))}
-                 <div className="p-5 mt-4 border-t border-gray-100 dark:border-slate-700">
-                     <button onClick={handleSignOut} className="flex items-center gap-2 text-red-500 hover:text-red-700 text-sm font-bold w-full">
-                         <LogOut className="w-4 h-4" /> Sign Out
-                     </button>
-                 </div>
-             </div>
-             
-             {/* Support Card */}
-             <div className="mt-6 bg-trade-primary text-white p-5 rounded-xl text-center">
-                 <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                     <HelpCircle className="w-6 h-6" />
-                 </div>
-                 <h4 className="font-bold mb-1">Need Help?</h4>
-                 <p className="text-xs text-gray-300 mb-3">Our support team is available 24/7 for Enterprise users.</p>
-                 <button 
-                  onClick={() => setShowSupportModal(true)}
-                  className="text-xs font-bold bg-white text-trade-primary px-4 py-2 rounded-lg w-full"
+      {/* Personal Information */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Personal Information</h3>
+          {!editingProfile ? (
+            <button
+              onClick={() => setEditingProfile(true)}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Edit
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingProfile(false);
+                  setProfileForm(profile || {});
+                }}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Changes
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <User className="w-3 h-3 inline mr-1" /> Full Name
+            </label>
+            <input
+              type="text"
+              value={editingProfile ? profileForm.fullName || '' : profile?.fullName || ''}
+              onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+              disabled={!editingProfile}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <Briefcase className="w-3 h-3 inline mr-1" /> Title/Position
+            </label>
+            <input
+              type="text"
+              value={editingProfile ? profileForm.title || '' : profile?.title || ''}
+              onChange={(e) => setProfileForm({ ...profileForm, title: e.target.value })}
+              disabled={!editingProfile}
+              placeholder="e.g., Trade Manager"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <Mail className="w-3 h-3 inline mr-1" /> Email Address
+              {profile?.emailVerified && (
+                <span className="ml-2 text-green-600 text-xs">
+                  <CheckCircle className="w-3 h-3 inline" /> Verified
+                </span>
+              )}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={profile?.email || ''}
+                disabled
+                className="flex-1 px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-gray-50 dark:bg-slate-700/50 text-gray-900 dark:text-white text-sm"
+              />
+              {!profile?.emailVerified && (
+                <button
+                  onClick={() => verifyEmail(userId)}
+                  className="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700"
                 >
-                  Contact Support
+                  Verify
                 </button>
-             </div>
-         </div>
+              )}
+            </div>
+          </div>
 
-         {/* 3. Content Area */}
-         <div className="lg:col-span-9 bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-8 overflow-y-auto">
-             
-             {/* --- GENERAL TAB --- */}
-             {activeTab === 'general' && (
-                 <div className="space-y-8 animate-fade-in">
-                     <div className="flex justify-between items-center">
-                         <div>
-                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Identity & Personal Information</h2>
-                             <p className="text-sm text-gray-500">Your profile represents your trade credibility across the AfriTradeOS network.</p>
-                         </div>
-                         <button 
-                            onClick={handleSaveProfile}
-                            disabled={isSaving}
-                            className="flex items-center gap-2 bg-trade-primary hover:bg-trade-secondary text-white px-4 py-2 rounded-lg font-bold text-sm transition-all"
-                         >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            {saveSuccess ? 'Saved!' : 'Save Changes'}
-                         </button>
-                     </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <Phone className="w-3 h-3 inline mr-1" /> Phone Number
+              {profile?.phoneVerified && (
+                <span className="ml-2 text-green-600 text-xs">
+                  <CheckCircle className="w-3 h-3 inline" /> Verified
+                </span>
+              )}
+            </label>
+            <input
+              type="tel"
+              value={editingProfile ? profileForm.phone || '' : profile?.phone || ''}
+              onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+              disabled={!editingProfile}
+              placeholder="+233 20 123 4567"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div className="space-y-1">
-                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Full Legal Name</label>
-                             <input 
-                                type="text" 
-                                value={personalInfo.name} 
-                                onChange={e => setPersonalInfo({...personalInfo, name: e.target.value})}
-                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white outline-none focus:ring-2 focus:ring-trade-primary/10 transition-all" 
-                             />
-                             <p className="text-[10px] text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Verified by Govt ID</p>
-                         </div>
-                         <div className="space-y-1">
-                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Email Address</label>
-                             <input type="email" value={personalInfo.email} className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white" readOnly />
-                             <p className="text-[10px] text-gray-400">Email cannot be changed.</p>
-                         </div>
-                         <div className="space-y-1">
-                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Phone Number</label>
-                             <input 
-                                type="tel" 
-                                value={personalInfo.phone} 
-                                onChange={e => setPersonalInfo({...personalInfo, phone: e.target.value})}
-                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white outline-none focus:ring-2 focus:ring-trade-primary/10 transition-all" 
-                             />
-                         </div>
-                         <div className="space-y-1">
-                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Primary Language</label>
-                             <select className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white">
-                                 <option>English</option>
-                                 <option>French</option>
-                                 <option>Portuguese</option>
-                                 <option>Arabic</option>
-                             </select>
-                         </div>
-                         <div className="space-y-1 md:col-span-2">
-                             <label className="text-xs font-bold text-trade-primary dark:text-gray-400 uppercase">Account Type / Role</label>
-                             <select 
-                                value={personalInfo.role}
-                                onChange={async (e) => {
-                                  const newRole = e.target.value as UserPersona;
-                                  setPersonalInfo({...personalInfo, role: newRole});
-                                  // Save to database
-                                  if (profileData?.id) {
-                                    await mockDatabase.updateUserProfile(profileData.id, { role: newRole });
-                                    // Reload page to apply new role to sidebar
-                                    window.location.reload();
-                                  }
-                                }}
-                                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 text-trade-primary dark:text-white outline-none focus:ring-2 focus:ring-trade-primary/10 transition-all"
-                             >
-                                 {Object.values(UserPersona).map(role => (
-                                   <option key={role} value={role}>{role}</option>
-                                 ))}
-                             </select>
-                             <p className="text-[10px] text-amber-600 flex items-center gap-1">
-                               <AlertTriangle className="w-3 h-3" /> Changing role will update your dashboard and available features
-                             </p>
-                         </div>
-                     </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <Globe className="w-3 h-3 inline mr-1" /> Country
+            </label>
+            <select
+              value={editingProfile ? profileForm.country || '' : profile?.country || ''}
+              onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
+              disabled={!editingProfile}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            >
+              <option value="Ghana">Ghana</option>
+              <option value="Nigeria">Nigeria</option>
+              <option value="Kenya">Kenya</option>
+              <option value="South Africa">South Africa</option>
+              <option value="Ethiopia">Ethiopia</option>
+              <option value="Tanzania">Tanzania</option>
+              <option value="Rwanda">Rwanda</option>
+              <option value="Uganda">Uganda</option>
+            </select>
+          </div>
 
-                     <div className="pt-6 border-t border-gray-100 dark:border-slate-700">
-                         <h3 className="font-bold text-trade-primary dark:text-white mb-4">Notification Preferences</h3>
-                         <div className="space-y-4">
-                             <div className="flex items-center justify-between">
-                                 <div className="flex items-center gap-3">
-                                     <Mail className="w-5 h-5 text-gray-400" />
-                                     <div>
-                                         <p className="text-sm font-medium text-trade-primary dark:text-white">Email Notifications</p>
-                                         <p className="text-xs text-gray-500">Weekly digests and critical alerts</p>
-                                     </div>
-                                 </div>
-                                 <button onClick={() => toggle('emailNotifs')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.emailNotifs ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                     <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${toggles.emailNotifs ? 'translate-x-6' : 'translate-x-0'}`} />
-                                 </button>
-                             </div>
-                             <div className="flex items-center justify-between">
-                                 <div className="flex items-center gap-3">
-                                     <Smartphone className="w-5 h-5 text-gray-400" />
-                                     <div>
-                                         <p className="text-sm font-medium text-trade-primary dark:text-white">SMS / WhatsApp Alerts</p>
-                                         <p className="text-xs text-gray-500">Real-time trade status updates</p>
-                                     </div>
-                                 </div>
-                                 <button onClick={() => toggle('smsNotifs')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.smsNotifs ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                     <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${toggles.smsNotifs ? 'translate-x-6' : 'translate-x-0'}`} />
-                                 </button>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-             )}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              <Clock className="w-3 h-3 inline mr-1" /> Timezone
+            </label>
+            <select
+              value={editingProfile ? profileForm.timezone || '' : profile?.timezone || ''}
+              onChange={(e) => setProfileForm({ ...profileForm, timezone: e.target.value })}
+              disabled={!editingProfile}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            >
+              <option value="Africa/Accra">GMT (Accra)</option>
+              <option value="Africa/Lagos">WAT (Lagos)</option>
+              <option value="Africa/Nairobi">EAT (Nairobi)</option>
+              <option value="Africa/Johannesburg">SAST (Johannesburg)</option>
+              <option value="Africa/Cairo">EET (Cairo)</option>
+            </select>
+          </div>
+        </div>
 
-             {/* --- PREFERENCES TAB --- */}
-             {activeTab === 'preferences' && (
-                 <div className="space-y-8 animate-fade-in">
-                     <div>
-                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Preferences</h2>
-                         <p className="text-sm text-gray-500">Notification, privacy, language, currency, and access control settings.</p>
-                     </div>
+        {/* Sync Info */}
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <p className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-2">
+            <RefreshCw className="w-3 h-3" />
+            Profile updates sync across: Invoices, Contracts, Audit Logs, Trade Documents
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
-                     {/* Notification Settings */}
-                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
-                           <Mail className="w-4 h-4" /> Notification Settings
-                         </h3>
-                         <div className="space-y-4">
-                           {[
-                             { key: 'tradeUpdates', label: 'Trade Status Updates', desc: 'Get notified when trade status changes', default: true },
-                             { key: 'complianceAlerts', label: 'Compliance Alerts', desc: 'Regulatory changes and deadline reminders', default: true },
-                             { key: 'marketOpportunities', label: 'Market Opportunities', desc: 'AI-detected market trends and partner matches', default: true },
-                             { key: 'financeReminders', label: 'Finance Reminders', desc: 'Payment deadlines and repayment schedules', default: true },
-                             { key: 'contractRenewals', label: 'Contract Renewals', desc: 'Expiring contracts and milestone notifications', default: false },
-                             { key: 'shipmentTracking', label: 'Shipment Tracking', desc: 'Real-time delivery and customs updates', default: true },
-                           ].map(notif => (
-                             <div key={notif.key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
-                               <div>
-                                 <p className="text-sm font-medium text-gray-800 dark:text-white">{notif.label}</p>
-                                 <p className="text-[10px] text-gray-500">{notif.desc}</p>
-                               </div>
-                               <label className="relative inline-flex items-center cursor-pointer">
-                                 <input type="checkbox" defaultChecked={notif.default} className="sr-only peer" />
-                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-trade-primary"></div>
-                               </label>
-                             </div>
-                           ))}
-                         </div>
-                     </div>
+  const renderOrganizationTab = () => (
+    <div className="space-y-6">
+      {/* Organization Details */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Legal Entity Details</h3>
+          {!editingOrg ? (
+            <button
+              onClick={() => setEditingOrg(true)}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Edit
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setEditingOrg(false);
+                  setOrgForm(organization || {});
+                }}
+                className="text-sm text-gray-500 hover:underline"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveOrganization}
+                disabled={isSaving}
+                className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Organization
+              </button>
+            </div>
+          )}
+        </div>
 
-                     {/* Language, Currency & Region */}
-                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
-                           <Globe className="w-4 h-4" /> Localization
-                         </h3>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           <div>
-                             <label className="block text-xs font-bold text-gray-500 mb-1.5">Language</label>
-                             <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm text-gray-800 dark:text-white outline-none">
-                               <option>English</option>
-                               <option>French (Français)</option>
-                               <option>Arabic (العربية)</option>
-                               <option>Portuguese (Português)</option>
-                             </select>
-                           </div>
-                           <div>
-                             <label className="block text-xs font-bold text-gray-500 mb-1.5">Currency</label>
-                             <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm text-gray-800 dark:text-white outline-none">
-                               <option>USD ($)</option>
-                               <option>EUR (€)</option>
-                               <option>GBP (£)</option>
-                               <option>NGN (₦)</option>
-                               <option>KES (KSh)</option>
-                               <option>ZAR (R)</option>
-                               <option>GHS (GH₵)</option>
-                               <option>EGP (E£)</option>
-                             </select>
-                           </div>
-                           <div>
-                             <label className="block text-xs font-bold text-gray-500 mb-1.5">Timezone</label>
-                             <select className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-sm text-gray-800 dark:text-white outline-none">
-                               <option>GMT (Accra)</option>
-                               <option>GMT+1 (Lagos, Douala)</option>
-                               <option>GMT+2 (Cairo, Johannesburg)</option>
-                               <option>GMT+3 (Nairobi, Addis Ababa)</option>
-                             </select>
-                           </div>
-                         </div>
-                     </div>
+        <div className="flex items-start gap-6 mb-6">
+          <div className="relative">
+            <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center overflow-hidden">
+              {organization?.logoUrl ? (
+                <img src={organization.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <Building2 className="w-8 h-8 text-gray-500 dark:text-gray-400" />
+              )}
+            </div>
+            <button
+              onClick={() => logoInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 p-1.5 bg-blue-600 rounded-lg text-white hover:bg-blue-700"
+            >
+              <Upload className="w-3 h-3" />
+            </button>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{organization?.name || 'Your Organization'}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {organization?.verificationStatus === 'verified' ? (
+                <span className="text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Verified Organization
+                </span>
+              ) : (
+                <span className="text-yellow-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> {organization?.verificationStatus || 'Pending'} Verification
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
 
-                     {/* Privacy Controls */}
-                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
-                           <Shield className="w-4 h-4" /> Privacy Controls
-                         </h3>
-                         <div className="space-y-4">
-                           {[
-                             { key: 'profileVisibility', label: 'Profile Visibility', desc: 'Allow verified partners to view your company profile', default: true },
-                             { key: 'tradeHistory', label: 'Trade History Sharing', desc: 'Share trade volume and reliability metrics with potential partners', default: false },
-                             { key: 'aiAnalytics', label: 'AI Analytics', desc: 'Allow AI to analyze your trade data for personalized recommendations', default: true },
-                           ].map(priv => (
-                             <div key={priv.key} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
-                               <div>
-                                 <p className="text-sm font-medium text-gray-800 dark:text-white">{priv.label}</p>
-                                 <p className="text-[10px] text-gray-500">{priv.desc}</p>
-                               </div>
-                               <label className="relative inline-flex items-center cursor-pointer">
-                                 <input type="checkbox" defaultChecked={priv.default} className="sr-only peer" />
-                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-trade-primary"></div>
-                               </label>
-                             </div>
-                           ))}
-                         </div>
-                     </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Organization Name</label>
+            <input
+              type="text"
+              value={editingOrg ? orgForm.name || '' : organization?.name || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
+              disabled={!editingOrg}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-                     {/* Multi-Tier Access Control */}
-                     <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-                         <h3 className="text-base font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
-                           <Users className="w-4 h-4" /> Multi-Tier Access Control
-                         </h3>
-                         <p className="text-xs text-gray-500 mb-4">Manage team access levels for SMEs with multiple users.</p>
-                         <div className="space-y-3">
-                           {[
-                             { name: personalInfo.name, email: personalInfo.email, role: 'Admin', access: 'Full Access', color: 'bg-red-100 text-red-700' },
-                             { name: 'Finance Manager', email: 'finance@company.com', role: 'Finance', access: 'Finance & Billing', color: 'bg-blue-100 text-blue-700' },
-                             { name: 'Trade Operations', email: 'ops@company.com', role: 'Operations', access: 'Trades & Logistics', color: 'bg-green-100 text-green-700' },
-                           ].map((member, idx) => (
-                             <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                               <div className="flex items-center gap-3">
-                                 <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-slate-600 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
-                                   {member.name.charAt(0)}
-                                 </div>
-                                 <div>
-                                   <p className="text-sm font-medium text-gray-800 dark:text-white">{member.name}</p>
-                                   <p className="text-[10px] text-gray-500">{member.email}</p>
-                                 </div>
-                               </div>
-                               <div className="flex items-center gap-2">
-                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${member.color}`}>{member.role}</span>
-                                 <span className="text-[10px] text-gray-500">{member.access}</span>
-                               </div>
-                             </div>
-                           ))}
-                         </div>
-                         <button 
-                          onClick={() => setShowInviteModal(true)}
-                          className="mt-3 w-full py-2 bg-trade-primary/10 hover:bg-trade-primary/20 text-trade-primary rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Invite Team Member
-                        </button>
-                     </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Registration Number</label>
+            <input
+              type="text"
+              value={editingOrg ? orgForm.registrationNumber || '' : organization?.registrationNumber || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, registrationNumber: e.target.value })}
+              disabled={!editingOrg}
+              placeholder="GH-BUS-2024-001234"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-                     {/* Regional Trade Association Links */}
-                     <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl p-4 flex items-start gap-3">
-                       <Globe className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                       <div>
-                         <p className="text-xs font-bold text-blue-800 dark:text-blue-300">Link with Trade Associations & AfCFTA</p>
-                         <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-0.5">Connect your account with regional trade associations and AfCFTA portals for streamlined compliance and market access.</p>
-                         <button 
-                          onClick={() => setShowConnectModal(true)}
-                          className="mt-2 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors"
-                        >
-                          Connect Now
-                        </button>
-                       </div>
-                     </div>
-                 </div>
-             )}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Tax/VAT Number</label>
+            <input
+              type="text"
+              value={editingOrg ? orgForm.taxVatNumber || '' : organization?.taxVatNumber || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, taxVatNumber: e.target.value })}
+              disabled={!editingOrg}
+              placeholder="TIN-123456789"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-             {/* --- ORGANIZATION TAB --- */}
-             {activeTab === 'organization' && (
-                 <div className="space-y-8 animate-fade-in">
-                     <div className="flex justify-between items-start">
-                         <div>
-                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Organization Profile</h2>
-                             <p className="text-sm text-gray-500">Manage business details and team permissions.</p>
-                         </div>
-                         <button 
-                            onClick={handleSaveProfile}
-                            disabled={isSaving}
-                            className="flex items-center gap-2 bg-trade-primary hover:bg-trade-secondary text-white px-4 py-2 rounded-lg font-bold text-sm transition-all"
-                         >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            {saveSuccess ? 'Saved!' : 'Save Changes'}
-                         </button>
-                     </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Default Currency</label>
+            <select
+              value={editingOrg ? orgForm.defaultCurrency || 'USD' : organization?.defaultCurrency || 'USD'}
+              onChange={(e) => setOrgForm({ ...orgForm, defaultCurrency: e.target.value })}
+              disabled={!editingOrg}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            >
+              {CURRENCIES.map(c => (
+                <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+              ))}
+            </select>
+          </div>
 
-                     <div className="bg-gray-50 dark:bg-slate-900/50 p-6 rounded-xl border border-gray-200 dark:border-slate-700">
-                         <div className="flex items-start gap-4">
-                             <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center border border-gray-200 dark:border-slate-700">
-                                 <Building2 className="w-8 h-8 text-trade-primary" />
-                             </div>
-                             <div className="flex-1">
-                                 <input 
-                                    type="text" 
-                                    value={personalInfo.companyName}
-                                    onChange={e => setPersonalInfo({...personalInfo, companyName: e.target.value})}
-                                    className="text-lg font-bold text-trade-primary dark:text-white bg-transparent border-b border-dashed border-gray-300 focus:border-trade-primary outline-none w-full mb-1"
-                                 />
-                                 <p className="text-sm text-gray-500 mb-2">Registration No: GH-2023-88291 • Tax ID: C00088219</p>
-                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">KYB Verified</span>
-                             </div>
-                         </div>
-                     </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Address</label>
+            <input
+              type="text"
+              value={editingOrg ? orgForm.address || '' : organization?.address || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, address: e.target.value })}
+              disabled={!editingOrg}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-                     <div>
-                         <h3 className="font-bold text-trade-primary dark:text-white mb-4">Team & Permissions</h3>
-                         <div className="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                             <table className="w-full text-sm text-left">
-                                 <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 font-medium">
-                                     <tr>
-                                         <th className="p-4">User</th>
-                                         <th className="p-4">Role</th>
-                                         <th className="p-4">Access Level</th>
-                                         <th className="p-4 text-right">Action</th>
-                                     </tr>
-                                 </thead>
-                                 <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                                     <tr>
-                                         <td className="p-4 font-medium text-trade-primary dark:text-white">{personalInfo.name || 'You'} (You)</td>
-                                         <td className="p-4">Admin</td>
-                                         <td className="p-4 text-gray-500">Full Access</td>
-                                         <td className="p-4 text-right text-gray-400">Owner</td>
-                                     </tr>
-                                 </tbody>
-                             </table>
-                             <div className="p-3 bg-gray-50 dark:bg-slate-900 text-center border-t border-gray-200 dark:border-slate-700">
-                                 <button className="text-sm font-bold text-trade-primary dark:text-blue-400 flex items-center justify-center gap-2">
-                                     <Users className="w-4 h-4" /> Invite New Member
-                                 </button>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-             )}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">City</label>
+            <input
+              type="text"
+              value={editingOrg ? orgForm.city || '' : organization?.city || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, city: e.target.value })}
+              disabled={!editingOrg}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-             {/* --- SECURITY & COMPLIANCE --- */}
-             {activeTab === 'security' && (
-                 <div className="space-y-8 animate-fade-in">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div>
-                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Security Settings</h2>
-                             <p className="text-sm text-gray-500 mb-6">Manage how you access your account.</p>
-                             
-                             <div className="space-y-4">
-                                 <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                                     <div>
-                                         <p className="font-bold text-trade-primary dark:text-white">Two-Factor Authentication</p>
-                                         <p className="text-xs text-gray-500">Secure your account with SMS or Authenticator.</p>
-                                     </div>
-                                     <button onClick={() => toggle('twoFactor')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.twoFactor ? 'bg-green-500' : 'bg-gray-300'}`}>
-                                         <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${toggles.twoFactor ? 'translate-x-6' : 'translate-x-0'}`} />
-                                     </button>
-                                 </div>
-                                 <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-between">
-                                     <div>
-                                         <p className="font-bold text-trade-primary dark:text-white">Password</p>
-                                         <p className="text-xs text-gray-500">Last changed 3 months ago.</p>
-                                     </div>
-                                     <button
-                                       onClick={() => setShowPasswordModal(true)}
-                                       className="text-sm text-blue-600 hover:underline font-bold"
-                                     >
-                                       Update
-                                     </button>
-                                 </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Country</label>
+            <select
+              value={editingOrg ? orgForm.country || '' : organization?.country || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, country: e.target.value })}
+              disabled={!editingOrg}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            >
+              <option value="Ghana">Ghana</option>
+              <option value="Nigeria">Nigeria</option>
+              <option value="Kenya">Kenya</option>
+              <option value="South Africa">South Africa</option>
+            </select>
+          </div>
 
-                                 {/* SSO Settings */}
-                                 <div className="p-4 rounded-xl border border-gray-200 dark:border-slate-700">
-                                     <div className="flex items-center justify-between mb-3">
-                                         <div>
-                                             <p className="font-bold text-trade-primary dark:text-white">Single Sign-On (SSO)</p>
-                                             <p className="text-xs text-gray-500">Link institutional identity providers.</p>
-                                         </div>
-                                     </div>
-                                     <div className="space-y-2">
-                                         <button
-                                           onClick={() => handleSSOConnect('google')}
-                                           className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                                         >
-                                             <div className="flex items-center gap-2">
-                                                 <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-gray-200 text-xs font-bold text-slate-800">G</div>
-                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Google Workspace</span>
-                                             </div>
-                                             <span className="text-xs text-blue-600 font-bold">Link</span>
-                                         </button>
-                                         <button
-                                           onClick={() => handleSSOConnect('microsoft')}
-                                           className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                                         >
-                                             <div className="flex items-center gap-2">
-                                                 <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">M</div>
-                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Microsoft Entra ID</span>
-                                             </div>
-                                             <span className="text-xs text-blue-600 font-bold">Link</span>
-                                         </button>
-                                         <button
-                                           onClick={() => handleSSOConnect('saml')}
-                                           className="w-full flex items-center justify-between p-2 rounded-lg border border-gray-100 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                                         >
-                                             <div className="flex items-center gap-2">
-                                                 <div className="w-6 h-6 rounded-full bg-trade-primary flex items-center justify-center text-white text-xs font-bold"><Key className="w-3 h-3" /></div>
-                                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SAML / OIDC Custom</span>
-                                             </div>
-                                             <span className="text-xs text-blue-600 font-bold">Configure</span>
-                                         </button>
-                                     </div>
-                                 </div>
-                             </div>
-                         </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Website</label>
+            <input
+              type="url"
+              value={editingOrg ? orgForm.website || '' : organization?.website || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })}
+              disabled={!editingOrg}
+              placeholder="https://example.com"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            />
+          </div>
 
-                         <div>
-                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Compliance Center</h2>
-                             <p className="text-sm text-gray-500 mb-6">Status of your regulatory requirements.</p>
-
-                             <div className="space-y-3">
-                                 {stats.kycVerified ? (
-                                   <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center gap-3 border border-green-100 dark:border-green-800">
-                                       <CheckCircle className="w-5 h-5 text-green-600" />
-                                       <div className="flex-1">
-                                           <p className="text-sm font-bold text-green-800 dark:text-green-300">KYC Verification</p>
-                                           <p className="text-xs text-green-700 dark:text-green-400">Identity confirmed.</p>
-                                       </div>
-                                   </div>
-                                 ) : (
-                                   <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center gap-3 border border-amber-100 dark:border-amber-800">
-                                       <AlertTriangle className="w-5 h-5 text-amber-600" />
-                                       <div className="flex-1">
-                                           <p className="text-sm font-bold text-amber-800 dark:text-amber-300">KYC Verification</p>
-                                           <p className="text-xs text-amber-700 dark:text-amber-400">Identity verification pending.</p>
-                                       </div>
-                                       <button
-                                         onClick={handleKYCVerify}
-                                         disabled={kycVerifying}
-                                         className="text-xs bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200 hover:bg-amber-50 transition-colors flex items-center gap-1"
-                                       >
-                                         {kycVerifying ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                                         Verify
-                                       </button>
-                                   </div>
-                                 )}
-                                 {stats.kybVerified ? (
-                                   <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center gap-3 border border-green-100 dark:border-green-800">
-                                       <CheckCircle className="w-5 h-5 text-green-600" />
-                                       <div className="flex-1">
-                                           <p className="text-sm font-bold text-green-800 dark:text-green-300">KYB Verification</p>
-                                           <p className="text-xs text-green-700 dark:text-green-400">Business registration verified.</p>
-                                       </div>
-                                   </div>
-                                 ) : (
-                                   <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center gap-3 border border-amber-100 dark:border-amber-800">
-                                       <AlertTriangle className="w-5 h-5 text-amber-600" />
-                                       <div className="flex-1">
-                                           <p className="text-sm font-bold text-amber-800 dark:text-amber-300">KYB Verification</p>
-                                           <p className="text-xs text-amber-700 dark:text-amber-400">Business verification pending.</p>
-                                       </div>
-                                       <button
-                                         onClick={() => { setUploadType('kyb'); setShowUploadModal(true); }}
-                                         className="text-xs bg-white text-amber-700 px-2 py-1 rounded shadow-sm border border-amber-200 hover:bg-amber-50 transition-colors"
-                                       >
-                                         Verify
-                                       </button>
-                                   </div>
-                                 )}
-                                 <div className="p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg flex items-center gap-3 border border-gray-200 dark:border-slate-700">
-                                     <FileText className="w-5 h-5 text-gray-400" />
-                                     <div className="flex-1">
-                                         <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Tax Clearance</p>
-                                         <p className="text-xs text-gray-500 dark:text-gray-400">Upload tax clearance certificate.</p>
-                                     </div>
-                                     <button
-                                       onClick={() => { setUploadType('tax'); setShowUploadModal(true); }}
-                                       className="text-xs bg-white dark:bg-slate-800 text-gray-600 px-2 py-1 rounded shadow-sm border border-gray-200 dark:border-slate-600 hover:bg-gray-100 transition-colors flex items-center gap-1"
-                                     >
-                                       <Upload className="w-3 h-3" /> Upload
-                                     </button>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-             )}
-
-             {/* --- AI & DATA --- */}
-             {activeTab === 'ai' && (
-                 <div className="space-y-8 animate-fade-in">
-                     <div>
-                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">AI & Data Control</h2>
-                         <p className="text-sm text-gray-500">You control how your data contributes to Africa’s trade intelligence.</p>
-                     </div>
-
-                     <div className="bg-purple-50 dark:bg-slate-900 p-6 rounded-xl border border-purple-100 dark:border-slate-700 flex items-start gap-4">
-                         <Zap className="w-6 h-6 text-purple-600 shrink-0 mt-1" />
-                         <div>
-                             <h4 className="font-bold text-gray-900 dark:text-white">Gemini 3 Pro Integration</h4>
-                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                 AfriTradeOS uses advanced AI for compliance reasoning and logistics optimization. Your data is encrypted and anonymized.
-                             </p>
-                         </div>
-                     </div>
-
-                     <div className="space-y-6">
-                         <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-700">
-                             <div>
-                                 <p className="font-bold text-trade-primary dark:text-white">Ecosystem Data Sharing</p>
-                                 <p className="text-xs text-gray-500 max-w-md">Allow anonymized trade flow data to contribute to the Market Intelligence demand heatmap. Helps improve regional forecasting.</p>
-                             </div>
-                             <button onClick={() => toggle('aiDataShare')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.aiDataShare ? 'bg-purple-600' : 'bg-gray-300'}`}>
-                                 <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${toggles.aiDataShare ? 'translate-x-6' : 'translate-x-0'}`} />
-                             </button>
-                         </div>
-
-                         <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-700">
-                             <div>
-                                 <p className="font-bold text-trade-primary dark:text-white">AI Explainability Mode</p>
-                                 <p className="text-xs text-gray-500">Always show "Reasoning" and "Citations" for AI compliance decisions.</p>
-                             </div>
-                             <button onClick={() => toggle('aiExplain')} className={`w-12 h-6 rounded-full p-1 transition-colors ${toggles.aiExplain ? 'bg-purple-600' : 'bg-gray-300'}`}>
-                                 <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${toggles.aiExplain ? 'translate-x-6' : 'translate-x-0'}`} />
-                             </button>
-                         </div>
-                     </div>
-                 </div>
-             )}
-
-             {/* --- AUDIT LOGS --- */}
-             {activeTab === 'audit' && (
-                 <div className="space-y-6 animate-fade-in">
-                     <div>
-                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Audit Logs</h2>
-                         <p className="text-sm text-gray-500">Security trail of all actions taken on your account.</p>
-                     </div>
-
-                     <div className="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                         <table className="w-full text-sm text-left">
-                             <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 font-medium">
-                                 <tr>
-                                     <th className="p-4">Action</th>
-                                     <th className="p-4">User</th>
-                                     <th className="p-4">Date & Time</th>
-                                     <th className="p-4">IP Address</th>
-                                     <th className="p-4">Status</th>
-                                 </tr>
-                             </thead>
-                             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-                                 {loadingLogs ? (
-                                     <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="animate-spin w-6 h-6 mx-auto text-gray-400" /></td></tr>
-                                 ) : logs.map(log => (
-                                     <tr key={log.id}>
-                                         <td className="p-4 font-medium text-gray-900 dark:text-white">{log.action}</td>
-                                         <td className="p-4 text-gray-500">{log.user}</td>
-                                         <td className="p-4 text-gray-500 font-mono text-xs">{log.timestamp}</td>
-                                         <td className="p-4 text-gray-500 font-mono text-xs">{log.ip}</td>
-                                         <td className="p-4">
-                                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                 log.status === 'Success' ? 'bg-green-100 text-green-700' :
-                                                 log.status === 'Warning' ? 'bg-amber-100 text-amber-700' :
-                                                 'bg-red-100 text-red-700'
-                                             }`}>
-                                                 {log.status}
-                                             </span>
-                                         </td>
-                                     </tr>
-                                 ))}
-                             </tbody>
-                         </table>
-                     </div>
-                     <div className="text-center">
-                         <button className="text-sm font-bold text-blue-600 hover:underline flex items-center justify-center gap-2 mx-auto">
-                             <Download className="w-4 h-4" /> Export CSV
-                         </button>
-                     </div>
-                 </div>
-             )}
-
-             {/* --- INTEGRATIONS --- */}
-             {activeTab === 'integrations' && (
-                 <div className="space-y-8 animate-fade-in">
-                     <div>
-                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Integration Management</h2>
-                         <p className="text-sm text-gray-500">Connect your import operations with external systems and services.</p>
-                     </div>
-
-                     <div className="space-y-4">
-                       {[
-                         { name: 'Customs Single Window', description: 'Auto-submit import declarations to national customs systems', status: 'connected', icon: '🏛️' },
-                         { name: 'ERP System (SAP/Oracle)', description: 'Sync purchase orders, invoices, and inventory with your ERP', status: 'available', icon: '📊' },
-                         { name: 'Logistics Providers API', description: 'Real-time shipment tracking from Maersk, DHL, and Bolloré', status: 'connected', icon: '🚢' },
-                         { name: 'Banking & Payments', description: 'Connect bank accounts for L/C issuance and payment processing', status: 'available', icon: '🏦' },
-                         { name: 'Warehouse Management', description: 'Sync incoming inventory with your warehouse system', status: 'available', icon: '📦' },
-                         { name: 'AfCFTA Trade Portal', description: 'Direct certificate of origin verification and tariff lookups', status: 'connected', icon: '🌍' },
-                       ].map(integration => (
-                         <div key={integration.name} className="flex items-center justify-between p-5 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
-                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl">
-                               {integration.icon}
-                             </div>
-                             <div>
-                               <h4 className="font-bold text-gray-900 dark:text-white">{integration.name}</h4>
-                               <p className="text-xs text-gray-500">{integration.description}</p>
-                             </div>
-                           </div>
-                           {integration.status === 'connected' ? (
-                             <div className="flex items-center gap-2">
-                               <span className="text-xs font-bold text-green-600 bg-green-100 dark:bg-green-900/20 px-2 py-1 rounded-full flex items-center gap-1">
-                                 <CheckCircle className="w-3 h-3" /> Connected
-                               </span>
-                               <button className="text-xs text-gray-500 hover:text-red-500 font-medium">Disconnect</button>
-                             </div>
-                           ) : (
-                             <button className="text-xs font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition-colors">
-                               Connect
-                             </button>
-                           )}
-                         </div>
-                       ))}
-                     </div>
-
-                     <div className="bg-indigo-50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-900/30 rounded-xl p-5">
-                       <div className="flex items-start gap-3">
-                         <Zap className="w-5 h-5 text-indigo-600 mt-0.5" />
-                         <div>
-                           <h4 className="font-bold text-indigo-800 dark:text-indigo-300">API Access</h4>
-                           <p className="text-xs text-indigo-700 dark:text-indigo-400 mt-1">Build custom integrations with the AfriTradeOS API. Available on Pro and Enterprise plans.</p>
-                           <button className="mt-2 text-xs font-bold text-indigo-600 hover:underline">View API Documentation →</button>
-                         </div>
-                       </div>
-                     </div>
-                 </div>
-             )}
-
-             {/* --- BILLING --- */}
-             {activeTab === 'billing' && (
-                 <div className="space-y-8 animate-fade-in">
-                      <div>
-                         <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-2">Billing & Subscription</h2>
-                         <p className="text-sm text-gray-500">Manage your plan and payment methods.</p>
-                     </div>
-
-                     {/* Current Plan */}
-                     <div className="bg-gradient-to-r from-trade-primary to-trade-secondary text-white p-6 rounded-xl">
-                         <div className="flex justify-between items-start">
-                           <div>
-                               <p className="text-sm text-blue-200 uppercase font-bold tracking-wider mb-1">Current Plan</p>
-                               <h3 className="text-3xl font-bold font-heading">Starter</h3>
-                               <p className="text-sm opacity-80 mt-1">Free plan - No billing</p>
-                           </div>
-                           <div className="text-right">
-                               <p className="text-2xl font-bold">$0<span className="text-sm font-normal">/mo</span></p>
-                               <span className="inline-block mt-2 px-3 py-1 bg-green-500/20 text-green-200 text-xs font-bold rounded-full">Active</span>
-                           </div>
-                         </div>
-                     </div>
-
-                     {/* Available Plans */}
-                     <div>
-                         <h4 className="font-bold text-trade-primary dark:text-white mb-4">Available Plans</h4>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           {/* Starter */}
-                           <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-5 bg-gray-50 dark:bg-slate-800/50">
-                             <h5 className="font-bold text-lg text-trade-primary dark:text-white">Starter</h5>
-                             <p className="text-2xl font-bold mt-2">$0<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                             <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Basic trade tracking</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Up to 5 trades/month</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Email support</li>
-                             </ul>
-                             <button disabled className="mt-4 w-full py-2 bg-gray-200 dark:bg-slate-700 text-gray-500 rounded-lg text-sm font-bold cursor-not-allowed">
-                               Current Plan
-                             </button>
-                           </div>
-                           
-                           {/* Pro */}
-                           <div className="border-2 border-trade-accent rounded-xl p-5 bg-white dark:bg-slate-800 relative">
-                             <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-trade-accent text-white text-xs font-bold rounded-full">Recommended</span>
-                             <h5 className="font-bold text-lg text-trade-primary dark:text-white">Pro Exporter</h5>
-                             <p className="text-2xl font-bold mt-2">$49<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                             <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Unlimited trades</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> AI market intelligence</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Trade finance access</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Priority support</li>
-                             </ul>
-                             <button 
-                               onClick={() => alert('Stripe checkout coming soon! This will redirect to payment.')}
-                               className="mt-4 w-full py-2 bg-trade-accent hover:bg-trade-accent/90 text-white rounded-lg text-sm font-bold transition-colors"
-                             >
-                               Upgrade to Pro
-                             </button>
-                           </div>
-                           
-                           {/* Enterprise */}
-                           <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-5 bg-white dark:bg-slate-800">
-                             <h5 className="font-bold text-lg text-trade-primary dark:text-white">Enterprise</h5>
-                             <p className="text-2xl font-bold mt-2">$199<span className="text-sm font-normal text-gray-500">/mo</span></p>
-                             <ul className="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Everything in Pro</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Multi-user accounts</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Custom integrations</li>
-                               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Dedicated manager</li>
-                             </ul>
-                             <button 
-                               onClick={() => alert('Contact sales for Enterprise pricing.')}
-                               className="mt-4 w-full py-2 bg-trade-primary hover:bg-trade-primary/90 text-white rounded-lg text-sm font-bold transition-colors"
-                             >
-                               Contact Sales
-                             </button>
-                           </div>
-                         </div>
-                     </div>
-
-                     {/* Payment Method */}
-                     <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-6">
-                         <div className="flex items-center justify-between mb-4">
-                           <h4 className="font-bold text-trade-primary dark:text-white">Payment Methods</h4>
-                           <button 
-                             onClick={() => alert('Stripe payment method setup coming soon!')}
-                             className="text-sm text-blue-600 font-bold hover:underline flex items-center gap-1"
-                           >
-                             <Plus className="w-4 h-4" /> Add Method
-                           </button>
-                         </div>
-                         <div className="text-center py-8 text-gray-400">
-                           <CreditCard className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                           <p className="text-sm">No payment methods added yet.</p>
-                           <p className="text-xs mt-1">Add a card or PayPal to upgrade your plan.</p>
-                         </div>
-                     </div>
-
-                     {/* Billing History */}
-                     <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-6">
-                         <h4 className="font-bold text-trade-primary dark:text-white mb-4">Billing History</h4>
-                         <div className="text-center py-6 text-gray-400">
-                           <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                           <p className="text-sm">No invoices yet.</p>
-                         </div>
-                     </div>
-                 </div>
-             )}
-
-         </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Timezone</label>
+            <select
+              value={editingOrg ? orgForm.timezone || '' : organization?.timezone || ''}
+              onChange={(e) => setOrgForm({ ...orgForm, timezone: e.target.value })}
+              disabled={!editingOrg}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
+            >
+              <option value="Africa/Accra">GMT (Accra)</option>
+              <option value="Africa/Lagos">WAT (Lagos)</option>
+              <option value="Africa/Nairobi">EAT (Nairobi)</option>
+              <option value="Africa/Johannesburg">SAST (Johannesburg)</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* Password Change Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-trade-primary dark:text-white">Change Password</h2>
-                <button
-                  onClick={() => setShowPasswordModal(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
+      {/* Team & Permissions */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Team & Permissions</h3>
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Invite Member
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {teamMembers.map(member => (
+            <div
+              key={member.id}
+              className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold">
+                  {member.fullName?.charAt(0) || member.email.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {member.fullName || member.email}
+                  </p>
+                  <p className="text-xs text-gray-500">{member.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  member.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                  member.status === 'invited' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-600'
+                }`}>
+                  {member.status}
+                </span>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  member.role === 'owner' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' :
+                  member.role === 'admin' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
+                  'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
+                }`}>
+                  {member.role}
+                </span>
+                {member.role !== 'owner' && (
+                  <button
+                    onClick={() => handleRemoveTeamMember(member.id)}
+                    className="p-1 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            <div className="p-6 space-y-4">
+      {/* Trade Associations */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Regional Trade Associations</h3>
+        <div className="space-y-3">
+          {associations.map(assoc => (
+            <div
+              key={assoc.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <Award className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{assoc.name}</p>
+                  <p className="text-xs text-gray-500">{assoc.region}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  assoc.membershipStatus === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                  assoc.membershipStatus === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' :
+                  'bg-red-100 dark:bg-red-900/30 text-red-600'
+                }`}>
+                  {assoc.membershipStatus}
+                </span>
+                {assoc.membershipStatus !== 'active' && (
+                  <button className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                    Connect
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Invite Team Member</h3>
+              <button onClick={() => setShowInviteModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Current Password
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Email Address</label>
+                <input
+                  type="email"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  placeholder="colleague@company.com"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Department</label>
+                <input
+                  type="text"
+                  value={inviteForm.department}
+                  onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+                  placeholder="e.g., Operations"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Assign Role</label>
+                <select
+                  value={inviteForm.role}
+                  onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as any })}
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+                >
+                  <option value="admin">Admin - Full access except owner actions</option>
+                  <option value="member">Member - Can create and edit trades/docs</option>
+                  <option value="viewer">Viewer - Read-only access</option>
+                </select>
+              </div>
+              <button
+                onClick={handleInviteTeamMember}
+                disabled={!inviteForm.email || isSaving}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                Send Invite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderPreferencesTab = () => (
+    <div className="space-y-6">
+      {/* Notification Settings */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Notification Settings</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Mail className="w-5 h-5 text-gray-500" />
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">Email Notifications</p>
+                <p className="text-xs text-gray-500">Receive updates via email</p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleSavePreferences({
+                notifications: { ...preferences?.notifications, email: !preferences?.notifications?.email }
+              } as any)}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                preferences?.notifications?.email ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                preferences?.notifications?.email ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Smartphone className="w-5 h-5 text-gray-500" />
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">SMS/WhatsApp</p>
+                <p className="text-xs text-gray-500">Receive urgent alerts via SMS</p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleSavePreferences({
+                notifications: { ...preferences?.notifications, sms: !preferences?.notifications?.sms }
+              } as any)}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                preferences?.notifications?.sms ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                preferences?.notifications?.sms ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          <div className="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4">
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3">Notification Types</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: 'tradeUpdates', label: 'Trade Updates' },
+                { key: 'complianceAlerts', label: 'Compliance Alerts' },
+                { key: 'marketOpportunities', label: 'Market Opportunities' },
+                { key: 'financeReminders', label: 'Finance Reminders' },
+                { key: 'contractRenewals', label: 'Contract Renewals' },
+                { key: 'shipmentTracking', label: 'Shipment Tracking' }
+              ].map(item => (
+                <label key={item.key} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(preferences?.notifications as any)?.[item.key] ?? true}
+                    onChange={(e) => handleSavePreferences({
+                      notifications: { ...preferences?.notifications, [item.key]: e.target.checked }
+                    } as any)}
+                    className="w-4 h-4 rounded border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{item.label}</span>
                 </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Localization */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Localization</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Language</label>
+            <select
+              value={preferences?.language || 'en'}
+              onChange={(e) => handleSavePreferences({ language: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="en">English</option>
+              <option value="fr">French</option>
+              <option value="pt">Portuguese</option>
+              <option value="ar">Arabic</option>
+              <option value="sw">Swahili</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Currency Display</label>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              {CURRENCIES.map(c => (
+                <option key={c.code} value={c.code}>{c.code} - {c.symbol}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Date Format</label>
+            <select
+              value={preferences?.dateFormat || 'DD/MM/YYYY'}
+              onChange={(e) => handleSavePreferences({ dateFormat: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Privacy Controls */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Privacy Controls</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Profile Visibility</label>
+            <select
+              value={preferences?.privacy?.profileVisibility || 'connections'}
+              onChange={(e) => handleSavePreferences({
+                privacy: { ...preferences?.privacy, profileVisibility: e.target.value as any }
+              })}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="public">Public - Visible to all platform users</option>
+              <option value="connections">Connections Only - Visible to trade partners</option>
+              <option value="private">Private - Hidden from directory</option>
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-t border-gray-200 dark:border-slate-700">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">Trade History Sharing</p>
+              <p className="text-xs text-gray-500">Allow partners to view past trade record</p>
+            </div>
+            <button
+              onClick={() => handleSavePreferences({
+                privacy: { ...preferences?.privacy, tradeHistorySharing: !preferences?.privacy?.tradeHistorySharing }
+              })}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                preferences?.privacy?.tradeHistorySharing ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                preferences?.privacy?.tradeHistorySharing ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-t border-gray-200 dark:border-slate-700">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">AI Analytics</p>
+              <p className="text-xs text-gray-500">Allow AI to analyze your trade patterns</p>
+            </div>
+            <button
+              onClick={() => handleSavePreferences({
+                privacy: { ...preferences?.privacy, aiAnalytics: !preferences?.privacy?.aiAnalytics }
+              })}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                preferences?.privacy?.aiAnalytics ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                preferences?.privacy?.aiAnalytics ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* UI Preferences */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Display Settings</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Theme</label>
+            <select
+              value={preferences?.ui?.theme || 'light'}
+              onChange={(e) => handleSavePreferences({
+                ui: { ...preferences?.ui, theme: e.target.value as any }
+              })}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">System Default</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Dashboard Layout</label>
+            <select
+              value={preferences?.ui?.dashboardLayout || 'default'}
+              onChange={(e) => handleSavePreferences({
+                ui: { ...preferences?.ui, dashboardLayout: e.target.value as any }
+              })}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              <option value="default">Default</option>
+              <option value="compact">Compact</option>
+              <option value="expanded">Expanded</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSecurityTab = () => (
+    <div className="space-y-6">
+      {/* Password Management */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Password</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-700 dark:text-gray-300">
+              Last changed: {security?.lastPasswordChange ? new Date(security.lastPasswordChange).toLocaleDateString() : 'Never'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">Strong passwords help protect your account</p>
+          </div>
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+          >
+            Change Password
+          </button>
+        </div>
+      </div>
+
+      {/* Two-Factor Authentication */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Two-Factor Authentication</h3>
+            <p className="text-xs text-gray-500 mt-1">Add an extra layer of security</p>
+          </div>
+          <button
+            onClick={handleToggle2FA}
+            disabled={isSaving}
+            className={`px-4 py-2 text-sm rounded-lg ${
+              security?.twoFactorEnabled
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-600 hover:bg-red-200'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            {security?.twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+          </button>
+        </div>
+        {security?.twoFactorEnabled && (
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span className="text-sm text-green-700 dark:text-green-300">
+              Two-factor authentication is enabled via {security.twoFactorMethod || 'authenticator'}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Active Sessions */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Active Sessions</h3>
+          <button
+            onClick={handleRevokeAllSessions}
+            className="text-sm text-red-600 hover:underline"
+          >
+            Revoke All Sessions
+          </button>
+        </div>
+        <div className="space-y-3">
+          {security?.activeSessions.map(session => (
+            <div
+              key={session.id}
+              className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${session.isCurrent ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
+                  <Activity className={`w-4 h-4 ${session.isCurrent ? 'text-green-600' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {session.deviceInfo}
+                    {session.isCurrent && <span className="ml-2 text-xs text-green-600">(Current)</span>}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {session.ipAddress} • {session.location} • {new Date(session.lastActiveAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {!session.isCurrent && (
+                <button
+                  onClick={() => handleRevokeSession(session.id)}
+                  className="text-sm text-red-600 hover:underline"
+                >
+                  Revoke
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SSO Connections */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Single Sign-On (SSO)</h3>
+        <div className="space-y-3">
+          {security?.ssoProviders.map(provider => (
+            <div
+              key={provider.provider}
+              className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                  {provider.provider === 'google' && <span className="text-lg">G</span>}
+                  {provider.provider === 'microsoft' && <span className="text-lg">M</span>}
+                  {provider.provider === 'saml' && <Lock className="w-4 h-4" />}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{provider.provider}</p>
+                  {provider.email && <p className="text-xs text-gray-500">{provider.email}</p>}
+                </div>
+              </div>
+              <button
+                onClick={() => connectSSO(provider.provider as any)}
+                className={`px-4 py-1.5 text-sm rounded-lg ${
+                  provider.connected
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {provider.connected ? 'Connected' : 'Connect'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Compliance Status */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Compliance Status</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">KYC Verification</span>
+              <span className={`text-xs font-bold px-2 py-1 rounded ${
+                profile?.emailVerified ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+              }`}>
+                {profile?.emailVerified ? 'Verified' : 'Pending'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">Identity verification for individual users</p>
+          </div>
+
+          <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">KYB Verification</span>
+              <span className={`text-xs font-bold px-2 py-1 rounded ${
+                organization?.verificationStatus === 'verified' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+              }`}>
+                {organization?.verificationStatus || 'Pending'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">Business verification for organizations</p>
+          </div>
+        </div>
+        <button className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <Download className="w-4 h-4" />
+          Download Compliance Report
+        </button>
+      </div>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Change Password</h3>
+              <button onClick={() => setShowPasswordModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            {saveError && (
+              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-lg text-sm">
+                {saveError}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Current Password</label>
                 <div className="relative">
                   <input
                     type={showPasswords.current ? 'text' : 'password'}
-                    value={passwordData.current}
-                    onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
-                    className="w-full p-3 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
+                    value={passwordForm.current}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                    className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPasswords.current ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
                   </button>
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  New Password
-                </label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">New Password</label>
                 <div className="relative">
                   <input
                     type={showPasswords.new ? 'text' : 'password'}
-                    value={passwordData.new}
-                    onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
-                    className="w-full p-3 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
+                    value={passwordForm.new}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPasswords.new ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
                   </button>
                 </div>
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Confirm New Password
-                </label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Confirm New Password</label>
                 <div className="relative">
                   <input
                     type={showPasswords.confirm ? 'text' : 'password'}
-                    value={passwordData.confirm}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
-                    className="w-full p-3 pr-10 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white outline-none"
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPasswords.confirm ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
                   </button>
                 </div>
               </div>
-
               <button
                 onClick={handlePasswordChange}
-                disabled={!passwordData.current || !passwordData.new || !passwordData.confirm || isChangingPassword}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
+                disabled={!passwordForm.current || !passwordForm.new || !passwordForm.confirm || isSaving}
+                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isChangingPassword ? <Loader2 className="w-5 h-5 animate-spin" /> : <Key className="w-5 h-5" />}
-                {isChangingPassword ? 'Updating...' : 'Update Password'}
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                Update Password
               </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
 
-      {/* Document Upload Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-trade-primary dark:text-white">
-                  {uploadType === 'kyc' ? 'KYC Verification' : uploadType === 'kyb' ? 'Business Verification' : 'Tax Clearance'}
-                </h2>
+  const renderIntegrationsTab = () => (
+    <div className="space-y-6">
+      {/* Connected Integrations */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Connected Services</h3>
+          <button
+            onClick={() => setShowIntegrationModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Integration
+          </button>
+        </div>
+        <div className="space-y-3">
+          {integrations.map(integration => (
+            <div
+              key={integration.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${
+                  integration.status === 'connected' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'
+                }`}>
+                  <Link2 className={`w-5 h-5 ${
+                    integration.status === 'connected' ? 'text-green-600' : 'text-gray-500'
+                  }`} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{integration.name}</p>
+                  <p className="text-xs text-gray-500">{integration.description}</p>
+                  {integration.lastSyncAt && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Last sync: {new Date(integration.lastSyncAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  integration.status === 'connected' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                  integration.status === 'error' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
+                  'bg-gray-100 dark:bg-slate-700 text-gray-600'
+                }`}>
+                  {integration.status}
+                </span>
+                {integration.status === 'connected' ? (
+                  <button
+                    onClick={() => handleDisconnectIntegration(integration.id)}
+                    className="text-sm text-red-600 hover:underline"
+                  >
+                    Disconnect
+                  </button>
+                ) : (
+                  <button className="text-sm text-blue-600 hover:underline">
+                    Connect
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {integrations.length === 0 && (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              <Link2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No integrations connected</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* API Keys */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">API Keys</h3>
+          <button
+            onClick={() => setShowAPIKeyModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Key className="w-4 h-4" />
+            Generate Key
+          </button>
+        </div>
+        <div className="space-y-3">
+          {apiKeys.map(key => (
+            <div
+              key={key.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{key.name}</p>
+                <p className="text-xs font-mono text-gray-500 mt-1">{key.keyPrefix}...{key.keyHash.slice(-6)}</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Created {new Date(key.createdAt).toLocaleDateString()} • {key.usageCount} calls
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {key.expiresAt && new Date(key.expiresAt) < new Date() && (
+                  <span className="text-xs font-bold px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-600">
+                    Expired
+                  </span>
+                )}
                 <button
-                  onClick={() => setShowUploadModal(false)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  onClick={() => handleRevokeAPIKey(key.id)}
+                  className="text-sm text-red-600 hover:underline"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  Revoke
                 </button>
               </div>
             </div>
-
-            <div className="p-6 space-y-4">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                <p className="text-sm text-blue-800 dark:text-blue-300">
-                  {uploadType === 'kyc'
-                    ? 'Please upload a government-issued ID (passport, national ID, or driver\'s license).'
-                    : uploadType === 'kyb'
-                    ? 'Please upload your business registration certificate or incorporation documents.'
-                    : 'Please upload your tax clearance certificate from the relevant tax authority.'}
-                </p>
-              </div>
-
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-trade-primary hover:bg-trade-primary/5 transition-colors"
-              >
-                <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  PDF, JPG, or PNG (max 10MB)
-                </p>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-
-              <p className="text-xs text-gray-500 text-center">
-                Your documents will be reviewed within 24-48 hours.
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Invite Team Member Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 text-trade-primary" /> Invite Team Member
-                </h3>
-                <button onClick={() => setShowInviteModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Email Address</label>
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  placeholder="colleague@company.com"
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none focus:border-trade-primary"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Role</label>
-                <select
-                  value={inviteRole}
-                  onChange={e => setInviteRole(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-white outline-none"
-                >
-                  <option value="viewer">Viewer - Read-only access</option>
-                  <option value="editor">Editor - Can edit trades and documents</option>
-                  <option value="admin">Admin - Full access</option>
-                </select>
-              </div>
-              <button
-                onClick={() => {
-                  setShowInviteModal(false);
-                  setInviteEmail('');
-                }}
-                className="w-full py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
-              >
-                Send Invitation
+      {/* Currency Sync */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Currency Rates</h3>
+            <p className="text-xs text-gray-500 mt-1">Sync exchange rates from external sources</p>
+          </div>
+          <button
+            onClick={handleSyncCurrencyRates}
+            disabled={isSaving}
+            className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Sync Rates
+          </button>
+        </div>
+      </div>
+
+      {/* API Key Modal */}
+      {showAPIKeyModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generate API Key</h3>
+              <button onClick={() => {
+                setShowAPIKeyModal(false);
+                setGeneratedApiKey(null);
+              }} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded">
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Connect Trade Associations Modal */}
-      {showConnectModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-blue-600" /> Connect Trade Associations
-                </h3>
-                <button onClick={() => setShowConnectModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">Link your account with regional trade bodies for streamlined compliance.</p>
-              <div className="space-y-3">
-                {[
-                  { name: 'AfCFTA Secretariat', status: 'Available' },
-                  { name: 'ECOWAS Trade Portal', status: 'Available' },
-                  { name: 'EAC Single Customs', status: 'Coming Soon' },
-                  { name: 'SADC Trade Hub', status: 'Available' },
-                ].map(assoc => (
-                  <div key={assoc.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
-                    <span className="text-sm font-medium text-gray-800 dark:text-white">{assoc.name}</span>
+            {generatedApiKey ? (
+              <div className="space-y-4">
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                    Your API key has been generated. Copy it now - you won't be able to see it again.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-white dark:bg-slate-700 px-3 py-2 rounded border font-mono overflow-x-auto">
+                      {generatedApiKey}
+                    </code>
                     <button
-                      disabled={assoc.status === 'Coming Soon'}
-                      className={`text-xs font-bold px-3 py-1 rounded-lg ${
-                        assoc.status === 'Coming Soon'
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedApiKey);
+                        alert('Copied to clipboard!');
+                      }}
+                      className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                      {assoc.status === 'Coming Soon' ? 'Coming Soon' : 'Connect'}
+                      <Copy className="w-4 h-4" />
                     </button>
                   </div>
-                ))}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAPIKeyModal(false);
+                    setGeneratedApiKey(null);
+                  }}
+                  className="w-full px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
+                >
+                  Done
+                </button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Key Name</label>
+                  <input
+                    type="text"
+                    value={apiKeyForm.name}
+                    onChange={(e) => setApiKeyForm({ ...apiKeyForm, name: e.target.value })}
+                    placeholder="e.g., Production API Key"
+                    className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Permissions</label>
+                  <div className="space-y-2">
+                    {['read:trades', 'write:trades', 'read:documents', 'write:documents'].map(perm => (
+                      <label key={perm} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={apiKeyForm.permissions.includes(perm)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setApiKeyForm({ ...apiKeyForm, permissions: [...apiKeyForm.permissions, perm] });
+                            } else {
+                              setApiKeyForm({ ...apiKeyForm, permissions: apiKeyForm.permissions.filter(p => p !== perm) });
+                            }
+                          }}
+                          className="w-4 h-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">{perm}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={handleGenerateAPIKey}
+                  disabled={!apiKeyForm.name || isSaving}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                  Generate Key
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
+    </div>
+  );
 
-      {/* Contact Support Modal */}
-      {showSupportModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-            <div className="p-6 border-b border-gray-100 dark:border-slate-700">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <HelpCircle className="w-5 h-5 text-trade-primary" /> Contact Support
-                </h3>
-                <button onClick={() => setShowSupportModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <button className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-trade-primary transition-all text-center">
-                  <Mail className="w-6 h-6 text-trade-primary mx-auto mb-2" />
-                  <p className="text-sm font-bold text-gray-800 dark:text-white">Email</p>
-                  <p className="text-[10px] text-gray-500">support@afritrade.os</p>
-                </button>
-                <button className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-trade-primary transition-all text-center">
-                  <Smartphone className="w-6 h-6 text-trade-primary mx-auto mb-2" />
-                  <p className="text-sm font-bold text-gray-800 dark:text-white">Phone</p>
-                  <p className="text-[10px] text-gray-500">+233 20 123 4567</p>
-                </button>
-              </div>
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                <p className="text-xs text-green-700 dark:text-green-400">
-                  <span className="font-bold">Enterprise Support:</span> As an Enterprise user, you have access to 24/7 priority support with a dedicated account manager.
-                </p>
+  const renderAITab = () => (
+    <div className="space-y-6">
+      {/* AI Settings */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">AI & Analytics Settings</h3>
+        <div className="space-y-4">
+          {[
+            { key: 'enableAIInsights', label: 'Enable AI Insights', description: 'Get AI-powered trade recommendations' },
+            { key: 'enablePredictions', label: 'Enable Predictions', description: 'Receive predictive analytics for your trades' },
+            { key: 'personalizedRecommendations', label: 'Personalized Recommendations', description: 'Get recommendations based on your trade history' },
+            { key: 'anonymizedAnalytics', label: 'Anonymized Analytics', description: 'Contribute to platform-wide insights anonymously' }
+          ].map(item => (
+            <div key={item.key} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700 last:border-0">
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.label}</p>
+                <p className="text-xs text-gray-500">{item.description}</p>
               </div>
               <button
-                onClick={() => setShowSupportModal(false)}
-                className="w-full py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
+                onClick={() => updateAIDataSettings(userId, { [item.key]: !(aiSettings as any)?.[item.key] })}
+                className={`w-12 h-6 rounded-full transition-colors ${
+                  (aiSettings as any)?.[item.key] ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+                }`}
               >
-                Close
+                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  (aiSettings as any)?.[item.key] ? 'translate-x-6' : 'translate-x-0.5'
+                }`} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Data Consent */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Data Consent</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">Data Sharing Consent</p>
+              <p className="text-xs text-gray-500">Allow sharing anonymized data for research</p>
+            </div>
+            <button
+              onClick={() => updateAIDataSettings(userId, { dataSharingConsent: !aiSettings?.dataSharingConsent })}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                aiSettings?.dataSharingConsent ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                aiSettings?.dataSharingConsent ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">Model Training Opt-in</p>
+              <p className="text-xs text-gray-500">Help improve AI models with your data</p>
+            </div>
+            <button
+              onClick={() => updateAIDataSettings(userId, { modelTrainingOptIn: !aiSettings?.modelTrainingOptIn })}
+              className={`w-12 h-6 rounded-full transition-colors ${
+                aiSettings?.modelTrainingOptIn ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+              }`}
+            >
+              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                aiSettings?.modelTrainingOptIn ? 'translate-x-6' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Data Retention Period</label>
+            <select
+              value={aiSettings?.dataRetentionDays || 365}
+              onChange={(e) => updateAIDataSettings(userId, { dataRetentionDays: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+            >
+              <option value={90}>90 days</option>
+              <option value={180}>180 days</option>
+              <option value={365}>1 year</option>
+              <option value={730}>2 years</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Data Management */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Data Management</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">Export Your Data</p>
+              <p className="text-xs text-gray-500">Download a copy of all your data</p>
+            </div>
+            <button
+              onClick={handleExportData}
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Export Data
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
+            <div>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-300">Delete Account Data</p>
+              <p className="text-xs text-red-600 dark:text-red-400">Permanently delete all your data</p>
+            </div>
+            <button
+              onClick={() => setShowDeleteDataModal(true)}
+              className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteDataModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Account Data?</h3>
+              <p className="text-sm text-gray-500 mt-2">
+                This action cannot be undone. All your trades, documents, and account data will be permanently deleted within 30 days.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteDataModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteDataRequest}
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete Data
               </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+
+  const renderBillingTab = () => (
+    <div className="space-y-6">
+      {/* Current Plan */}
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm opacity-80">Current Plan</p>
+            <h3 className="text-2xl font-bold">{billingInfo?.planName || 'Free Plan'}</h3>
+          </div>
+          <div className="text-right">
+            <p className="text-sm opacity-80">Billing Cycle</p>
+            <p className="text-lg font-semibold capitalize">{billingInfo?.billingCycle || 'Monthly'}</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm opacity-80">
+            Current period: {billingInfo?.currentPeriodStart ? new Date(billingInfo.currentPeriodStart).toLocaleDateString() : 'N/A'} - {billingInfo?.currentPeriodEnd ? new Date(billingInfo.currentPeriodEnd).toLocaleDateString() : 'N/A'}
+          </p>
+          <button className="px-4 py-2 bg-white text-blue-600 text-sm rounded-lg hover:bg-blue-50 font-semibold">
+            Upgrade Plan
+          </button>
+        </div>
+      </div>
+
+      {/* Usage Metrics */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Usage Metrics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { label: 'Trades Created', used: billingInfo?.usageMetrics.tradesCreated || 0, limit: billingInfo?.usageMetrics.tradesLimit || 10, icon: TrendingUp },
+            { label: 'Documents', used: billingInfo?.usageMetrics.documentsUploaded || 0, limit: billingInfo?.usageMetrics.documentsLimit || 50, icon: FileText },
+            { label: 'API Calls', used: billingInfo?.usageMetrics.apiCalls || 0, limit: billingInfo?.usageMetrics.apiCallsLimit || 1000, icon: Zap },
+            { label: 'Storage (MB)', used: billingInfo?.usageMetrics.storageUsedMB || 0, limit: billingInfo?.usageMetrics.storageLimitMB || 100, icon: Database },
+            { label: 'Team Members', used: billingInfo?.usageMetrics.teamMembers || 1, limit: billingInfo?.usageMetrics.teamMembersLimit || 1, icon: Users }
+          ].map(metric => {
+            const percentage = Math.min((metric.used / metric.limit) * 100, 100);
+            return (
+              <div key={metric.label} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <metric.icon className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{metric.label}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{metric.used} / {metric.limit}</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                  <div
+                    className={`h-2 rounded-full ${
+                      percentage >= 90 ? 'bg-red-500' :
+                      percentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Payment Methods */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white">Payment Methods</h3>
+          <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Card
+          </button>
+        </div>
+        <div className="space-y-3">
+          {billingInfo?.paymentMethods.map(method => (
+            <div
+              key={method.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-100 dark:bg-slate-700 rounded-lg">
+                  <CardIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {method.brand} ending in {method.last4}
+                  </p>
+                  {method.expiryMonth && method.expiryYear && (
+                    <p className="text-xs text-gray-500">Expires {method.expiryMonth}/{method.expiryYear}</p>
+                  )}
+                </div>
+              </div>
+              {method.isDefault && (
+                <span className="text-xs font-bold px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 rounded">
+                  Default
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Invoices */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Invoices</h3>
+        <div className="space-y-3">
+          {billingInfo?.invoices.map(invoice => (
+            <div
+              key={invoice.id}
+              className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <Receipt className="w-5 h-5 text-gray-500" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{invoice.invoiceNumber}</p>
+                  <p className="text-xs text-gray-500">{new Date(invoice.issuedAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {formatCurrency(invoice.amount)}
+                </span>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  invoice.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
+                  invoice.status === 'overdue' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
+                  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                }`}>
+                  {invoice.status}
+                </span>
+                <button
+                  onClick={() => downloadInvoice(invoice.id)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+                >
+                  <Download className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAuditTab = () => (
+    <div className="space-y-6">
+      {/* Filters */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">Filters:</span>
+          </div>
+          <select
+            value={auditFilters.entityType || ''}
+            onChange={(e) => setAuditFilters({ ...auditFilters, entityType: e.target.value || undefined })}
+            className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="">All Types</option>
+            <option value="profile">Profile</option>
+            <option value="auth">Authentication</option>
+            <option value="trade">Trades</option>
+            <option value="document">Documents</option>
+            <option value="integration">Integrations</option>
+            <option value="payment">Payments</option>
+          </select>
+          <select
+            value={auditFilters.status || ''}
+            onChange={(e) => setAuditFilters({ ...auditFilters, status: e.target.value as any || undefined })}
+            className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
+          >
+            <option value="">All Statuses</option>
+            <option value="success">Success</option>
+            <option value="failed">Failed</option>
+          </select>
+          <div className="flex-1" />
+          <button
+            onClick={() => handleExportAuditLogs('csv')}
+            className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export Logs
+          </button>
+        </div>
+      </div>
+
+      {/* Audit Log Table */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-slate-700/50">
+              <tr>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Date/Time</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Action</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Entity</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">IP Address</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditLogs.map(log => (
+                <tr key={log.id} className="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                  <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{log.action}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className="text-xs font-bold px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 rounded">
+                      {log.entityType}
+                    </span>
+                    {log.entityId && <span className="text-xs text-gray-500 ml-2">#{log.entityId.slice(0, 8)}</span>}
+                  </td>
+                  <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 font-mono">
+                    {log.ipAddress || '-'}
+                  </td>
+                  <td className="py-3 px-4">
+                    <span className={`text-xs font-bold px-2 py-1 rounded ${
+                      log.status === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                    }`}>
+                      {log.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {auditLogs.length === 0 && (
+          <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+            <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+            <p>No audit logs found</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {auditTotal > 20 && (
+          <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-slate-700">
+            <p className="text-sm text-gray-500">
+              Showing {auditPage * 20 + 1} - {Math.min((auditPage + 1) * 20, auditTotal)} of {auditTotal}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setAuditPage(Math.max(0, auditPage - 1))}
+                disabled={auditPage === 0}
+                className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setAuditPage(auditPage + 1)}
+                disabled={(auditPage + 1) * 20 >= auditTotal}
+                className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
+      {/* Success Toast */}
+      {saveSuccess && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 z-50">
+          <CheckCircle className="w-4 h-4" />
+          Changes saved successfully
+        </div>
+      )}
+
+      {/* Header & Tabs */}
+      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <Settings className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings & Profile</h2>
+            <p className="text-xs text-gray-500">Manage your account, organization, and preferences</p>
+          </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex bg-gray-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              }`}
+            >
+              <tab.icon className="w-3.5 h-3.5" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto">
+        {activeTab === 'identity' && renderIdentityTab()}
+        {activeTab === 'organization' && renderOrganizationTab()}
+        {activeTab === 'preferences' && renderPreferencesTab()}
+        {activeTab === 'security' && renderSecurityTab()}
+        {activeTab === 'integrations' && renderIntegrationsTab()}
+        {activeTab === 'ai' && renderAITab()}
+        {activeTab === 'billing' && renderBillingTab()}
+        {activeTab === 'audit' && renderAuditTab()}
+      </div>
     </div>
   );
 };
