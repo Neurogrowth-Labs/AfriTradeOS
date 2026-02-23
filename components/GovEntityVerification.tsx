@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Shield,
   Search,
@@ -71,6 +72,7 @@ const CROSS_COUNTRY_VERIFICATIONS = [
 type ActiveTab = 'applications' | 'screening' | 'tiers' | 'cross_country';
 
 export const GovEntityVerification: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('applications');
   const [wizardStep, setWizardStep] = useState(1);
@@ -184,8 +186,17 @@ export const GovEntityVerification: React.FC = () => {
             <p className="text-xs text-gray-500 mt-1">Trust framework — Digital KYC, AML screening, sanctions checks & trusted trader tiers</p>
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700">
+            <button 
+              onClick={() => navigate('/gov/kyc/new')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700"
+            >
               <UserCheck className="w-3.5 h-3.5" /> New Verification
+            </button>
+            <button 
+              onClick={() => navigate('/gov/kyc/search')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700"
+            >
+              <Search className="w-3.5 h-3.5" /> Search Entity
             </button>
             <button className="flex items-center gap-1.5 px-3 py-2 bg-trade-primary text-white rounded-lg text-xs font-bold">
               <Download className="w-3.5 h-3.5" /> Export

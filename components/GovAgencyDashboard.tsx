@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Building,
   Download,
@@ -26,7 +27,8 @@ import {
   Truck,
   Banknote,
   Radio,
-  Loader2
+  Loader2,
+  Play
 } from 'lucide-react';
 import {
   XAxis,
@@ -121,6 +123,10 @@ export const GovAgencyDashboard: React.FC = () => {
   const [SECTOR_DATA, setSectorData] = useState<{ name: string; value: number; color: string }[]>([]);
   const [COUNTRY_DATA, setCountryData] = useState<{ id: string; name: string; x: number; y: number; trades: number; compliance: number; risk: string; volume: string }[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<typeof COUNTRY_DATA[0] | null>(null);
+  const [selectedPolicy, setSelectedPolicy] = useState('');
+  const [simulationRunning, setSimulationRunning] = useState(false);
+  const [simulationResult, setSimulationResult] = useState<{gdp: string; volume: string; revenue: string} | null>(null);
+  const navigate = useNavigate();
 
   // Fetch all dashboard data from database
   useEffect(() => {
@@ -344,6 +350,55 @@ export const GovAgencyDashboard: React.FC = () => {
     setShowExportMenu(false);
   };
 
+  // Navigation handlers for role-based dashboards
+  const handleRoleRedirect = (role: RoleView) => {
+    setRoleView(role);
+    switch (role) {
+      case 'minister':
+        navigate('/gov/minister/dashboard');
+        break;
+      case 'officer':
+        navigate('/gov/officer/workspace');
+        break;
+      case 'analyst':
+        navigate('/gov/analyst/insights');
+        break;
+    }
+  };
+
+  // Dispute Cases handlers
+  const handleViewCases = (status: string) => {
+    navigate(`/gov/cases?status=${status}`);
+  };
+
+  const handleCaseAnalytics = () => {
+    navigate('/gov/cases/analytics');
+  };
+
+  // Policy Simulator handlers
+  const handleRunSimulation = async () => {
+    if (!selectedPolicy) return;
+    setSimulationRunning(true);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setSimulationResult({
+      gdp: '+0.15%',
+      volume: '+22%',
+      revenue: '+$35M'
+    });
+    setSimulationRunning(false);
+  };
+
+  // Fraud Detection handlers
+  const handleInvestigateAlert = (alertId: string) => navigate(`/gov/alerts/${alertId}`);
+  const handleEscalateAlert = (alertId: string) => {
+    // TODO: Implement escalation API call
+    navigate(`/gov/alerts/${alertId}?action=escalate`);
+  };
+  const handleFreezeEntity = (alertId: string) => {
+    // TODO: Implement freeze entity API call
+    navigate(`/gov/alerts/${alertId}?action=freeze`);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -376,10 +431,11 @@ export const GovAgencyDashboard: React.FC = () => {
               {(['minister', 'officer', 'analyst'] as RoleView[]).map(r => (
                 <button
                   key={r}
-                  onClick={() => setRoleView(r)}
+                  onClick={() => handleRoleRedirect(r)}
                   className={`px-3 py-1.5 rounded-md text-[10px] font-bold capitalize transition-all ${
                     roleView === r ? 'bg-trade-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
                   }`}
+                  title={r === 'minister' ? 'Executive oversight dashboard' : r === 'officer' ? 'Case & operations workspace' : 'Intelligence & statistics lab'}
                 >
                   {r}
                 </button>
@@ -518,7 +574,7 @@ export const GovAgencyDashboard: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700">Investigate</button>
+            <button onClick={() => handleInvestigateAlert(AI_ANOMALIES.find(a => a.risk === 'critical')?.id || '')} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700">Investigate</button>
             <button onClick={() => setShowAIPanel(false)} className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-800 rounded-lg text-xs font-bold text-red-700 dark:text-red-400">Dismiss</button>
           </div>
         </div>
@@ -642,6 +698,11 @@ export const GovAgencyDashboard: React.FC = () => {
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${getSeverityStyle(alert.severity)}`}>
                         {alert.severity}
                       </span>
+                    </div>
+                    <div className="flex gap-1.5 mt-2">
+                      <button onClick={() => handleInvestigateAlert(alert.id)} className="px-2 py-1 bg-blue-600 text-white rounded text-[9px] font-bold hover:bg-blue-700">Investigate</button>
+                      <button onClick={() => handleEscalateAlert(alert.id)} className="px-2 py-1 bg-amber-500 text-white rounded text-[9px] font-bold hover:bg-amber-600">Escalate</button>
+                      <button onClick={() => handleFreezeEntity(alert.id)} className="px-2 py-1 bg-red-600 text-white rounded text-[9px] font-bold hover:bg-red-700">Freeze</button>
                     </div>
                   </div>
                 ))}
@@ -816,6 +877,37 @@ export const GovAgencyDashboard: React.FC = () => {
                 <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm mb-3">
                   <Gauge className="w-4 h-4 text-blue-500" /> Policy Simulations
                 </h3>
+                <div className="mb-3">
+                  <select 
+                    value={selectedPolicy} 
+                    onChange={(e) => setSelectedPolicy(e.target.value)}
+                    className="w-full p-2 text-xs rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Select policy template...</option>
+                    <option value="tariff_reduction">Reduce tariff on textiles by 5%</option>
+                    <option value="single_window">Implement single window for transit</option>
+                    <option value="digital_trade">Digital trade facilitation</option>
+                    <option value="sps_harmonization">SPS standards harmonization</option>
+                  </select>
+                </div>
+                <button 
+                  onClick={handleRunSimulation}
+                  disabled={!selectedPolicy || simulationRunning}
+                  className="w-full mb-3 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {simulationRunning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                  {simulationRunning ? 'Running Simulation...' : 'Run Simulation'}
+                </button>
+                {simulationResult && (
+                  <div className="p-2.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 mb-3">
+                    <p className="text-[10px] font-bold text-green-700 dark:text-green-400 uppercase mb-1">Simulation Results</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-green-600 font-bold">GDP: {simulationResult.gdp}</span>
+                      <span className="text-[10px] text-blue-600 font-bold">Vol: {simulationResult.volume}</span>
+                      <span className="text-[10px] text-green-600 font-bold">Rev: {simulationResult.revenue}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   {POLICY_SIMULATIONS.map((sim, i) => (
                     <div key={i} className="p-2.5 rounded-lg bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600">
@@ -891,24 +983,24 @@ export const GovAgencyDashboard: React.FC = () => {
                 <Scale className="w-4 h-4 text-red-500" /> Dispute Cases
               </h3>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800 text-center">
+                <button onClick={() => handleViewCases('open')} className="p-3 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-200 dark:border-red-800 text-center hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors cursor-pointer">
                   <p className="text-xl font-black text-red-600">{DISPUTE_CASES.open}</p>
                   <p className="text-[10px] font-bold text-red-500 uppercase">Open</p>
-                </div>
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 text-center">
+                </button>
+                <button onClick={() => handleViewCases('investigating')} className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800 text-center hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors cursor-pointer">
                   <p className="text-xl font-black text-amber-600">{DISPUTE_CASES.investigating}</p>
                   <p className="text-[10px] font-bold text-amber-500 uppercase">Investigating</p>
-                </div>
-                <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800 text-center">
+                </button>
+                <button onClick={() => handleViewCases('resolved')} className="p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800 text-center hover:bg-green-100 dark:hover:bg-green-900/20 transition-colors cursor-pointer">
                   <p className="text-xl font-black text-green-600">{DISPUTE_CASES.resolved}</p>
                   <p className="text-[10px] font-bold text-green-500 uppercase">Resolved</p>
-                </div>
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 text-center">
+                </button>
+                <button onClick={handleCaseAnalytics} className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800 text-center hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors cursor-pointer">
                   <p className="text-xl font-black text-blue-600">{DISPUTE_CASES.avgResolutionDays}d</p>
                   <p className="text-[10px] font-bold text-blue-500 uppercase">Avg Resolution</p>
-                </div>
+                </button>
               </div>
-              <button className="w-full px-3 py-2 bg-trade-primary text-white rounded-lg text-xs font-bold hover:bg-trade-primary/90 flex items-center justify-center gap-2">
+              <button onClick={() => handleViewCases('all')} className="w-full px-3 py-2 bg-trade-primary text-white rounded-lg text-xs font-bold hover:bg-trade-primary/90 flex items-center justify-center gap-2">
                 <Eye className="w-3.5 h-3.5" /> View All Cases
               </button>
             </div>

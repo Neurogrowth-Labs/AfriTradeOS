@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Scale,
   Search,
@@ -75,6 +76,7 @@ interface InspectionCase {
 type ActiveTab = 'library' | 'compliance' | 'enforcement' | 'gaps';
 
 export const GovPolicyCompliance: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('library');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -749,7 +751,19 @@ export const GovPolicyCompliance: React.FC = () => {
                           <p className="text-[10px] text-green-700 dark:text-green-400 font-medium">{gap.recommendation}</p>
                         </div>
                       </div>
-                      <button className="px-3 py-1.5 bg-trade-primary text-white rounded-lg text-[10px] font-bold shrink-0">
+                      <button 
+                        onClick={() => {
+                          const gapRoutes: Record<string, string> = {
+                            'Digital Trade Rules': '/gov/regulatory/digital-trade',
+                            'SPS Harmonization': '/gov/regulatory/sps',
+                            'Rules of Origin': '/gov/regulatory/origin-rules',
+                            'Customs IT Systems': '/gov/regulatory/customs-it',
+                            'Investment Protection': '/gov/regulatory/investment'
+                          };
+                          navigate(gapRoutes[gap.area] || '/gov/regulatory');
+                        }}
+                        className="px-3 py-1.5 bg-trade-primary text-white rounded-lg text-[10px] font-bold shrink-0 hover:bg-trade-primary/90"
+                      >
                         Action Plan
                       </button>
                     </div>

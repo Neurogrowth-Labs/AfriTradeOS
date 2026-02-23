@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   TrendingUp,
@@ -72,6 +73,7 @@ const INCLUSION_DATA = {
 type ActiveTab = 'overview' | 'sectors' | 'inclusion' | 'insights' | 'benchmark';
 
 export const GovTradeStatistics: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [timeRange, setTimeRange] = useState('12m');
@@ -179,6 +181,32 @@ export const GovTradeStatistics: React.FC = () => {
   const totalExports = TRADE_VOLUME_DATA.reduce((sum, d) => sum + d.exports, 0);
   const totalRevenue = REVENUE_BREAKDOWN.reduce((sum, d) => sum + d.value, 0);
 
+  // Export handlers
+  const handleExportCSV = () => {
+    let csvContent = 'data:text/csv;charset=utf-8,';
+    csvContent += 'Month,Imports,Exports,Balance\n';
+    TRADE_VOLUME_DATA.forEach(d => {
+      csvContent += `${d.month},${d.imports},${d.exports},${d.balance}\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `trade_statistics_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    // Navigate to PDF generation endpoint
+    navigate(`/gov/trade-statistics/export?format=pdf&period=${timeRange}`);
+  };
+
+  const handleShare = () => {
+    // Navigate to share page
+    navigate(`/gov/trade-statistics/share?period=${timeRange}`);
+  };
+
   const tabs = [
     { id: 'overview', label: 'Trade Overview', icon: BarChart3 },
     { id: 'sectors', label: 'Sector Performance', icon: Package },
@@ -220,9 +248,9 @@ export const GovTradeStatistics: React.FC = () => {
               </button>
               {showExportMenu && (
                 <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 z-10 min-w-[120px]">
-                  <button onClick={() => setShowExportMenu(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">CSV</button>
-                  <button onClick={() => setShowExportMenu(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Excel</button>
-                  <button onClick={() => setShowExportMenu(false)} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">PDF Report</button>
+                  <button onClick={() => { handleExportCSV(); setShowExportMenu(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Download CSV</button>
+                  <button onClick={() => { handleExportPDF(); setShowExportMenu(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Download PDF</button>
+                  <button onClick={() => { handleShare(); setShowExportMenu(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">Share</button>
                 </div>
               )}
             </div>

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   DollarSign,
   TrendingUp,
@@ -10,7 +11,11 @@ import {
   Landmark,
   ArrowRight,
   Zap,
-  Activity
+  Activity,
+  AlertTriangle,
+  CheckCircle,
+  Star,
+  ExternalLink
 } from 'lucide-react';
 import {
   LineChart,
@@ -44,13 +49,123 @@ const FX_HISTORY = [
   { time: 'Sat', NGN: 1652, KES: 152.8, ZAR: 18.48, GHS: 14.92 },
 ];
 
-const FINANCE_PRODUCTS = [
-  { id: 'fp1', name: 'Letter of Credit', provider: 'Ecobank', rate: '2.5%', term: '90 days', minScore: 70, type: 'Trade Finance' },
-  { id: 'fp2', name: 'Export Factoring', provider: 'Afreximbank', rate: '3.2%', term: '60 days', minScore: 65, type: 'Receivables' },
-  { id: 'fp3', name: 'Supply Chain Finance', provider: 'Standard Bank', rate: '1.8%', term: '120 days', minScore: 75, type: 'SCF' },
-  { id: 'fp4', name: 'Trade Insurance', provider: 'ATI (Africa)', rate: '0.8%', term: '180 days', minScore: 50, type: 'Insurance' },
-  { id: 'fp5', name: 'Working Capital Loan', provider: 'KCB Group', rate: '4.5%', term: '12 months', minScore: 60, type: 'Lending' },
-  { id: 'fp6', name: 'Forfaiting', provider: 'FirstRand', rate: '2.8%', term: '6 months', minScore: 70, type: 'Trade Finance' },
+// Trade Finance Providers with enhanced data
+interface FinanceProvider {
+  id: string;
+  name: string;
+  shortName: string;
+  logo: string;
+  products: FinanceProduct[];
+  rating: number;
+  reviews: number;
+  minScore: number;
+  description: string;
+  specialties: string[];
+  aiRecommended?: boolean;
+}
+
+interface FinanceProduct {
+  id: string;
+  name: string;
+  rate: string;
+  term: string;
+  minScore: number;
+  type: string;
+}
+
+const FINANCE_PROVIDERS: FinanceProvider[] = [
+  {
+    id: 'ecobank',
+    name: 'Ecobank',
+    shortName: 'Ecobank',
+    logo: 'E',
+    rating: 4.5,
+    reviews: 156,
+    minScore: 65,
+    description: 'Pan-African banking group with presence in 33 countries. Strong trade finance and SME solutions.',
+    specialties: ['Letter of Credit', 'Trade Guarantees', 'SME Finance'],
+    aiRecommended: true,
+    products: [
+      { id: 'eco1', name: 'Letter of Credit', rate: '2.5%', term: '90 days', minScore: 70, type: 'Trade Finance' },
+      { id: 'eco2', name: 'Trade Guarantee', rate: '1.5%', term: '180 days', minScore: 65, type: 'Guarantee' },
+    ]
+  },
+  {
+    id: 'afreximbank',
+    name: 'African Export-Import Bank (Afreximbank)',
+    shortName: 'Afreximbank',
+    logo: 'A',
+    rating: 4.9,
+    reviews: 89,
+    minScore: 60,
+    description: 'Continental trade finance institution. Premier DFI for African trade.',
+    specialties: ['Export Factoring', 'Guarantees', 'Project Finance'],
+    aiRecommended: true,
+    products: [
+      { id: 'afr1', name: 'Export Factoring', rate: '3.2%', term: '60 days', minScore: 65, type: 'Receivables' },
+      { id: 'afr2', name: 'Trade Insurance', rate: '0.5%', term: '365 days', minScore: 50, type: 'Insurance' },
+    ]
+  },
+  {
+    id: 'standard-bank',
+    name: 'Standard Bank Group',
+    shortName: 'Standard Bank',
+    logo: 'S',
+    rating: 4.6,
+    reviews: 234,
+    minScore: 70,
+    description: 'Africa\'s largest bank by assets. Strong in commodity finance and structured trade.',
+    specialties: ['Supply Chain Finance', 'Commodity Finance', 'Structured Trade'],
+    products: [
+      { id: 'std1', name: 'Supply Chain Finance', rate: '1.8%', term: '120 days', minScore: 75, type: 'SCF' },
+      { id: 'std2', name: 'Commodity Finance', rate: '2.2%', term: '90 days', minScore: 70, type: 'Commodity' },
+    ]
+  },
+  {
+    id: 'ati',
+    name: 'African Trade Insurance Agency (ATI)',
+    shortName: 'ATI',
+    logo: 'T',
+    rating: 4.7,
+    reviews: 67,
+    minScore: 50,
+    description: 'Multilateral trade credit and political risk insurer for Africa.',
+    specialties: ['Trade Credit Insurance', 'Political Risk', 'Investment Insurance'],
+    products: [
+      { id: 'ati1', name: 'Trade Insurance', rate: '0.8%', term: '180 days', minScore: 50, type: 'Insurance' },
+      { id: 'ati2', name: 'Political Risk Cover', rate: '1.2%', term: '365 days', minScore: 55, type: 'Insurance' },
+    ]
+  },
+  {
+    id: 'kcb',
+    name: 'KCB Group',
+    shortName: 'KCB',
+    logo: 'K',
+    rating: 4.4,
+    reviews: 178,
+    minScore: 60,
+    description: 'East Africa\'s largest bank. Strong regional trade finance network.',
+    specialties: ['Working Capital', 'L/C', 'East Africa Corridor'],
+    products: [
+      { id: 'kcb1', name: 'Working Capital Loan', rate: '4.5%', term: '12 months', minScore: 60, type: 'Lending' },
+      { id: 'kcb2', name: 'L/C Facility', rate: '2.0%', term: '90 days', minScore: 65, type: 'Trade Finance' },
+    ]
+  },
+  {
+    id: 'firstrand',
+    name: 'FirstRand',
+    shortName: 'FirstRand',
+    logo: 'F',
+    rating: 4.5,
+    reviews: 145,
+    minScore: 70,
+    description: 'South Africa\'s largest financial services group. Forfaiting specialists.',
+    specialties: ['Forfaiting', 'Asset Finance', 'Cross-Border'],
+    products: [
+      { id: 'fr1', name: 'Forfaiting', rate: '2.8%', term: '6 months', minScore: 70, type: 'Trade Finance' },
+      { id: 'fr2', name: 'Asset Finance', rate: '3.5%', term: '24 months', minScore: 75, type: 'Asset' },
+    ]
+  },
 ];
 
 const COUNTRY_RISK = [
@@ -63,8 +178,13 @@ const COUNTRY_RISK = [
 ];
 
 export const AnalystFinanceMetrics: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'fx' | 'products' | 'risk' | 'calculator'>('fx');
   const [fxRates, setFxRates] = useState(FX_LIVE);
+  const [showEligibilityWarning, setShowEligibilityWarning] = useState<string | null>(null);
+
+  // Current user's score (simulated - in production, this would come from auth context)
+  const userEligibilityScore = 72;
 
   // Calculator state
   const [calcData, setCalcData] = useState({
@@ -96,8 +216,36 @@ export const AnalystFinanceMetrics: React.FC = () => {
   const totalLanded = calcData.cifValue + afcftaDuty + vat + calcData.shippingCost + calcData.insuranceCost;
   const dutySaving = duty - afcftaDuty;
 
+  // Compare handler with eligibility check
+  const handleCompare = (productType: string, providerId: string, minScore: number) => {
+    if (userEligibilityScore < minScore) {
+      setShowEligibilityWarning(`Your eligibility score (${userEligibilityScore}) is below the minimum required (${minScore}) for this provider.`);
+      setTimeout(() => setShowEligibilityWarning(null), 4000);
+      return;
+    }
+    navigate(`/finance/compare?product=${encodeURIComponent(productType)}&provider=${providerId}`);
+  };
+
+  // Apply for product
+  const handleApply = (providerId: string, productId: string, minScore: number) => {
+    if (userEligibilityScore < minScore) {
+      setShowEligibilityWarning(`Your eligibility score (${userEligibilityScore}) is below the minimum required (${minScore}) to apply.`);
+      setTimeout(() => setShowEligibilityWarning(null), 4000);
+      return;
+    }
+    navigate(`/finance/apply?provider=${providerId}&product=${productId}`);
+  };
+
   return (
     <div className="h-full flex flex-col gap-4 animate-fade-in pb-4">
+      {/* Eligibility Warning Toast */}
+      {showEligibilityWarning && (
+        <div className="fixed top-4 right-4 z-50 bg-amber-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-fade-in max-w-md">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <p className="text-sm font-medium">{showEligibilityWarning}</p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm p-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3">
@@ -110,11 +258,24 @@ export const AnalystFinanceMetrics: React.FC = () => {
               <p className="text-[10px] text-gray-500">FX rates • Trade finance products • Credit risk • Profitability calculator</p>
             </div>
           </div>
+
+          {/* User Eligibility Status */}
+          <div className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+            <span className="text-[10px] font-bold text-gray-500">Your Score:</span>
+            <span className={`text-sm font-black ${userEligibilityScore >= 70 ? 'text-green-600' : 'text-amber-600'}`}>
+              {userEligibilityScore}/100
+            </span>
+            {userEligibilityScore >= 70 ? (
+              <CheckCircle className="w-4 h-4 text-green-500" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+            )}
+          </div>
         </div>
         <div className="flex gap-2 overflow-x-auto">
           {[
             { id: 'fx' as const, label: 'FX Rates', icon: DollarSign },
-            { id: 'products' as const, label: 'Finance Products', icon: CreditCard },
+            { id: 'products' as const, label: 'Finance Providers', icon: CreditCard },
             { id: 'risk' as const, label: 'Credit Risk', icon: Shield },
             { id: 'calculator' as const, label: 'Profitability Calculator', icon: Calculator },
           ].map(tab => (
@@ -175,38 +336,114 @@ export const AnalystFinanceMetrics: React.FC = () => {
         </div>
       )}
 
-      {/* FINANCE PRODUCTS */}
+      {/* FINANCE PROVIDERS */}
       {activeTab === 'products' && (
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FINANCE_PRODUCTS.map(fp => (
-              <div key={fp.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{fp.name}</p>
-                    <p className="text-[10px] text-gray-500">{fp.provider}</p>
-                  </div>
-                  <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 px-2 py-0.5 rounded-full font-bold">{fp.type}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-gray-400">Rate</p>
-                    <p className="text-sm font-black text-green-600">{fp.rate}</p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-gray-400">Term</p>
-                    <p className="text-sm font-black text-trade-primary dark:text-white">{fp.term}</p>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-2 text-center">
-                    <p className="text-[9px] text-gray-400">Min Score</p>
-                    <p className="text-sm font-black text-gray-600 dark:text-gray-400">{fp.minScore}</p>
-                  </div>
-                </div>
-                <button className="w-full mt-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1">
-                  Compare <ArrowRight className="w-3 h-3" />
-                </button>
+          {/* AI Recommendation Banner */}
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-xl p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Zap className="w-5 h-5 text-amber-300" />
+              <div>
+                <p className="text-sm font-bold text-white">AI-Recommended Providers</p>
+                <p className="text-[10px] text-purple-200">Based on your trade profile, sector, and eligibility score</p>
               </div>
-            ))}
+            </div>
+            <span className="text-[10px] bg-white/20 text-white px-3 py-1 rounded-full font-bold">
+              {FINANCE_PROVIDERS.filter(p => p.aiRecommended).length} recommended
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {FINANCE_PROVIDERS.map(provider => {
+              const isEligible = userEligibilityScore >= provider.minScore;
+              return (
+                <div key={provider.id} className={`bg-white dark:bg-slate-800 rounded-xl border p-4 transition-all ${
+                  provider.aiRecommended ? 'border-purple-300 dark:border-purple-600 ring-1 ring-purple-100' : 'border-gray-100 dark:border-slate-700'
+                } ${!isEligible ? 'opacity-60' : 'hover:shadow-md'}`}>
+                  {/* Provider Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-black ${
+                        provider.aiRecommended ? 'bg-purple-100 text-purple-600' : 'bg-emerald-100 text-emerald-600'
+                      }`}>
+                        {provider.logo}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">{provider.shortName}</p>
+                          {provider.aiRecommended && (
+                            <span className="text-[8px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5">
+                              <Zap className="w-2.5 h-2.5" /> AI Pick
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          <span className="text-[10px] font-bold text-gray-600">{provider.rating}</span>
+                          <span className="text-[10px] text-gray-400">({provider.reviews})</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                      isEligible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      Min: {provider.minScore}
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-gray-500 mb-3 line-clamp-2">{provider.description}</p>
+
+                  {/* Specialties */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {provider.specialties.map(spec => (
+                      <span key={spec} className="text-[9px] bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                        {spec}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Products */}
+                  <div className="space-y-2 mb-3">
+                    {provider.products.map(product => (
+                      <div key={product.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                        <div>
+                          <p className="text-[11px] font-bold text-gray-800 dark:text-white">{product.name}</p>
+                          <p className="text-[9px] text-gray-500">{product.rate} • {product.term}</p>
+                        </div>
+                        <button
+                          onClick={() => handleApply(provider.id, product.id, product.minScore)}
+                          disabled={userEligibilityScore < product.minScore}
+                          className={`text-[9px] font-bold px-2 py-1 rounded transition-colors ${
+                            userEligibilityScore >= product.minScore
+                              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }`}
+                          title={userEligibilityScore < product.minScore ? `Min score: ${product.minScore}` : 'Apply now'}
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Compare Button */}
+                  <button
+                    onClick={() => handleCompare('Trade Finance', provider.id, provider.minScore)}
+                    disabled={!isEligible}
+                    className={`w-full py-2.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                      isEligible
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        : 'bg-gray-200 dark:bg-slate-700 text-gray-400 cursor-not-allowed'
+                    }`}
+                    title={!isEligible ? `Your score (${userEligibilityScore}) is below minimum (${provider.minScore})` : 'Compare this provider'}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Compare {provider.shortName}
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
