@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { 
+import {
   Menu,
   X,
   Bell,
@@ -20,7 +20,8 @@ import {
   Shield,
   CheckCheck,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  LogOut
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { useCurrency, CURRENCIES } from './contexts/CurrencyContext';
@@ -539,6 +540,19 @@ export default function App() {
 
   const toggleTheme = () => setIsDark(!isDark);
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      isSimulatedRef.current = false;
+      setIsOnboarded(false);
+      setUserProfile(null);
+      setUserRole(UserPersona.EXPORTER_SME);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   const handleOnboardingComplete = (role: UserPersona, profile: any) => {
       // Mark as simulated if ID starts with mock_
       if (profile.id && profile.id.startsWith('mock_')) {
@@ -732,7 +746,7 @@ export default function App() {
         </nav>
         
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
-          <div 
+          <div
             className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors"
             onClick={() => {
               if (userRole === UserPersona.BANK) {
@@ -748,10 +762,19 @@ export default function App() {
               <p className="text-[10px] text-slate-400 truncate">{userRole}</p>
             </div>
           </div>
-          {/* Role is locked after onboarding - displayed as badge, not editable */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
-              <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
-              <span className="text-[10px] font-medium text-slate-300">{userRole}</span>
+          {/* Role badge and Logout button */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+                <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
+                <span className="text-[10px] font-medium text-slate-300">{userRole}</span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg border border-red-500/20 transition-colors"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
