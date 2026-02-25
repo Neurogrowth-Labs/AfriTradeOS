@@ -1278,6 +1278,169 @@ export async function downloadInvoice(invoiceId: string): Promise<string | null>
   }
 }
 
+// Plan upgrade configuration
+const PLAN_CONFIGS = {
+  pro_monthly: {
+    planType: 'professional' as const,
+    planName: 'Pro Plan',
+    tradesLimit: 999999,
+    documentsLimit: 999999,
+    apiCallsLimit: 10000,
+    storageLimitMB: 5000,
+    teamMembersLimit: 5,
+    price: 19.00
+  },
+  enterprise_monthly: {
+    planType: 'enterprise' as const,
+    planName: 'Enterprise Plan',
+    tradesLimit: 999999,
+    documentsLimit: 999999,
+    apiCallsLimit: 999999,
+    storageLimitMB: 50000,
+    teamMembersLimit: 999999,
+    price: 49.00
+  }
+};
+
+export interface UpgradeResult {
+  success: boolean;
+  newPlanName: string;
+  newPlanType: string;
+  periodStart: string;
+  periodEnd: string;
+  invoiceId?: string;
+  error?: string;
+}
+
+export async function upgradePlan(
+  userId: string,
+  planId: string,
+  paypalOrderId: string,
+  paypalPayerId?: string
+): Promise<UpgradeResult> {
+  const planConfig = PLAN_CONFIGS[planId as keyof typeof PLAN_CONFIGS];
+
+  if (!planConfig) {
+    return {
+      success: false,
+      newPlanName: '',
+      newPlanType: '',
+      periodStart: '',
+      periodEnd: '',
+      error: 'Invalid plan selected'
+    };
+  }
+
+  const now = new Date();
+  const periodStart = now.toISOString();
+  const periodEnd = new Date(now.setMonth(now.getMonth() + 1)).toISOString();
+
+  try {
+    // 1. Update billing_info with new plan
+    const { error: billingError } = await supabase
+      .from('billing_info')
+      .upsert({
+        user_id: userId,
+        plan_type: planConfig.planType,
+        plan_name: planConfig.planName,
+        billing_cycle: 'monthly',
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+        subscription_status: 'active',
+        paypal_order_id: paypalOrderId,
+        paypal_payer_id: paypalPayerId,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+    if (billingError) throw billingError;
+
+    // 2. Update usage limits based on new plan
+    const { error: usageError } = await supabase
+      .from('usage_metrics')
+      .upsert({
+        user_id: userId,
+        trades_limit: planConfig.tradesLimit,
+        documents_limit: planConfig.documentsLimit,
+        api_calls_limit: planConfig.apiCallsLimit,
+        storage_limit_mb: planConfig.storageLimitMB,
+        team_members_limit: planConfig.teamMembersLimit,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+
+    if (usageError) throw usageError;
+
+    // 3. Create invoice record
+    const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const { data: invoiceData, error: invoiceError } = await supabase
+      .from('invoices')
+      .insert({
+        user_id: userId,
+        invoice_number: invoiceNumber,
+        amount: planConfig.price,
+        currency: 'USD',
+        status: 'paid',
+        issued_at: periodStart,
+        due_at: periodStart,
+        paid_at: periodStart,
+        description: `${planConfig.planName} - Monthly Subscription`,
+        paypal_order_id: paypalOrderId
+      })
+      .select('id')
+      .single();
+
+    if (invoiceError) {
+      console.warn('Failed to create invoice record:', invoiceError);
+    }
+
+    // 4. Create audit log
+    await createAuditLog({
+      userId,
+      action: 'plan_upgraded',
+      entityType: 'subscription',
+      entityId: paypalOrderId,
+      newValues: {
+        planType: planConfig.planType,
+        planName: planConfig.planName,
+        price: planConfig.price,
+        paypalOrderId
+      },
+      status: 'success',
+      metadata: { source: 'paypal', planId }
+    });
+
+    return {
+      success: true,
+      newPlanName: planConfig.planName,
+      newPlanType: planConfig.planType,
+      periodStart,
+      periodEnd,
+      invoiceId: invoiceData?.id
+    };
+  } catch (error) {
+    console.error('Failed to upgrade plan:', error);
+
+    // Log failed attempt
+    await createAuditLog({
+      userId,
+      action: 'plan_upgrade_failed',
+      entityType: 'subscription',
+      entityId: paypalOrderId,
+      status: 'failed',
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      metadata: { source: 'paypal', planId }
+    });
+
+    return {
+      success: false,
+      newPlanName: '',
+      newPlanType: '',
+      periodStart: '',
+      periodEnd: '',
+      error: error instanceof Error ? error.message : 'Failed to upgrade plan'
+    };
+  }
+}
+
 // Audit Log Methods
 export async function getAuditLogs(userId: string, filters?: {
   action?: string;

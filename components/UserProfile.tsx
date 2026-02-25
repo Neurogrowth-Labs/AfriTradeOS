@@ -8,10 +8,12 @@ import {
   Brain, BarChart3, Clock, Trash2, RefreshCw, Copy, ExternalLink, Check,
   Camera, MapPin, Phone, AtSign, Briefcase, Calendar, Activity, Filter,
   ChevronRight, ChevronDown, AlertCircle, Info, Database, FileCheck,
-  CreditCard as CardIcon, Building, Award, TrendingUp, Wallet, Receipt
+  CreditCard as CardIcon, Building, Award, TrendingUp, Wallet, Receipt,
+  Sparkles, Crown, Star
 } from 'lucide-react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
+import { UPGRADE_PLANS, loadPayPalScript, initPayPalButtons, UpgradePlan } from '../services/paypalService';
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext';
 import {
   getUserProfile, updateUserProfile, uploadProfilePhoto, verifyEmail,
@@ -27,6 +29,7 @@ import {
   getTeamMembers, inviteTeamMember, updateTeamMember, removeTeamMember,
   getRoles, createRole, updateRole, deleteRole,
   getTradeAssociations, connectTradeAssociation, syncCurrencyRates,
+  upgradePlan,
   UserProfile as UserProfileType, Organization, UserPreferences, SecuritySettings,
   Integration, APIKey, AIDataSettings, BillingInfo, AuditLog, TeamMember, Role,
   TradeAssociation, UserSession
@@ -78,6 +81,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   const [showIntegrationModal, setShowIntegrationModal] = useState(false);
   const [showDeleteDataModal, setShowDeleteDataModal] = useState(false);
   const [generatedApiKey, setGeneratedApiKey] = useState<string | null>(null);
+
+  // PayPal Upgrade Modal states
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<UpgradePlan | null>(null);
+  const [paypalLoading, setPaypalLoading] = useState(false);
+  const [paypalReady, setPaypalReady] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const paypalContainerRef = useRef<HTMLDivElement>(null);
 
   // Password form
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
@@ -1902,7 +1914,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           <p className="text-sm opacity-80">
             Current period: {billingInfo?.currentPeriodStart ? new Date(billingInfo.currentPeriodStart).toLocaleDateString() : 'N/A'} - {billingInfo?.currentPeriodEnd ? new Date(billingInfo.currentPeriodEnd).toLocaleDateString() : 'N/A'}
           </p>
-          <button className="px-4 py-2 bg-white text-blue-600 text-sm rounded-lg hover:bg-blue-50 font-semibold">
+          <button
+            onClick={() => {
+              setSelectedPlan(UPGRADE_PLANS[0]);
+              setShowUpgradeModal(true);
+              setPaymentSuccess(false);
+              setPaymentError(null);
+              setPaypalReady(false);
+              setPaypalLoading(false);
+            }}
+            className="px-4 py-2 bg-white text-blue-600 text-sm rounded-lg hover:bg-blue-50 font-semibold flex items-center gap-2"
+          >
+            <Crown className="w-4 h-4" />
             Upgrade Plan
           </button>
         </div>
@@ -2208,6 +2231,245 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         {activeTab === 'billing' && renderBillingTab()}
         {activeTab === 'audit' && renderAuditTab()}
       </div>
+
+      {/* PayPal Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white relative">
+              <button
+                onClick={() => {
+                  setShowUpgradeModal(false);
+                  setPaypalReady(false);
+                  setPaypalLoading(false);
+                }}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Crown className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold">Upgrade Your Plan</h2>
+              </div>
+              <p className="text-blue-100 text-sm">Unlock powerful features to accelerate your trade operations</p>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {paymentSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-2">
+                    Welcome to <span className="font-semibold text-blue-600">{billingInfo?.planName || selectedPlan?.name}</span>!
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    Your account has been upgraded and all premium features are now active.
+                  </p>
+
+                  {/* New Plan Benefits */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6 text-left">
+                    <h4 className="font-semibold text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Your New Benefits
+                    </h4>
+                    <ul className="space-y-2">
+                      {selectedPlan?.features.slice(0, 5).map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowUpgradeModal(false);
+                      setPaymentSuccess(false);
+                      setPaypalReady(false);
+                      setPaypalLoading(false);
+                      // Refresh billing data without full page reload
+                      fetchAllData();
+                    }}
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold"
+                  >
+                    Get Started
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Plan Selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {UPGRADE_PLANS.map(plan => (
+                      <div
+                        key={plan.id}
+                        onClick={() => setSelectedPlan(plan)}
+                        className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          selectedPlan?.id === plan.id
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-slate-600 hover:border-blue-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            {plan.id === 'pro_monthly' ? (
+                              <Star className="w-5 h-5 text-yellow-500" />
+                            ) : (
+                              <Sparkles className="w-5 h-5 text-purple-500" />
+                            )}
+                            <h4 className="font-bold text-gray-900 dark:text-white">{plan.name}</h4>
+                          </div>
+                          {selectedPlan?.id === plan.id && (
+                            <CheckCircle className="w-5 h-5 text-blue-600" />
+                          )}
+                        </div>
+                        <div className="mb-3">
+                          <span className="text-3xl font-bold text-gray-900 dark:text-white">${plan.price}</span>
+                          <span className="text-gray-500 dark:text-gray-400">/month</span>
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{plan.description}</p>
+                        <ul className="space-y-2">
+                          {plan.features.slice(0, 4).map((feature, idx) => (
+                            <li key={idx} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                              <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              {feature}
+                            </li>
+                          ))}
+                          {plan.features.length > 4 && (
+                            <li className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                              +{plan.features.length - 4} more features
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+
+                  {paymentError && (
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-3">
+                      <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      <p className="text-sm text-red-600 dark:text-red-400">{paymentError}</p>
+                    </div>
+                  )}
+
+                  {/* PayPal Payment Section */}
+                  <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">Payment Summary</h4>
+                        <p className="text-sm text-gray-500">Pay securely with PayPal</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">${selectedPlan?.price.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500">Billed monthly</p>
+                      </div>
+                    </div>
+
+                    {/* PayPal Button Container */}
+                    {!paypalReady && !paypalLoading && (
+                      <button
+                        onClick={async () => {
+                          if (!selectedPlan) return;
+                          setPaypalLoading(true);
+                          setPaymentError(null);
+                          try {
+                            await loadPayPalScript();
+                            // Clear container before rendering
+                            const container = document.getElementById('paypal-button-container');
+                            if (container) container.innerHTML = '';
+
+                            initPayPalButtons(
+                              'paypal-button-container',
+                              selectedPlan.id,
+                              userId,
+                              async (details: { id: string; payer?: { payer_id?: string } }) => {
+                                // Payment successful - now upgrade the plan in database
+                                setPaypalLoading(true);
+                                const upgradeResult = await upgradePlan(
+                                  userId,
+                                  selectedPlan.id,
+                                  details.id,
+                                  details.payer?.payer_id
+                                );
+
+                                if (upgradeResult.success) {
+                                  // Update local billing state
+                                  setBillingInfo(prev => prev ? {
+                                    ...prev,
+                                    planType: upgradeResult.newPlanType as 'free' | 'starter' | 'professional' | 'enterprise',
+                                    planName: upgradeResult.newPlanName,
+                                    currentPeriodStart: upgradeResult.periodStart,
+                                    currentPeriodEnd: upgradeResult.periodEnd,
+                                    subscriptionStatus: 'active'
+                                  } : null);
+                                  setPaymentSuccess(true);
+                                } else {
+                                  setPaymentError(upgradeResult.error || 'Failed to activate plan. Please contact support.');
+                                }
+                                setPaypalLoading(false);
+                              },
+                              (error) => {
+                                setPaymentError(error.message || 'Payment failed. Please try again.');
+                                setPaypalLoading(false);
+                                setPaypalReady(false);
+                              }
+                            );
+                            // Mark PayPal as ready after buttons are initialized
+                            setPaypalLoading(false);
+                            setPaypalReady(true);
+                          } catch (error) {
+                            const errMsg = error instanceof Error ? error.message : 'Failed to load PayPal. Please try again.';
+                            setPaymentError(errMsg);
+                            setPaypalLoading(false);
+                          }
+                        }}
+                        className="w-full py-4 bg-[#0070ba] hover:bg-[#005ea6] text-white rounded-lg font-semibold flex items-center justify-center gap-3 transition-colors"
+                      >
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.65A.859.859 0 0 1 5.8 2h6.797c2.322 0 4.02.652 5.045 1.936.965 1.208 1.203 2.834.708 4.834l-.008.03c-.534 2.21-1.472 3.857-2.787 4.894-1.315 1.037-3.058 1.563-5.18 1.563H8.14a.859.859 0 0 0-.847.725l-1.217 7.355z"/>
+                        </svg>
+                        Pay with PayPal - ${selectedPlan?.price.toFixed(2)}
+                      </button>
+                    )}
+
+                    {paypalLoading && !paypalReady && (
+                      <div className="text-center py-4">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">Loading PayPal...</p>
+                      </div>
+                    )}
+
+                    {/* PayPal SDK renders buttons here */}
+                    <div
+                      ref={paypalContainerRef}
+                      id="paypal-button-container"
+                      className={`min-h-[50px] ${paypalReady ? '' : 'hidden'}`}
+                    />
+
+                    {paypalLoading && paypalReady && (
+                      <div className="text-center py-4">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">Processing payment...</p>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-center text-gray-400 mt-4">
+                      By upgrading, you agree to our Terms of Service and Privacy Policy.
+                      You can cancel anytime from your account settings.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
