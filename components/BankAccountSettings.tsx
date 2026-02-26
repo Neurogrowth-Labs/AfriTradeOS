@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Users,
@@ -38,7 +38,8 @@ import {
   Webhook,
   ToggleLeft,
   ToggleRight,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -202,6 +203,92 @@ type SettingsTab = 'users' | 'roles' | 'currencies' | 'integrations' | 'audit';
 
 export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSignOut }) => {
   const [signingOut, setSigningOut] = useState(false);
+  const [activeTab, setActiveTab] = useState<SettingsTab>('users');
+  const [users, setUsers] = useState<UserAccount[]>(MOCK_USERS);
+  const [roles, setRoles] = useState<Role[]>(MOCK_ROLES);
+  const [currencies, setCurrencies] = useState<Currency[]>(MOCK_CURRENCIES);
+  const [integrations, setIntegrations] = useState<Integration[]>(MOCK_INTEGRATIONS);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(MOCK_AUDIT_LOGS);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [expandedRole, setExpandedRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [syncingRates, setSyncingRates] = useState(false);
+  const [syncingIntegration, setSyncingIntegration] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<UserAccount | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+
+  // New user form state
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'Trade Finance Officer',
+    department: 'Trade Finance',
+    mfaEnabled: false
+  });
+
+  // New role form state
+  const [newRole, setNewRole] = useState({
+    name: '',
+    description: '',
+    permissions: [] as string[]
+  });
+
+  // Fetch data from Supabase on mount
+  useEffect(() => {
+    fetchAuditLogs();
+    fetchIntegrations();
+  }, []);
+
+  const fetchAuditLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setAuditLogs(data.map(log => ({
+          id: log.id,
+          timestamp: log.created_at,
+          user: log.user_id || 'System',
+          action: log.action,
+          resource: log.entity_type || '',
+          details: log.new_values ? JSON.stringify(log.new_values).slice(0, 50) : '',
+          ipAddress: log.ip_address || '',
+          status: log.status as 'success' | 'failure'
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+    }
+  };
+
+  const fetchIntegrations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('*');
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setIntegrations(data.map(int => ({
+          id: int.id,
+          name: int.name,
+          type: int.type as 'api' | 'webhook' | 'database' | 'service',
+          status: int.status as 'connected' | 'disconnected' | 'error',
+          lastSync: int.last_sync_at || '',
+          description: int.description || '',
+          icon: int.type === 'api' ? 'globe' : int.type === 'database' ? 'database' : 'link'
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching integrations:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -216,13 +303,214 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
       setSigningOut(false);
     }
   };
-  const [activeTab, setActiveTab] = useState<SettingsTab>('users');
-  const [users, setUsers] = useState<UserAccount[]>(MOCK_USERS);
-  const [currencies, setCurrencies] = useState<Currency[]>(MOCK_CURRENCIES);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [showAddRole, setShowAddRole] = useState(false);
-  const [expandedRole, setExpandedRole] = useState<string | null>(null);
+
+  // Add new user
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email) return;
+
+    setLoading(true);
+    try {
+      const newUserData: UserAccount = {
+        id: `U${String(users.length + 1).padStart(3, '0')}`,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        department: newUser.department,
+        status: 'pending',
+        lastLogin: '',
+        permissions: ['view_applications'],
+        mfaEnabled: newUser.mfaEnabled
+      };
+
+      // Log to audit
+      await supabase.from('audit_logs').insert({
+        action: 'CREATE_USER',
+        entity_type: 'User',
+        entity_id: newUserData.id,
+        new_values: { name: newUser.name, email: newUser.email, role: newUser.role },
+        status: 'success'
+      });
+
+      setUsers(prev => [...prev, newUserData]);
+      setShowAddUser(false);
+      setNewUser({ name: '', email: '', role: 'Trade Finance Officer', department: 'Trade Finance', mfaEnabled: false });
+    } catch (error) {
+      console.error('Error adding user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update user
+  const handleUpdateUser = async (userId: string, updates: Partial<UserAccount>) => {
+    setLoading(true);
+    try {
+      await supabase.from('audit_logs').insert({
+        action: 'UPDATE_USER',
+        entity_type: 'User',
+        entity_id: userId,
+        new_values: updates,
+        status: 'success'
+      });
+
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete user
+  const handleDeleteUser = async (userId: string) => {
+    setLoading(true);
+    try {
+      await supabase.from('audit_logs').insert({
+        action: 'DELETE_USER',
+        entity_type: 'User',
+        entity_id: userId,
+        status: 'success'
+      });
+
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add new role
+  const handleAddRole = async () => {
+    if (!newRole.name) return;
+
+    setLoading(true);
+    try {
+      const newRoleData: Role = {
+        id: `R${String(roles.length + 1).padStart(3, '0')}`,
+        name: newRole.name,
+        description: newRole.description,
+        permissions: newRole.permissions.map((p, i) => ({
+          id: `P${String(i + 10).padStart(3, '0')}`,
+          name: p,
+          category: 'Custom',
+          description: p.replace(/_/g, ' ')
+        })),
+        userCount: 0,
+        isSystem: false
+      };
+
+      await supabase.from('audit_logs').insert({
+        action: 'CREATE_ROLE',
+        entity_type: 'Role',
+        entity_id: newRoleData.id,
+        new_values: { name: newRole.name, permissions: newRole.permissions },
+        status: 'success'
+      });
+
+      setRoles(prev => [...prev, newRoleData]);
+      setShowAddRole(false);
+      setNewRole({ name: '', description: '', permissions: [] });
+    } catch (error) {
+      console.error('Error adding role:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete role
+  const handleDeleteRole = async (roleId: string) => {
+    const role = roles.find(r => r.id === roleId);
+    if (role?.isSystem) return;
+
+    setLoading(true);
+    try {
+      await supabase.from('audit_logs').insert({
+        action: 'DELETE_ROLE',
+        entity_type: 'Role',
+        entity_id: roleId,
+        status: 'success'
+      });
+
+      setRoles(prev => prev.filter(r => r.id !== roleId));
+    } catch (error) {
+      console.error('Error deleting role:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sync exchange rates
+  const handleSyncRates = async () => {
+    setSyncingRates(true);
+    try {
+      // Simulate API call to fetch rates
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Update currencies with slightly modified rates to show change
+      setCurrencies(prev => prev.map(c => ({
+        ...c,
+        exchangeRate: c.isBase ? 1 : c.exchangeRate * (0.99 + Math.random() * 0.02),
+        lastUpdated: new Date().toISOString()
+      })));
+
+      await supabase.from('audit_logs').insert({
+        action: 'SYNC_RATES',
+        entity_type: 'Currency',
+        new_values: { synced_at: new Date().toISOString() },
+        status: 'success'
+      });
+    } catch (error) {
+      console.error('Error syncing rates:', error);
+    } finally {
+      setSyncingRates(false);
+    }
+  };
+
+  // Sync integration
+  const handleSyncIntegration = async (integrationId: string) => {
+    setSyncingIntegration(integrationId);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      setIntegrations(prev => prev.map(int =>
+        int.id === integrationId
+          ? { ...int, lastSync: new Date().toISOString(), status: 'connected' as const }
+          : int
+      ));
+
+      await supabase.from('audit_logs').insert({
+        action: 'SYNC_INTEGRATION',
+        entity_type: 'Integration',
+        entity_id: integrationId,
+        status: 'success'
+      });
+    } catch (error) {
+      console.error('Error syncing integration:', error);
+    } finally {
+      setSyncingIntegration(null);
+    }
+  };
+
+  // Export audit logs
+  const handleExportLogs = () => {
+    const csvContent = [
+      ['Timestamp', 'User', 'Action', 'Resource', 'Details', 'IP Address', 'Status'].join(','),
+      ...filteredLogs.map(log =>
+        [log.timestamp, log.user, log.action, log.resource, `"${log.details}"`, log.ipAddress, log.status].join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -230,7 +518,7 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
     user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredLogs = MOCK_AUDIT_LOGS.filter(log =>
+  const filteredLogs = auditLogs.filter(log =>
     log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
     log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
     log.resource.toLowerCase().includes(searchQuery.toLowerCase())
@@ -359,13 +647,25 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                      <button
+                        onClick={() => setEditingUser(user)}
+                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Edit user"
+                      >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                      <button
+                        onClick={() => handleUpdateUser(user.id, { mfaEnabled: !user.mfaEnabled })}
+                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Toggle MFA"
+                      >
                         <Key className="w-4 h-4" />
                       </button>
-                      <button className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors">
+                      <button
+                        onClick={() => setShowDeleteConfirm(user.id)}
+                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
+                        title="Delete user"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -376,6 +676,181 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
           </tbody>
         </table>
       </div>
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-900 rounded-xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Add New User</h3>
+              <button onClick={() => setShowAddUser(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {roles.map(role => (
+                    <option key={role.id} value={role.name}>{role.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Department</label>
+                <select
+                  value={newUser.department}
+                  onChange={e => setNewUser(prev => ({ ...prev, department: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Trade Finance">Trade Finance</option>
+                  <option value="Risk Management">Risk Management</option>
+                  <option value="Compliance">Compliance</option>
+                  <option value="IT">IT</option>
+                  <option value="Operations">Operations</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="mfaEnabled"
+                  checked={newUser.mfaEnabled}
+                  onChange={e => setNewUser(prev => ({ ...prev, mfaEnabled: e.target.checked }))}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-800"
+                />
+                <label htmlFor="mfaEnabled" className="text-sm text-slate-400">Enable MFA</label>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddUser(false)}
+                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddUser}
+                disabled={loading || !newUser.name || !newUser.email}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Add User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-900 rounded-xl border border-slate-700 p-6 w-full max-w-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-500/20 rounded-lg">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Delete User</h3>
+            </div>
+            <p className="text-slate-400 mb-6">Are you sure you want to delete this user? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteUser(showDeleteConfirm)}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-900 rounded-xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Edit User</h3>
+              <button onClick={() => setEditingUser(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Status</label>
+                <select
+                  value={editingUser.status}
+                  onChange={e => setEditingUser(prev => prev ? { ...prev, status: e.target.value as 'active' | 'inactive' | 'pending' } : null)}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Role</label>
+                <select
+                  value={editingUser.role}
+                  onChange={e => setEditingUser(prev => prev ? { ...prev, role: e.target.value } : null)}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {roles.map(role => (
+                    <option key={role.id} value={role.name}>{role.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingUser(null)}
+                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleUpdateUser(editingUser.id, { status: editingUser.status, role: editingUser.role })}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -395,7 +870,7 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
 
       {/* Roles List */}
       <div className="space-y-4">
-        {MOCK_ROLES.map(role => (
+        {roles.map(role => (
           <div key={role.id} className="bg-slate-900 rounded-xl border border-slate-700">
             <button
               onClick={() => setExpandedRole(expandedRole === role.id ? null : role.id)}
@@ -452,7 +927,10 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
                       <Edit2 className="w-4 h-4" />
                       Edit Role
                     </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-red-400 text-sm hover:bg-red-500/10 rounded-lg transition-colors">
+                    <button
+                      onClick={() => handleDeleteRole(role.id)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-red-400 text-sm hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
                       <Trash2 className="w-4 h-4" />
                       Delete
                     </button>
@@ -463,6 +941,80 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
           </div>
         ))}
       </div>
+
+      {/* Create Role Modal */}
+      {showAddRole && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-slate-900 rounded-xl border border-slate-700 p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Create New Role</h3>
+              <button onClick={() => setShowAddRole(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Role Name</label>
+                <input
+                  type="text"
+                  value={newRole.name}
+                  onChange={e => setNewRole(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter role name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">Description</label>
+                <textarea
+                  value={newRole.description}
+                  onChange={e => setNewRole(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={2}
+                  placeholder="Describe this role"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Permissions</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {['view_applications', 'approve_applications', 'manage_documents', 'view_kyc', 'approve_kyc', 'view_aml', 'view_risk', 'generate_reports'].map(perm => (
+                    <label key={perm} className="flex items-center gap-2 p-2 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-800">
+                      <input
+                        type="checkbox"
+                        checked={newRole.permissions.includes(perm)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setNewRole(prev => ({ ...prev, permissions: [...prev.permissions, perm] }));
+                          } else {
+                            setNewRole(prev => ({ ...prev, permissions: prev.permissions.filter(p => p !== perm) }));
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-800"
+                      />
+                      <span className="text-sm text-white">{perm.replace(/_/g, ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowAddRole(false)}
+                className="flex-1 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddRole}
+                disabled={loading || !newRole.name}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Create Role
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -471,9 +1023,13 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-slate-400">Configure supported currencies and exchange rates</p>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors">
-          <RefreshCw className="w-4 h-4" />
-          Sync Rates
+        <button
+          onClick={handleSyncRates}
+          disabled={syncingRates}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${syncingRates ? 'animate-spin' : ''}`} />
+          {syncingRates ? 'Syncing...' : 'Sync Rates'}
         </button>
       </div>
 
@@ -546,9 +1102,10 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
 
       {/* Integrations Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {MOCK_INTEGRATIONS.map(integration => {
+        {integrations.map(integration => {
           const statusStyle = getStatusStyle(integration.status);
           const Icon = getIntegrationIcon(integration.icon);
+          const isSyncing = syncingIntegration === integration.id;
 
           return (
             <div key={integration.id} className="bg-slate-900 rounded-xl border border-slate-700 p-4">
@@ -578,10 +1135,15 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
                   Last sync: {formatTimestamp(integration.lastSync)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
-                    <RefreshCw className="w-4 h-4" />
+                  <button
+                    onClick={() => handleSyncIntegration(integration.id)}
+                    disabled={isSyncing}
+                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                    title="Sync now"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                   </button>
-                  <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                  <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors" title="Settings">
                     <Settings className="w-4 h-4" />
                   </button>
                 </div>
@@ -607,7 +1169,10 @@ export const BankAccountSettings: React.FC<BankAccountSettingsProps> = ({ onSign
             className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors">
+        <button
+          onClick={handleExportLogs}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+        >
           <Download className="w-4 h-4" />
           Export Logs
         </button>

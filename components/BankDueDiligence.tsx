@@ -262,6 +262,7 @@ const MOCK_AML_ALERTS: AMLAlert[] = [
 ];
 
 export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
+  console.log('BankDueDiligence rendering...');
   const [activeView, setActiveView] = useState<'kyc' | 'aml'>('kyc');
   const [kycProfiles, setKycProfiles] = useState<KYCProfile[]>(MOCK_KYC_PROFILES);
   const [amlAlerts, setAmlAlerts] = useState<AMLAlert[]>(MOCK_AML_ALERTS);
@@ -271,6 +272,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [riskFilter, setRiskFilter] = useState('all');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['documents', 'verifications', 'flags']));
+  const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => {
@@ -279,6 +281,18 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
         newSet.delete(section);
       } else {
         newSet.add(section);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAlert = (alertId: string) => {
+    setExpandedAlerts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(alertId)) {
+        newSet.delete(alertId);
+      } else {
+        newSet.add(alertId);
       }
       return newSet;
     });
@@ -323,15 +337,17 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
     return styles[risk];
   };
 
-  const getStatusStyle = (status: KYCProfile['status']) => {
-    const styles = {
+  const getStatusStyle = (status: string) => {
+    const styles: Record<string, { bg: string; text: string; icon: React.ElementType }> = {
       pending: { bg: 'bg-slate-500/20', text: 'text-slate-400', icon: Clock },
       in_progress: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: RefreshCw },
       approved: { bg: 'bg-green-500/20', text: 'text-green-400', icon: CheckCircle2 },
       rejected: { bg: 'bg-red-500/20', text: 'text-red-400', icon: XCircle },
-      expired: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: AlertCircle }
+      expired: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: AlertCircle },
+      verified: { bg: 'bg-green-500/20', text: 'text-green-400', icon: CheckCircle2 },
+      uploaded: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: Clock }
     };
-    return styles[status];
+    return styles[status] || styles.pending;
   };
 
   const getAlertSeverityStyle = (severity: AMLAlert['severity']) => {
@@ -547,10 +563,19 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
   );
 
   const renderKYCDetail = () => {
+    console.log('renderKYCDetail called, selectedProfile:', selectedProfile);
     if (!selectedProfile) return null;
+
+    // Defensive checks for required arrays
+    const documents = selectedProfile.documents || [];
+    const verifications = selectedProfile.verifications || [];
+    const flags = selectedProfile.flags || [];
+
+    console.log('documents:', documents, 'verifications:', verifications, 'flags:', flags);
 
     const riskStyle = getRiskStyle(selectedProfile.riskLevel);
     const statusStyle = getStatusStyle(selectedProfile.status);
+    console.log('riskStyle:', riskStyle, 'statusStyle:', statusStyle);
     const StatusIcon = statusStyle.icon;
 
     return (
@@ -597,7 +622,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Documents</p>
-            <p className="text-2xl font-bold text-white mt-1">{selectedProfile.documents.length}</p>
+            <p className="text-2xl font-bold text-white mt-1">{documents.length}</p>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Last Review</p>
@@ -610,21 +635,21 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
         </div>
 
         {/* Flags Alert */}
-        {selectedProfile.flags.length > 0 && (
+        {flags.length > 0 && (
           <div className={`p-4 rounded-lg border ${
-            selectedProfile.flags.some(f => f.severity === 'critical') ? 'bg-red-500/10 border-red-500/30' :
-            selectedProfile.flags.some(f => f.severity === 'warning') ? 'bg-amber-500/10 border-amber-500/30' :
+            flags.some(f => f.severity === 'critical') ? 'bg-red-500/10 border-red-500/30' :
+            flags.some(f => f.severity === 'warning') ? 'bg-amber-500/10 border-amber-500/30' :
             'bg-blue-500/10 border-blue-500/30'
           }`}>
             <div className="flex items-start gap-3">
               <AlertTriangle className={`w-5 h-5 mt-0.5 ${
-                selectedProfile.flags.some(f => f.severity === 'critical') ? 'text-red-400' :
-                selectedProfile.flags.some(f => f.severity === 'warning') ? 'text-amber-400' : 'text-blue-400'
+                flags.some(f => f.severity === 'critical') ? 'text-red-400' :
+                flags.some(f => f.severity === 'warning') ? 'text-amber-400' : 'text-blue-400'
               }`} />
               <div>
-                <p className="font-medium text-white">{selectedProfile.flags.length} Active Flag(s)</p>
+                <p className="font-medium text-white">{flags.length} Active Flag(s)</p>
                 <ul className="mt-2 space-y-1">
-                  {selectedProfile.flags.map(flag => (
+                  {flags.map(flag => (
                     <li key={flag.id} className="text-sm text-slate-300">• {flag.description}</li>
                   ))}
                 </ul>
@@ -641,16 +666,16 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
           >
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-400" />
-              Documents ({selectedProfile.documents.length})
+              Documents ({documents.length})
             </h3>
             {expandedSections.has('documents') ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
           </button>
           {expandedSections.has('documents') && (
             <div className="p-4 pt-0 space-y-3">
-              {selectedProfile.documents.length === 0 ? (
+              {documents.length === 0 ? (
                 <p className="text-slate-400 text-center py-4">No documents uploaded</p>
               ) : (
-                selectedProfile.documents.map(doc => {
+                documents.map(doc => {
                   const docStatusStyle = getStatusStyle(doc.status as KYCProfile['status']);
                   return (
                     <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
@@ -688,13 +713,13 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
           >
             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
               <ScanLine className="w-5 h-5 text-purple-400" />
-              Verifications ({selectedProfile.verifications.length})
+              Verifications ({verifications.length})
             </h3>
             {expandedSections.has('verifications') ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
           </button>
           {expandedSections.has('verifications') && (
             <div className="p-4 pt-0 space-y-3">
-              {selectedProfile.verifications.map(verification => {
+              {verifications.map(verification => {
                 const VerificationIcon = getVerificationIcon(verification.type);
                 const verificationStatusColors = {
                   pending: 'text-slate-400 bg-slate-500/20',
@@ -872,16 +897,26 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                     </div>
                   </div>
                 </div>
-                <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
-                  <ChevronDown className="w-5 h-5" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleAlert(alert.id);
+                  }}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  {expandedAlerts.has(alert.id) ? (
+                    <ChevronUp className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
                 </button>
               </div>
 
-              {alert.transactionDetails && alert.transactionDetails.length > 0 && (
+              {expandedAlerts.has(alert.id) && alert.transactionDetails && alert.transactionDetails.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-slate-700">
                   <p className="text-sm text-slate-400 mb-2">Related Transactions:</p>
                   <div className="space-y-2">
-                    {alert.transactionDetails.slice(0, 2).map(tx => (
+                    {alert.transactionDetails.map(tx => (
                       <div key={tx.id} className="flex items-center justify-between p-2 bg-slate-800/50 rounded">
                         <div className="flex items-center gap-3">
                           <span className={`w-2 h-2 rounded-full ${tx.type === 'credit' ? 'bg-green-400' : 'bg-red-400'}`} />

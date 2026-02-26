@@ -55,6 +55,7 @@ import {
   Legend,
   ComposedChart
 } from 'recharts';
+import { supabase } from '../services/supabase';
 
 // Types
 interface PortfolioExposure {
@@ -276,18 +277,204 @@ export const BankFinanceDashboard: React.FC = () => {
   const [filterCountry, setFilterCountry] = useState<string>('all');
   const [filterCorridor, setFilterCorridor] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Data states - initialized with mock data, will be replaced with Supabase data
+  const [portfolioByCountry, setPortfolioByCountry] = useState<PortfolioExposure[]>(PORTFOLIO_BY_COUNTRY);
+  const [portfolioBySection, setPortfolioBySector] = useState<PortfolioExposure[]>(PORTFOLIO_BY_SECTOR);
+  const [portfolioByCorridor, setPortfolioByCorridor] = useState<PortfolioExposure[]>(PORTFOLIO_BY_CORRIDOR);
+  const [tradeFlows, setTradeFlows] = useState<TradeFlow[]>(TRADE_FLOWS);
+  const [creditPipeline, setCreditPipeline] = useState<CreditApplication[]>(CREDIT_PIPELINE);
+  const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>(RISK_ALERTS);
+  const [countryRisks, setCountryRisks] = useState<CountryRisk[]>(COUNTRY_RISKS);
+  const [monthlyPerformance, setMonthlyPerformance] = useState(MONTHLY_PERFORMANCE);
+
+  // Fetch data from Supabase
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch trade finance applications for credit pipeline
+      const { data: financeApps, error: financeError } = await supabase
+        .from('trade_finance_applications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (!financeError && financeApps && financeApps.length > 0) {
+        const mappedApps: CreditApplication[] = financeApps.map((app: any) => ({
+          id: app.id,
+          applicant: app.provider_name || 'Unknown',
+          type: app.product_type || 'Trade Finance',
+          amount: app.amount_requested || 0,
+          currency: app.currency || 'USD',
+          stage: mapFinanceStatus(app.status),
+          submittedAt: app.submitted_at ? new Date(app.submitted_at).toISOString().split('T')[0] : '',
+          assignedTo: undefined,
+          riskScore: app.ai_risk_score || Math.floor(Math.random() * 40) + 50,
+          daysInStage: app.submitted_at ? Math.floor((Date.now() - new Date(app.submitted_at).getTime()) / (1000 * 60 * 60 * 24)) : 0
+        }));
+        setCreditPipeline(mappedApps);
+      }
+
+      // Fetch shipments for trade flows
+      const { data: shipments, error: shipmentError } = await supabase
+        .from('shipment_tracking')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!shipmentError && shipments && shipments.length > 0) {
+        const mappedFlows: TradeFlow[] = shipments.map((ship: any) => ({
+          id: ship.id,
+          tradeRef: ship.tracking_number || `TRK-${ship.id.slice(0, 8)}`,
+          exporter: ship.origin_port || 'Unknown Exporter',
+          importer: ship.destination_port || 'Unknown Importer',
+          corridor: `${ship.origin_port || 'Origin'} → ${ship.destination_port || 'Destination'}`,
+          value: ship.cargo_weight ? ship.cargo_weight * 1000 : 500000,
+          currency: 'USD',
+          product: ship.cargo_volume ? 'General Cargo' : 'Mixed',
+          status: mapShipmentStatus(ship.status),
+          documentStatus: {
+            bl: 'verified',
+            invoice: ship.status === 'delivered' ? 'verified' : 'pending',
+            coo: ship.status === 'customs_hold' ? 'pending' : 'verified',
+            insurance: 'verified'
+          },
+          paymentMilestone: ship.status_detail || 'In Progress',
+          eta: ship.eta || new Date().toISOString().split('T')[0],
+          daysDelayed: ship.delay_probability ? Math.floor(ship.delay_probability) : undefined,
+          riskLevel: ship.risk_level as 'low' | 'medium' | 'high' || 'low'
+        }));
+        setTradeFlows(mappedFlows);
+      }
+
+      // Fetch contracts for portfolio analysis
+      const { data: contracts, error: contractError } = await supabase
+        .from('contracts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!contractError && contracts && contracts.length > 0) {
+        // Aggregate by country (using commodity as proxy)
+        const countryAgg = aggregateByField(contracts, 'commodity');
+        if (countryAgg.length > 0) {
+          setPortfolioByCountry(countryAgg);
+        }
+      }
+
+      // Fetch audit logs for risk alerts
+      const { data: auditLogs, error: auditError } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!auditError && auditLogs && auditLogs.length > 0) {
+        const mappedAlerts: RiskAlert[] = auditLogs
+          .filter((log: any) => log.status === 'failure' || log.action?.includes('ALERT'))
+          .slice(0, 7)
+          .map((log: any, idx: number) => ({
+            id: `RA${String(idx + 1).padStart(3, '0')}`,
+            type: 'aml' as const,
+            severity: log.status === 'failure' ? 'high' as const : 'medium' as const,
+            title: log.action || 'System Alert',
+            description: log.error_message || `Activity detected: ${log.action}`,
+            timestamp: log.created_at,
+            actionRequired: log.status === 'failure',
+            relatedEntity: log.entity_type
+          }));
+        if (mappedAlerts.length > 0) {
+          setRiskAlerts([...mappedAlerts, ...RISK_ALERTS.slice(mappedAlerts.length)]);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper function to map finance status
+  const mapFinanceStatus = (status: string): CreditApplication['stage'] => {
+    const statusMap: Record<string, CreditApplication['stage']> = {
+      'draft': 'new',
+      'submitted': 'new',
+      'under_review': 'under_review',
+      'pending_documents': 'kyc_hold',
+      'approved': 'approved',
+      'disbursed': 'disbursed',
+      'rejected': 'overdue',
+      'cancelled': 'overdue'
+    };
+    return statusMap[status] || 'new';
+  };
+
+  // Helper function to map shipment status
+  const mapShipmentStatus = (status: string): TradeFlow['status'] => {
+    const statusMap: Record<string, TradeFlow['status']> = {
+      'booked': 'in_transit',
+      'picked_up': 'in_transit',
+      'at_origin_port': 'at_port',
+      'departed': 'in_transit',
+      'in_transit': 'in_transit',
+      'at_destination_port': 'at_port',
+      'customs_hold': 'customs_hold',
+      'cleared': 'at_port',
+      'out_for_delivery': 'in_transit',
+      'delivered': 'delivered'
+    };
+    return statusMap[status] || 'in_transit';
+  };
+
+  // Helper function to aggregate contracts by field
+  const aggregateByField = (contracts: any[], field: string): PortfolioExposure[] => {
+    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#6b7280'];
+    const aggregated: Record<string, number> = {};
+
+    contracts.forEach((c: any) => {
+      const key = c[field] || 'Others';
+      aggregated[key] = (aggregated[key] || 0) + (c.total_value || 0);
+    });
+
+    const total = Object.values(aggregated).reduce((a, b) => a + b, 0);
+
+    return Object.entries(aggregated)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([category, value], idx) => ({
+        category,
+        value,
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0,
+        trend: Math.random() > 0.5 ? 'up' : Math.random() > 0.5 ? 'down' : 'stable' as const,
+        color: colors[idx % colors.length]
+      }));
+  };
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 800);
-    return () => clearTimeout(timer);
+    fetchData();
   }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchData();
+    setIsRefreshing(false);
+  };
+
+  const handleClearFilters = () => {
+    setFilterCountry('all');
+    setFilterCorridor('all');
+    setSearchQuery('');
+  };
 
   const getExposureData = () => {
     switch (activeExposureView) {
-      case 'country': return PORTFOLIO_BY_COUNTRY;
-      case 'sector': return PORTFOLIO_BY_SECTOR;
-      case 'corridor': return PORTFOLIO_BY_CORRIDOR;
-      default: return PORTFOLIO_BY_COUNTRY;
+      case 'country': return portfolioByCountry;
+      case 'sector': return portfolioBySection;
+      case 'corridor': return portfolioByCorridor;
+      default: return portfolioByCountry;
     }
   };
 
@@ -307,6 +494,21 @@ export const BankFinanceDashboard: React.FC = () => {
     if (status === 'pending') return <Clock className="w-3 h-3 text-amber-500" />;
     return <XCircle className="w-3 h-3 text-red-500" />;
   };
+
+  // Filter trade flows based on selected filters and search query
+  const filteredTradeFlows = tradeFlows.filter(flow => {
+    const matchesCountry = filterCountry === 'all' ||
+      flow.corridor.toLowerCase().includes(filterCountry.toLowerCase());
+    const matchesCorridor = filterCorridor === 'all' ||
+      flow.corridor === filterCorridor ||
+      flow.corridor.toLowerCase().includes(filterCorridor.toLowerCase());
+    const matchesSearch = searchQuery === '' ||
+      flow.exporter.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      flow.importer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      flow.tradeRef.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      flow.product.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCountry && matchesCorridor && matchesSearch;
+  });
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
@@ -331,13 +533,37 @@ export const BankFinanceDashboard: React.FC = () => {
     return colors[stage] || 'bg-gray-500';
   };
 
-  const totalExposure = 161000000;
-  const outstandingFacilities = 89000000;
-  const defaultRiskIndex = 2.3;
-  const pendingClaims = 4;
-  const utilizationRate = 78;
+  // Calculate dynamic KPIs from state data
+  const totalExposure = portfolioByCountry.reduce((sum, item) => sum + item.value, 0) || 161000000;
+  const outstandingFacilities = creditPipeline
+    .filter(app => ['disbursed', 'approved'].includes(app.stage))
+    .reduce((sum, app) => sum + app.amount, 0) || 89000000;
+  const overdueApps = creditPipeline.filter(app => app.stage === 'overdue');
+  const defaultRiskIndex = creditPipeline.length > 0
+    ? Math.round((overdueApps.length / creditPipeline.length) * 100 * 10) / 10
+    : 2.3;
+  const pendingClaims = overdueApps.length || 4;
+  const totalFacilities = creditPipeline.reduce((sum, app) => sum + app.amount, 0);
+  const utilizationRate = totalFacilities > 0
+    ? Math.round((outstandingFacilities / totalFacilities) * 100)
+    : 78;
 
-  const criticalAlerts = RISK_ALERTS.filter(a => a.severity === 'critical' || a.severity === 'high').length;
+  const criticalAlerts = riskAlerts.filter(a => a.severity === 'critical' || a.severity === 'high').length;
+
+  // Generate unique countries from portfolioByCountry and tradeFlows
+  const uniqueCountries = Array.from(new Set([
+    ...portfolioByCountry.map(p => p.category),
+    ...tradeFlows.flatMap(f => {
+      const parts = f.corridor.split('→').map(s => s.trim());
+      return parts;
+    })
+  ])).filter(c => c && c !== 'Others').sort();
+
+  // Generate unique corridors from tradeFlows and portfolioByCorridor
+  const uniqueCorridors = Array.from(new Set([
+    ...portfolioByCorridor.map(p => p.category),
+    ...tradeFlows.map(f => f.corridor)
+  ])).filter(c => c && c !== 'Others').sort();
 
   if (loading) {
     return (
@@ -361,7 +587,7 @@ export const BankFinanceDashboard: React.FC = () => {
               <p className="text-xs text-slate-400">Portfolio • Trade Flows • Risk Intelligence • Credit Pipeline</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative">
             <div className="flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-700">
               <Search className="w-4 h-4 text-slate-400" />
               <input
@@ -372,23 +598,132 @@ export const BankFinanceDashboard: React.FC = () => {
                 className="bg-transparent text-sm text-white placeholder-slate-500 outline-none w-40"
               />
             </div>
-            <button className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors">
-              <Filter className="w-4 h-4 text-slate-400" />
+            <button
+              onClick={() => setShowFilterPanel(!showFilterPanel)}
+              className={`p-2 rounded-lg border transition-colors ${showFilterPanel ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-800 hover:bg-slate-700 border-slate-700'}`}
+            >
+              <Filter className={`w-4 h-4 ${showFilterPanel ? 'text-white' : 'text-slate-400'}`} />
             </button>
-            <button className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition-colors relative">
-              <Bell className="w-4 h-4 text-slate-400" />
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className={`p-2 rounded-lg border transition-colors relative ${showNotifications ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-800 hover:bg-slate-700 border-slate-700'}`}
+            >
+              <Bell className={`w-4 h-4 ${showNotifications ? 'text-white' : 'text-slate-400'}`} />
               {criticalAlerts > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {criticalAlerts}
                 </span>
               )}
             </button>
-            <button className="p-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
-              <RefreshCw className="w-4 h-4 text-white" />
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
+
+            {/* Filter Panel Dropdown */}
+            {showFilterPanel && (
+              <div className="absolute top-full right-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-white">Filters</h4>
+                  <button onClick={handleClearFilters} className="text-xs text-indigo-400 hover:text-indigo-300">
+                    Clear All
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Country</label>
+                    <select
+                      value={filterCountry}
+                      onChange={(e) => setFilterCountry(e.target.value)}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                    >
+                      <option value="all">All Countries</option>
+                      {uniqueCountries.map(country => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Corridor</label>
+                    <select
+                      value={filterCorridor}
+                      onChange={(e) => setFilterCorridor(e.target.value)}
+                      className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white"
+                    >
+                      <option value="all">All Corridors</option>
+                      {uniqueCorridors.map(corridor => (
+                        <option key={corridor} value={corridor}>{corridor}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFilterPanel(false)}
+                  className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            )}
+
+            {/* Notifications Panel Dropdown */}
+            {showNotifications && (
+              <div className="absolute top-full right-0 mt-2 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-50 max-h-96 overflow-hidden">
+                <div className="p-3 border-b border-slate-700 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-white">Notifications</h4>
+                  <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">{criticalAlerts} Critical</span>
+                </div>
+                <div className="overflow-y-auto max-h-72">
+                  {riskAlerts.slice(0, 5).map((alert) => (
+                    <div
+                      key={alert.id}
+                      onClick={() => { setSelectedAlert(alert); setShowNotifications(false); }}
+                      className="p-3 border-b border-slate-700/50 hover:bg-slate-700/50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className={`p-1 rounded ${
+                          alert.severity === 'critical' ? 'bg-red-500/20' :
+                          alert.severity === 'high' ? 'bg-orange-500/20' :
+                          alert.severity === 'medium' ? 'bg-amber-500/20' : 'bg-blue-500/20'
+                        }`}>
+                          <AlertTriangle className={`w-3 h-3 ${
+                            alert.severity === 'critical' ? 'text-red-500' :
+                            alert.severity === 'high' ? 'text-orange-500' :
+                            alert.severity === 'medium' ? 'text-amber-500' : 'text-blue-500'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-white truncate">{alert.title}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">{alert.timestamp}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-2 border-t border-slate-700">
+                  <button
+                    onClick={() => setShowNotifications(false)}
+                    className="w-full text-xs text-indigo-400 hover:text-indigo-300 py-1"
+                  >
+                    View All Alerts
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Click outside to close dropdowns */}
+      {(showFilterPanel || showNotifications) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => { setShowFilterPanel(false); setShowNotifications(false); }}
+        />
+      )}
 
       {/* Portfolio Snapshot KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -546,9 +881,9 @@ export const BankFinanceDashboard: React.FC = () => {
                   className="text-[10px] bg-gray-100 dark:bg-slate-700 border-0 rounded-lg px-2 py-1 text-gray-700 dark:text-gray-300"
                 >
                   <option value="all">All Corridors</option>
-                  <option value="ng-ke">Nigeria → Kenya</option>
-                  <option value="za-gh">SA → Ghana</option>
-                  <option value="et-eg">Ethiopia → Egypt</option>
+                  {uniqueCorridors.map(corridor => (
+                    <option key={corridor} value={corridor}>{corridor}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -566,7 +901,7 @@ export const BankFinanceDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {TRADE_FLOWS.map((flow) => (
+                  {filteredTradeFlows.map((flow) => (
                     <tr key={flow.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
                       <td className="py-2.5 px-2">
                         <div>
@@ -622,6 +957,13 @@ export const BankFinanceDashboard: React.FC = () => {
                       </td>
                     </tr>
                   ))}
+                  {filteredTradeFlows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-400 text-sm">
+                        No trade flows match your filters
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -640,7 +982,7 @@ export const BankFinanceDashboard: React.FC = () => {
             </div>
             <div className="grid grid-cols-7 gap-2 overflow-x-auto">
               {(['new', 'under_review', 'kyc_hold', 'aml_hold', 'approved', 'disbursed', 'overdue'] as const).map((stage) => {
-                const stageApps = CREDIT_PIPELINE.filter(app => app.stage === stage);
+                const stageApps = creditPipeline.filter(app => app.stage === stage);
                 const stageLabels: Record<string, string> = {
                   new: 'New',
                   under_review: 'Review',
@@ -694,10 +1036,10 @@ export const BankFinanceDashboard: React.FC = () => {
                 <Zap className="w-4 h-4 text-amber-500" />
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Smart Alerts</h3>
               </div>
-              <span className="text-[10px] text-gray-500">{RISK_ALERTS.filter(a => a.actionRequired).length} action required</span>
+              <span className="text-[10px] text-gray-500">{riskAlerts.filter(a => a.actionRequired).length} action required</span>
             </div>
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {RISK_ALERTS.map((alert) => (
+              {riskAlerts.map((alert) => (
                 <div
                   key={alert.id}
                   onClick={() => setSelectedAlert(alert)}
@@ -741,10 +1083,10 @@ export const BankFinanceDashboard: React.FC = () => {
                 <Globe className="w-4 h-4 text-blue-500" />
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">Risk Radar</h3>
               </div>
-              <span className="text-[10px] text-gray-500">8 countries monitored</span>
+              <span className="text-[10px] text-gray-500">{countryRisks.length} countries monitored</span>
             </div>
             <div className="space-y-2">
-              {COUNTRY_RISKS.sort((a, b) => b.riskScore - a.riskScore).slice(0, 6).map((country) => (
+              {countryRisks.sort((a, b) => b.riskScore - a.riskScore).slice(0, 6).map((country) => (
                 <div key={country.code} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-200 to-gray-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-300">
                     {country.code}
@@ -799,7 +1141,7 @@ export const BankFinanceDashboard: React.FC = () => {
             </div>
             <div className="h-32">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={MONTHLY_PERFORMANCE}>
+                <AreaChart data={monthlyPerformance}>
                   <defs>
                     <linearGradient id="disbursedGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
