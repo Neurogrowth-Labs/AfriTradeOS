@@ -370,7 +370,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         {view === 'LOGIN' ? 'Welcome Back.' : 
                          view === 'FORGOT_PASSWORD' ? 'Secure Reset.' : 
                          view === 'EMAIL_VERIFICATION' ? 'Verify Email.' :
-                         view === 'SIGNUP' ? 'Simulation Mode.' :
+                         view === 'SIGNUP' ? 'Real Time Mode.' :
                          'Setup Profile.'}
                     </h1>
                     <p className="text-gray-300 text-sm leading-relaxed">
