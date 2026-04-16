@@ -348,32 +348,33 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-trade-bg dark:bg-slate-950 flex items-center justify-center p-4 transition-colors duration-500 font-sans">
+    <div className="fixed inset-0 z-[100] bg-trade-bg dark:bg-slate-950 flex items-center justify-center p-4 md:p-6 transition-colors duration-500 font-sans">
         
         {/* Background Ambient Glow */}
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-trade-secondary/20 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-trade-accent/10 rounded-full blur-3xl" />
 
-        <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 min-h-[550px] flex">
+        <div className="card-premium relative w-full max-w-5xl overflow-hidden min-h-[600px] flex">
             
             {/* Left Panel: Visual & Messaging */}
-            <div className="hidden md:flex w-5/12 bg-trade-primary relative p-8 flex-col justify-between text-white overflow-hidden">
+            <div className="hidden md:flex w-5/12 bg-trade-primary relative p-10 flex-col justify-between text-white overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-trade-primary/95 to-trade-secondary/95 z-10" />
                 <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" alt="Trade" />
+                <div className="absolute inset-0 z-10 opacity-[0.04] bg-[radial-gradient(circle_at_20%_20%,white_0.7px,transparent_0.8px)] bg-[length:18px_18px]" />
                 
                 <div className="relative z-20">
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-3 mb-8">
                         <div className="w-8 h-8 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-lg flex items-center justify-center font-bold font-heading text-white text-lg shadow-lg">A</div>
-                        <span className="text-xl font-bold font-heading tracking-tight">AfriTradeOS</span>
+                        <span className="type-header text-white">AfriTradeOS</span>
                     </div>
-                    <h1 className="text-3xl font-bold font-heading leading-tight mb-3">
+                    <h1 className="type-hero text-white mb-4">
                         {view === 'LOGIN' ? 'Welcome Back.' : 
                          view === 'FORGOT_PASSWORD' ? 'Secure Reset.' : 
                          view === 'EMAIL_VERIFICATION' ? 'Verify Email.' :
                          view === 'SIGNUP' ? 'Real Time Mode.' :
                          'Setup Profile.'}
                     </h1>
-                    <p className="text-gray-300 text-sm leading-relaxed">
+                    <p className="type-body text-white/72 max-w-md">
                         {view === 'LOGIN' || view === 'FORGOT_PASSWORD'
                             ? 'Securely access your trade dashboard, monitor live shipments, and manage compliance from one unified operating system.'
                             : view === 'EMAIL_VERIFICATION' 
@@ -383,16 +384,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     </p>
                 </div>
 
-                <div className="relative z-20 space-y-3">
-                    <div className="flex items-center gap-3 text-xs text-gray-200">
+                <div className="relative z-20 space-y-4">
+                    <div className="flex items-center gap-3 text-sm text-white/78">
                         <CheckCircle className="w-4 h-4 text-trade-accent" /> 
                         <span>Instant Rules of Origin Compliance</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-200">
+                    <div className="flex items-center gap-3 text-sm text-white/78">
                         <CheckCircle className="w-4 h-4 text-trade-accent" /> 
                         <span>Verified Partner Network</span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-gray-200">
+                    <div className="flex items-center gap-3 text-sm text-white/78">
                         <CheckCircle className="w-4 h-4 text-trade-accent" /> 
                         <span>Access to Trade Finance</span>
                     </div>
@@ -400,31 +401,31 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             </div>
 
             {/* Right Panel: Interactive Flow */}
-            <div className="w-full md:w-7/12 p-8 flex flex-col justify-center relative bg-white dark:bg-slate-900 transition-all">
+            <div className="w-full md:w-7/12 p-6 md:p-10 flex flex-col justify-center relative bg-white/90 dark:bg-slate-900/90 transition-all backdrop-blur-sm">
                 
                 {errorMsg && (
-                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-2xl flex items-center gap-2 animate-in slide-in-from-top-2 border border-red-100 dark:border-red-900/40">
                         <AlertCircle className="w-4 h-4 shrink-0" /> <span className="flex-1">{errorMsg}</span>
                     </div>
                 )}
 
                 {/* 1. LOGIN VIEW */}
                 {view === 'LOGIN' && (
-                    <form onSubmit={handleLoginSubmit} className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
+                    <form onSubmit={handleLoginSubmit} className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
                         <div>
-                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">Sign In</h2>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">Access your AfriTradeOS account.</p>
+                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Sign In</h2>
+                            <p className="type-body text-gray-500 dark:text-gray-400">Access your AfriTradeOS account.</p>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Email Address</label>
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Email Address</label>
                                 <div className="relative group">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="email" 
                                         required
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
                                         placeholder="name@company.com"
                                         value={loginEmail}
                                         onChange={e => setLoginEmail(e.target.value)}
@@ -432,16 +433,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5 flex justify-between">
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2 flex justify-between items-center">
                                     Password
-                                    <button type="button" onClick={() => setView('FORGOT_PASSWORD')} className="text-trade-secondary dark:text-blue-400 hover:underline normal-case font-medium">Forgot?</button>
+                                    <button type="button" onClick={() => setView('FORGOT_PASSWORD')} className="text-trade-secondary dark:text-blue-400 hover:underline normal-case font-medium tracking-normal">Forgot?</button>
                                 </label>
                                 <div className="relative group">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type={showPassword ? "text" : "password"}
                                         required
-                                        className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="input-premium w-full pl-10 pr-10 text-trade-primary dark:text-white"
                                         placeholder="••••••••"
                                         value={loginPassword}
                                         onChange={e => setLoginPassword(e.target.value)}
@@ -460,7 +461,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <button 
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70"
+                            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
                         </button>
@@ -485,7 +486,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             <span className="text-xs font-bold text-trade-primary dark:text-white">Continue with Google</span>
                         </button> */}
 
-                        <p className="text-center text-sm text-gray-500 mt-6">
+                        <p className="text-center type-body text-gray-500 mt-6">
                             Don't have an account? <button type="button" onClick={() => setView('SIGNUP')} className="text-trade-primary dark:text-white font-bold hover:underline">Sign up</button>
                         </p>
                     </form>
@@ -493,11 +494,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 {/* 2. FORGOT PASSWORD VIEW */}
                 {view === 'FORGOT_PASSWORD' && (
-                    <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
+                    <div className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
                         <div className="flex items-center justify-between">
                             <button 
                                 onClick={() => setView('LOGIN')}
-                                className="group flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-trade-primary dark:hover:text-white transition-colors"
+                                className="group flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-trade-primary dark:hover:text-white transition-colors"
                             >
                                 <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-gray-200 dark:group-hover:bg-slate-700 flex items-center justify-center transition-colors">
                                     <ArrowLeft className="w-3 h-3" />
@@ -507,28 +508,28 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         </div>
 
                         <div>
-                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center mb-4 border border-blue-100 dark:border-blue-800">
+                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-5 border border-blue-100 dark:border-blue-800">
                                 <ShieldCheck className="w-6 h-6 text-trade-primary dark:text-blue-400" />
                             </div>
-                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-2">Forgot Password?</h2>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Forgot Password?</h2>
+                            <p className="type-body text-gray-500 dark:text-gray-400">
                                 Enter the email address associated with your account and we'll send you a secure link to reset your password.
                             </p>
                         </div>
 
                         {forgotSuccess ? (
-                            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-6 text-center animate-fade-in">
+                            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-[20px] p-6 text-center animate-fade-in">
                                 <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
                                     <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
                                 </div>
-                                <h3 className="text-green-800 dark:text-green-300 font-bold mb-2">Check your email</h3>
-                                <p className="text-sm text-green-700 dark:text-green-400 mb-6">
+                                <h3 className="type-header text-green-800 dark:text-green-300 mb-2">Check your email</h3>
+                                <p className="type-body text-green-700 dark:text-green-400 mb-6">
                                     If an account exists for <span className="font-bold block mt-1">{forgotEmail}</span>, you will receive a reset link shortly.
                                 </p>
                                 <button 
                                     type="button"
                                     onClick={() => setView('LOGIN')}
-                                    className="w-full py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                                    className="btn-secondary w-full"
                                 >
                                     Back to Sign In
                                 </button>
@@ -536,13 +537,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         ) : (
                             <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5 ml-1">Work Email</label>
+                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2 ml-1">Work Email</label>
                                     <div className="relative group">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                         <input 
                                             type="email" 
                                             required
-                                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all placeholder:text-gray-400"
+                                            className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white placeholder:text-gray-400"
                                             placeholder="name@company.com"
                                             value={forgotEmail}
                                             onChange={e => setForgotEmail(e.target.value)}
@@ -553,7 +554,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                 <button 
                                     type="submit"
                                     disabled={loading || !forgotEmail}
-                                    className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-xl font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                    className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
                                 >
                                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                                         <>
@@ -568,7 +569,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 {/* 3. EMAIL VERIFICATION VIEW */}
                 {view === 'EMAIL_VERIFICATION' && (
-                    <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full text-center">
+                    <div className="space-y-6 animate-fade-in max-w-md mx-auto w-full text-center">
                         <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto border border-blue-100 dark:border-blue-800 shadow-sm relative">
                             <Inbox className="w-8 h-8 text-trade-primary dark:text-blue-400" />
                             <div className="absolute -top-1 -right-1 w-6 h-6 bg-trade-accent rounded-full flex items-center justify-center shadow-md animate-bounce">
@@ -576,22 +577,22 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             </div>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-2">Check your inbox</h2>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Check your inbox</h2>
+                            <p className="type-body text-gray-500 dark:text-gray-400">
                                 We've sent a welcome email to <span className="font-bold text-trade-primary dark:text-white">{signupEmail}</span> with a verification link.
                             </p>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
+                            <p className="type-body text-gray-500 dark:text-gray-400 mt-2">
                                 Please click the link in the email to activate your account and access the platform.
                             </p>
                         </div>
                         <div className="pt-4 space-y-3">
                             <button
                                 onClick={() => setView('LOGIN')}
-                                className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg flex items-center justify-center gap-2"
+                                className="btn-primary w-full flex items-center justify-center gap-2"
                             >
                                 Go to Sign In
                             </button>
-                            <p className="text-xs text-gray-400 mt-2">
+                            <p className="type-caption mt-2">
                                 Didn't receive it? Check spam or <button className="text-trade-primary hover:underline" onClick={() => setView('SIGNUP')}>try another email</button>.
                             </p>
                         </div>
@@ -600,21 +601,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 {/* 4. SIGN UP VIEW (Enhanced) */}
                 {view === 'SIGNUP' && (
-                    <form onSubmit={handleSignupSubmit} className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
+                    <form onSubmit={handleSignupSubmit} className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
                         <div>
-                            <h2 className="text-2xl font-bold font-heading text-trade-primary dark:text-white mb-1">Create Account</h2>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm">Start your AfCFTA journey securely.</p>
+                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Create Account</h2>
+                            <p className="type-body text-gray-500 dark:text-gray-400">Start your AfCFTA journey securely.</p>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Full Name</label>
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Full Name</label>
                                 <div className="relative group">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="text" 
                                         required
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
                                         placeholder="Kofi Mensah"
                                         value={signupName}
                                         onChange={e => setSignupName(e.target.value)}
@@ -622,13 +623,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Work Email</label>
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Work Email</label>
                                 <div className="relative group">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="email" 
                                         required
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
                                         placeholder="name@company.com"
                                         value={signupEmail}
                                         onChange={e => setSignupEmail(e.target.value)}
@@ -638,13 +639,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             
                             {/* Password Field */}
                             <div>
-                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Password</label>
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Password</label>
                                 <div className="relative group">
                                     <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type={showPassword ? "text" : "password"}
                                         required
-                                        className="w-full pl-10 pr-10 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="input-premium w-full pl-10 pr-10 text-trade-primary dark:text-white"
                                         placeholder="Create a strong password"
                                         value={signupPassword}
                                         onChange={e => setSignupPassword(e.target.value)}
@@ -666,20 +667,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                                 style={{ width: `${(passwordStrength / 4) * 100}%` }} 
                                             />
                                         </div>
-                                        <span className="text-[10px] font-bold text-gray-500">{getStrengthLabel(passwordStrength)}</span>
+                                        <span className="type-caption font-semibold text-gray-500">{getStrengthLabel(passwordStrength)}</span>
                                     </div>
                                 )}
                             </div>
 
                             {/* Confirm Password Field */}
                             <div>
-                                <label className="block text-xs font-bold text-trade-primary dark:text-gray-400 uppercase mb-1.5">Confirm Password</label>
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Confirm Password</label>
                                 <div className="relative group">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
                                     <input 
                                         type="password" 
                                         required
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-2 focus:ring-trade-primary/10 focus:border-trade-primary transition-all"
+                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
                                         placeholder="Repeat your password"
                                         value={signupConfirmPassword}
                                         onChange={e => setSignupConfirmPassword(e.target.value)}
@@ -698,7 +699,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                         onChange={(e) => setTermsAccepted(e.target.checked)}
                                     />
                                 </div>
-                                <label htmlFor="terms" className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                                <label htmlFor="terms" className="type-caption text-gray-500 dark:text-gray-400 leading-relaxed">
                                     I agree to the <a href="#" className="text-trade-primary dark:text-white font-bold hover:underline">Terms of Service</a> and <a href="#" className="text-trade-primary dark:text-white font-bold hover:underline">Privacy Policy</a>.
                                 </label>
                             </div>
@@ -707,12 +708,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <button 
                             type="submit"
                             disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword}
-                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start with AfriTradeOS'}
                         </button>
 
-                        <p className="text-center text-sm text-gray-500 mt-6">
+                        <p className="text-center type-body text-gray-500 mt-6">
                             Already have an account? <button type="button" onClick={() => setView('LOGIN')} className="text-trade-primary dark:text-white font-bold hover:underline">Sign in</button>
                         </p>
                     </form>
@@ -720,29 +721,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 {/* 5. ROLE SELECTION (Onboarding Step 1) */}
                 {view === 'ROLE_SELECT' && (
-                    <div className="space-y-6 animate-fade-in max-w-sm mx-auto w-full">
+                    <div className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
                         <div>
-                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-1">Select Account Type</h2>
-                             <p className="text-gray-500 dark:text-gray-400 text-xs">Your role determines tools, permissions, and insights.</p>
+                             <h2 className="type-header text-trade-primary dark:text-white mb-2">Select Account Type</h2>
+                             <p className="type-body text-gray-500 dark:text-gray-400">Your role determines tools, permissions, and insights.</p>
                         </div>
 
-                        <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
                             {roles.map(r => (
                                 <button
                                     key={r.id}
                                     onClick={() => handleRoleSelect(r.id)}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${
                                         selectedRole === r.id 
-                                        ? 'border-trade-accent bg-trade-accent/5 ring-1 ring-trade-accent' 
-                                        : 'border-gray-200 dark:border-slate-700 hover:border-trade-secondary/50 dark:hover:border-slate-600'
+                                        ? 'border-trade-accent bg-trade-accent/6 ring-1 ring-trade-accent shadow-[0_14px_30px_rgba(201,162,77,0.14)]' 
+                                        : 'border-gray-200 dark:border-slate-700 hover:border-trade-secondary/50 dark:hover:border-slate-600 hover:shadow-[0_12px_24px_rgba(15,23,42,0.08)]'
                                     }`}
                                 >
-                                    <div className={`p-2 rounded-md ${selectedRole === r.id ? 'bg-trade-accent text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400'}`}>
+                                    <div className={`p-3 rounded-xl ${selectedRole === r.id ? 'bg-trade-accent text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400'}`}>
                                         <r.icon className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className={`text-sm font-bold ${selectedRole === r.id ? 'text-trade-primary dark:text-trade-accent' : 'text-trade-primary dark:text-white'}`}>{r.label}</h3>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{r.desc}</p>
+                                        <h3 className={`type-body font-semibold ${selectedRole === r.id ? 'text-trade-primary dark:text-trade-accent' : 'text-trade-primary dark:text-white'}`}>{r.label}</h3>
+                                        <p className="type-caption text-gray-500 dark:text-gray-400">{r.desc}</p>
                                     </div>
                                 </button>
                             ))}
@@ -751,7 +752,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <button 
                             onClick={handleRoleNext}
                             disabled={!selectedRole}
-                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             Continue <ArrowRight className="w-4 h-4" />
                         </button>
@@ -760,29 +761,29 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 {/* 6. PROFILE SETUP (Onboarding Step 2) */}
                 {view === 'PROFILE_SETUP' && (
-                     <div className="space-y-5 animate-fade-in max-w-sm mx-auto w-full">
+                     <div className="space-y-5 animate-fade-in max-w-md mx-auto w-full">
                          <div>
-                             <h2 className="text-xl font-bold font-heading text-trade-primary dark:text-white mb-1">Organization Profile</h2>
-                             <p className="text-gray-500 dark:text-gray-400 text-xs">Tell us about your business to optimize the OS.</p>
+                             <h2 className="type-header text-trade-primary dark:text-white mb-2">Organization Profile</h2>
+                             <p className="type-body text-gray-500 dark:text-gray-400">Tell us about your business to optimize the OS.</p>
                         </div>
 
                         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Your Name</label>
+                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Your Name</label>
                                     <input 
                                         type="text" 
-                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        className="input-premium w-full text-trade-primary dark:text-white"
                                         value={profile.userName}
                                         onChange={(e) => setProfile({...profile, userName: e.target.value})}
                                         placeholder="John Doe"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Company</label>
+                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Company</label>
                                     <input 
                                         type="text" 
-                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        className="input-premium w-full text-trade-primary dark:text-white"
                                         value={profile.companyName}
                                         onChange={(e) => setProfile({...profile, companyName: e.target.value})}
                                         placeholder="Trading Co. Ltd"
@@ -791,9 +792,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Country of Operation</label>
+                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Country of Operation</label>
                                 <select 
-                                    className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                    className="input-premium w-full text-trade-primary dark:text-white"
                                     value={profile.country}
                                     onChange={(e) => setProfile({...profile, country: e.target.value})}
                                 >
@@ -803,19 +804,19 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Phone</label>
+                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Phone</label>
                                     <input 
                                         type="tel" 
-                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        className="input-premium w-full text-trade-primary dark:text-white"
                                         value={profile.phone}
                                         onChange={(e) => setProfile({...profile, phone: e.target.value})}
                                         placeholder="+233..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-bold text-trade-primary dark:text-gray-400 uppercase mb-1">Size</label>
+                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Size</label>
                                     <select 
-                                        className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-trade-primary dark:text-white text-sm outline-none focus:ring-1 focus:ring-trade-accent/50"
+                                        className="input-premium w-full text-trade-primary dark:text-white"
                                         value={profile.size}
                                         onChange={(e) => setProfile({...profile, size: e.target.value})}
                                     >
@@ -830,7 +831,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <button 
                             onClick={handleFinalize}
                             disabled={loading}
-                            className="w-full py-3 bg-trade-primary hover:bg-trade-secondary text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-trade-primary/20 flex items-center justify-center gap-2"
+                            className="btn-primary w-full flex items-center justify-center gap-2"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Launch Dashboard'}
                         </button>

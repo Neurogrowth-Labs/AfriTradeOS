@@ -101,14 +101,14 @@ const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-slate-700 animate-in zoom-in-95 duration-200">
+      <div className="card-premium max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
             <Key className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Set New Password</h3>
-            <p className="text-sm text-gray-500">Secure your account with a new credential.</p>
+            <h3 className="type-header text-gray-900 dark:text-white">Set New Password</h3>
+            <p className="type-body text-gray-500">Secure your account with a new credential.</p>
           </div>
         </div>
 
@@ -124,20 +124,20 @@ const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
               </div>
             )}
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">New Password</label>
+              <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-gray-500 mb-2">New Password</label>
               <input 
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                className="input-premium w-full text-gray-900 dark:text-white"
                 placeholder="••••••••"
               />
             </div>
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              className="btn-primary w-full flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update Password'}
             </button>
@@ -701,9 +701,9 @@ export default function App() {
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-lg flex items-center justify-center font-heading font-bold text-white text-lg shadow-lg">A</div>
-            <span className="text-lg font-bold font-heading tracking-tight text-white">AfriTradeOS</span>
+            <span className="type-header text-white">AfriTradeOS</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
+          <button onClick={() => setSidebarOpen(false)} className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-white/10 shadow-none">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -758,8 +758,8 @@ export default function App() {
           >
             <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.userName || 'User')}&background=C9A24D&color=fff`} alt="User" className="w-7 h-7 rounded-full ring-2 ring-trade-accent" />
             <div className="overflow-hidden">
-              <p className="text-xs font-medium text-slate-200 truncate">{userProfile?.userName || 'User'}</p>
-              <p className="text-[10px] text-slate-400 truncate">{userRole}</p>
+              <p className="text-sm font-medium text-slate-200 truncate">{userProfile?.userName || 'User'}</p>
+              <p className="type-caption text-slate-400 truncate">{userRole}</p>
             </div>
           </div>
           {/* Role badge and Logout button */}
@@ -770,7 +770,7 @@ export default function App() {
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded-lg border border-red-500/20 transition-colors"
+              className="btn-icon p-0 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border-red-500/20 shadow-none"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -787,7 +787,7 @@ export default function App() {
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="text-base font-heading font-semibold text-trade-primary dark:text-gray-100">
+            <h1 className="type-header text-trade-primary dark:text-gray-100">
               {userRole === UserPersona.ANALYST ? (
                 currentView === AppView.DASHBOARD ? 'Analytics Hub' :
                 currentView === AppView.MARKET_INTEL ? 'Market Research' :
@@ -835,7 +835,7 @@ export default function App() {
             {/* Localization UI */}
             <div className="hidden md:flex items-center gap-2 mr-4 bg-gray-50 dark:bg-slate-800 rounded-lg p-1 border border-gray-100 dark:border-slate-700">
                <button 
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
+                  className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
                   title="Switch Language"
                >
                    <Languages className="w-3 h-3 text-trade-accent" />
@@ -845,7 +845,7 @@ export default function App() {
                <div className="relative" ref={currencyRef}>
                   <button 
                     onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700 shadow-sm transition-all"
+                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
                     title="Switch Currency"
                   >
                     <Coins className="w-3 h-3 text-trade-accent" />
@@ -902,7 +902,7 @@ export default function App() {
 
             <button 
               onClick={toggleTheme}
-              className="p-1.5 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent transition-colors"
+              className="btn-icon p-0 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent"
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -911,7 +911,7 @@ export default function App() {
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-1.5 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent"
+                className="btn-icon relative p-0 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent"
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
@@ -923,12 +923,12 @@ export default function App() {
 
               {/* Notifications Panel */}
               {showNotifications && (
-                <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="card-premium absolute right-0 top-full mt-2 w-80 sm:w-96 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   {/* Header */}
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-700/50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-trade-accent" />
-                      <span className="font-bold text-gray-900 dark:text-white">Notifications</span>
+                      <span className="type-body font-semibold text-gray-900 dark:text-white">Notifications</span>
                       {unreadCount > 0 && (
                         <span className="px-1.5 py-0.5 bg-trade-accent text-white text-[10px] font-bold rounded-full">
                           {unreadCount} new
@@ -939,7 +939,7 @@ export default function App() {
                       {unreadCount > 0 && (
                         <button 
                           onClick={markAllAsRead}
-                          className="p-1.5 text-gray-500 hover:text-trade-accent hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                          className="btn-icon p-0 text-gray-500 hover:text-trade-accent hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
                           title="Mark all as read"
                         >
                           <CheckCheck className="w-4 h-4" />
@@ -947,7 +947,7 @@ export default function App() {
                       )}
                       <button 
                         onClick={clearAllNotifications}
-                        className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                        className="btn-icon p-0 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
                         title="Clear all"
                       >
                         <Trash2 className="w-4 h-4" />
