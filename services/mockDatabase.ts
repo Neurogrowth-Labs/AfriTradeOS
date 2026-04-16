@@ -10,6 +10,26 @@ import {
   DbAMLAlert
 } from '../types';
 import { supabase } from './supabase';
+import { isOnboardingComplete } from './onboardingService';
+
+const hasCompletedOnboarding = async (): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, country, company_name, role, onboarding_completed, onboarding_step')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return isOnboardingComplete(data as DbUser | null);
+  } catch (e) {
+    console.error('Failed to verify onboarding state:', e);
+    return false;
+  }
+};
 
 
 // --- DATABASE CLIENT WRAPPER ---
@@ -80,6 +100,10 @@ export const mockDatabase = {
 
   getTrades: async (): Promise<DbTrade[]> => {
     try {
+      if (!(await hasCompletedOnboarding())) {
+        return [];
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       
       let query = supabase
@@ -107,6 +131,10 @@ export const mockDatabase = {
 
   getFinanceRequests: async (userId: string): Promise<DbFinanceRequest[]> => {
     try {
+        if (!(await hasCompletedOnboarding())) {
+          return [];
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
         let query = supabase.from('finance_requests').select('*').order('created_at', { ascending: false });
         
@@ -276,6 +304,10 @@ export const mockDatabase = {
     documents_url?: string[];
   }): Promise<DbFinanceRequest | null> => {
     try {
+      if (!(await hasCompletedOnboarding())) {
+        throw new Error('ONBOARDING_REQUIRED');
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -350,6 +382,10 @@ export const mockDatabase = {
 
   createTrade: async (tradeData: Partial<DbTrade>): Promise<DbTrade | null> => {
     try {
+      if (!(await hasCompletedOnboarding())) {
+        throw new Error('ONBOARDING_REQUIRED');
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       console.log("createTrade - Current user:", user?.id || "NOT AUTHENTICATED (will use placeholder)");
 
@@ -387,6 +423,10 @@ export const mockDatabase = {
 
   updateTrade: async (tradeId: string, updates: Partial<DbTrade>): Promise<DbTrade | null> => {
     try {
+      if (!(await hasCompletedOnboarding())) {
+        throw new Error('ONBOARDING_REQUIRED');
+      }
+
       const { data, error } = await supabase
         .from('trades')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -405,6 +445,10 @@ export const mockDatabase = {
 
   getTradeById: async (tradeId: string): Promise<DbTrade | null> => {
     try {
+      if (!(await hasCompletedOnboarding())) {
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('trades')
         .select('*')
@@ -421,6 +465,10 @@ export const mockDatabase = {
 
   deleteTrade: async (tradeId: string): Promise<boolean> => {
     try {
+      if (!(await hasCompletedOnboarding())) {
+        throw new Error('ONBOARDING_REQUIRED');
+      }
+
       const { error } = await supabase
         .from('trades')
         .delete()

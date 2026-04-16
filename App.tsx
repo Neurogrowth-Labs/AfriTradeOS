@@ -70,6 +70,7 @@ import BankTradeTools from './components/BankTradeTools';
 import { supabase } from './services/supabase';
 import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
+import { buildOnboardingProfileState, isOnboardingComplete } from './services/onboardingService';
 
 // Internal Component: Password Reset Modal
 const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
@@ -451,10 +452,9 @@ export default function App() {
         // 2. Fallback to Auth Metadata if DB is empty (First login race condition)
         const meta = session.user.user_metadata || {};
         
-        // Existing account: profile exists in DB → skip onboarding
-        // New account: no profile at all → show onboarding
         if (dbProfile) {
             const role = dbProfile.role || UserPersona.EXPORTER_SME;
+            const onboarding = buildOnboardingProfileState(dbProfile);
             if (dbProfile.role) setUserRole(role);
             setUserProfile({
               userName: dbProfile.full_name || meta.full_name || '',
@@ -463,28 +463,80 @@ export default function App() {
               country: dbProfile.country || 'Ghana',
               phone: dbProfile.phone || meta.phone || '',
               id: dbProfile.id,
+              onboardingCompleted: onboarding.onboardingCompleted,
+              onboardingStep: onboarding.onboardingStep,
               ...meta
             });
-            setIsOnboarded(true);
-            // Navigate to role-specific default route
-            const defaultRoute = getDefaultRouteForRole(role);
-            if (location.pathname === '/' || location.pathname === '/dashboard') {
-              navigate(defaultRoute);
+            setIsOnboarded(onboarding.onboardingCompleted);
+
+            if (onboarding.onboardingCompleted) {
+              const defaultRoute = getDefaultRouteForRole(role);
+              if (location.pathname === '/' || location.pathname === '/dashboard') {
+                navigate(defaultRoute);
+              }
+            } else if (location.pathname !== '/') {
+              navigate('/');
             }
         } else {
-            // No profile at all - new account, redirect to onboarding
-            console.log("No profile found, redirecting to onboarding...");
+            console.log("No completed onboarding profile found, redirecting to onboarding...");
+            setUserRole(UserPersona.EXPORTER_SME);
             setUserProfile({
               userName: meta.full_name || '',
               email: session.user.email,
-              id: session.user.id
+              id: session.user.id,
+              onboardingCompleted: false,
+              onboardingStep: 1,
             });
             setIsOnboarded(false);
+            if (location.pathname !== '/') {
+              navigate('/');
+            }
         }
       } catch (error) {
         console.error("Profile fetch error:", error);
-        // On error, keep current state - don't force onboarding for existing users
+
+        const meta = session.user.user_metadata || {};
+        const fallbackProfile = {
+          userName: meta.full_name || '',
+          email: session.user.email,
+          id: session.user.id,
+          onboardingCompleted: false,
+          onboardingStep: 1,
+        };
+
+        setUserProfile(fallbackProfile);
+        setIsOnboarded(false);
+        if (location.pathname !== '/') {
+          navigate('/');
+        }
       }
+  };
+
+  useEffect(() => {
+    if (!isAuthLoading && userProfile && !isOnboarded && location.pathname !== '/') {
+      navigate('/');
+    }
+  }, [isAuthLoading, isOnboarded, location.pathname, navigate, userProfile]);
+
+  const handleAuthProfileLoaded = (profile: any, role?: UserPersona) => {
+    if (role) {
+      setUserRole(role);
+    }
+    setUserProfile(profile);
+    const completed = isOnboardingComplete({
+      role: role || userRole,
+      full_name: profile?.userName,
+      email: profile?.email,
+      country: profile?.country,
+      company_name: profile?.companyName,
+      onboarding_completed: profile?.onboardingCompleted,
+    });
+    setIsOnboarded(completed);
+    if (completed) {
+      navigate(getDefaultRouteForRole(role || userRole));
+    } else {
+      navigate('/');
+    }
   };
 
   // Check for Supabase Session
@@ -558,11 +610,14 @@ export default function App() {
       if (profile.id && profile.id.startsWith('mock_')) {
           isSimulatedRef.current = true;
       }
-      setUserRole(role);
-      setUserProfile(profile);
-      setIsOnboarded(true);
-      // Navigate to role-specific default route
-      navigate(getDefaultRouteForRole(role));
+      handleAuthProfileLoaded(
+        {
+          ...profile,
+          onboardingCompleted: true,
+          onboardingStep: 3,
+        },
+        role
+      );
   };
 
   const renderView = () => {

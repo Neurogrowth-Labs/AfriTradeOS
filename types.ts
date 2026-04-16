@@ -65,6 +65,8 @@ export interface DbUser {
   phone?: string;
   company_name?: string;
   is_super_admin?: boolean;
+  onboarding_completed?: boolean;
+  onboarding_step?: number;
 }
 
 export interface DbOrganization {

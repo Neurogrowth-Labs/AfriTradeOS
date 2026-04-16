@@ -28,8 +28,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     organization_id UUID,
     company_name TEXT,
     is_super_admin BOOLEAN DEFAULT FALSE,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
+    onboarding_step INTEGER DEFAULT 1 CHECK (onboarding_step BETWEEN 1 AND 4),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT onboarding_completion_requires_profile_data CHECK (
+      onboarding_completed = FALSE OR (
+        NULLIF(TRIM(COALESCE(full_name, '')), '') IS NOT NULL AND
+        NULLIF(TRIM(COALESCE(email, '')), '') IS NOT NULL AND
+        NULLIF(TRIM(COALESCE(country, '')), '') IS NOT NULL AND
+        NULLIF(TRIM(COALESCE(company_name, '')), '') IS NOT NULL
+      )
+    )
 );
 
 -- Enable RLS
@@ -52,6 +62,8 @@ BEGIN
       role,
       country,
       company_name,
+      onboarding_completed,
+      onboarding_step,
       created_at,
       updated_at
     )
@@ -63,6 +75,8 @@ BEGIN
       'SME Exporter'::public.user_persona,
       'Ghana',
       '',
+      FALSE,
+      1,
       NOW(),
       NOW()
     )

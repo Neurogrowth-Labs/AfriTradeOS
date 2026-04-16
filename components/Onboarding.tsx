@@ -3,6 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
 import {
+  ONBOARDING_STEP_COMPLETE,
+  ONBOARDING_STEP_PROFILE,
+  ONBOARDING_STEP_ROLE,
+  determineOnboardingStep,
+} from '../services/onboardingService';
+import {
   ArrowRight,
   Briefcase,
   Truck,
@@ -73,19 +79,57 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     size: 'SME'
   });
 
+  const syncOnboardingProgress = async (
+    updates: Record<string, any>,
+    fallbackView?: AuthView
+  ) => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      if (fallbackView) setView(fallbackView);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .upsert(
+        {
+          id: userData.user.id,
+          email: userData.user.email,
+          updated_at: new Date().toISOString(),
+          ...updates,
+        },
+        { onConflict: 'id' }
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    if (fallbackView) setView(fallbackView);
+  };
+
   // Check if session already exists (e.g. from SQL Trigger creating a skeleton user)
   useEffect(() => {
     const checkExistingSession = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session && (view === 'LOGIN' || view === 'SIGNUP')) {
-            // User is authenticated but incomplete (App.tsx passed them here)
-            // Skip auth screens
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            const resolvedStep = determineOnboardingStep(existingProfile);
+            setSelectedRole(existingProfile?.role || null);
             setProfile(prev => ({
                 ...prev,
-                email: session.user.email || '',
-                userName: session.user.user_metadata?.full_name || ''
+                email: existingProfile?.email || session.user.email || '',
+                userName: existingProfile?.full_name || session.user.user_metadata?.full_name || '',
+                companyName: existingProfile?.company_name || '',
+                country: existingProfile?.country || prev.country,
+                phone: existingProfile?.phone || '',
             }));
-            setView('ROLE_SELECT');
+            setView(resolvedStep >= ONBOARDING_STEP_PROFILE ? 'PROFILE_SETUP' : 'ROLE_SELECT');
         }
     };
     checkExistingSession();
@@ -143,17 +187,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           throw error;
       }
 
-      // Extract profile from metadata
-      const meta = data.user?.user_metadata || {};
-      
-      onComplete(meta.role || UserPersona.EXPORTER_SME, {
-          userName: meta.full_name || 'User',
-          companyName: meta.companyName || 'My Company',
-          email: data.user?.email || loginEmail,
-          country: meta.country || 'Ghana',
-          role: meta.role || UserPersona.EXPORTER_SME,
-          phone: meta.phone || ''
-      });
+      if (!data.session) {
+        throw new Error("Login succeeded but session was not created.");
+      }
 
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to login");
@@ -190,6 +226,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       const { data, error } = await supabase.auth.signUp({
         email: signupEmail,
         password: signupPassword,
+        options: {
+          data: {
+            full_name: signupName,
+          },
+        },
       });
 
       console.log(signupEmail);
@@ -267,11 +308,33 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   const handleRoleNext = () => {
-      if (selectedRole) setView('PROFILE_SETUP');
+      if (!selectedRole) return;
+
+      setLoading(true);
+      setErrorMsg(null);
+      syncOnboardingProgress(
+        {
+          role: selectedRole,
+          full_name: profile.userName || signupName,
+          country: profile.country || 'Ghana',
+          onboarding_completed: false,
+          onboarding_step: ONBOARDING_STEP_PROFILE,
+        },
+        'PROFILE_SETUP'
+      )
+        .catch((err: any) => {
+          console.error(err);
+          setErrorMsg(err.message || 'Failed to save onboarding progress');
+        })
+        .finally(() => setLoading(false));
   };
 
   const handleFinalize = async () => {
       if (!selectedRole) return;
+      if (!profile.userName.trim() || !profile.companyName.trim() || !profile.country.trim()) {
+        setErrorMsg('Please complete your profile details before continuing.');
+        return;
+      }
       setLoading(true);
       setErrorMsg(null);
       
@@ -287,23 +350,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 id: `mock_user_${Date.now()}`, // Identifiable mock ID
                 role: selectedRole,
                 email: profile.email || 'simulation@afritrade.os',
-                isSimulated: true
+                isSimulated: true,
+                onboardingCompleted: true,
+                onboardingStep: ONBOARDING_STEP_COMPLETE,
             });
             return;
         }
 
-        // Real Session Sync
-        // Using UPSERT to ensure row exists even if the initial trigger failed silently
+        // Mark complete only after the required profile fields have been persisted.
         const { error: dbError } = await supabase
             .from('profiles')
             .upsert({
                 id: userData.user.id,
                 email: userData.user.email,
-                full_name: profile.userName, 
+                full_name: profile.userName.trim(),
                 role: selectedRole,
-                company_name: profile.companyName,
-                country: profile.country,
-                phone: profile.phone,
+                company_name: profile.companyName.trim(),
+                country: profile.country.trim(),
+                phone: profile.phone.trim(),
+                onboarding_completed: true,
+                onboarding_step: ONBOARDING_STEP_COMPLETE,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'id' });
 
@@ -315,7 +381,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         onComplete(selectedRole, {
             ...profile,
             id: userData.user.id,
-            role: selectedRole
+            role: selectedRole,
+            onboardingCompleted: true,
+            onboardingStep: ONBOARDING_STEP_COMPLETE,
         });
       } catch (err: any) {
         console.error(err);
