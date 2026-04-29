@@ -1,77 +1,102 @@
 
-import { GoogleGenAI, Modality, Type, LiveServerMessage } from "@google/genai";
-import { createBlob, decode, decodeAudioData } from "./audioUtils";
+// OpenRouter API Service (replacing Gemini)
+// OpenRouter provides access to multiple AI models through a unified API
 
-// Initialize the client. 
-// NOTE: In a real environment, verify API_KEY exists.
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
 const apiKey =
-  (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-  (import.meta as any).env?.VITE_API_KEY ||
-  (process as any).env?.GEMINI_API_KEY ||
-  (process as any).env?.API_KEY ||
+  (import.meta as any).env?.VITE_OPENROUTER_API_KEY ||
+  (process as any).env?.OPENROUTER_API_KEY ||
   '';
-const ai = new GoogleGenAI({ apiKey });
 
 const isAbortError = (error: any) => {
-  return error.name === 'AbortError' || 
+  return error.name === 'AbortError' ||
          error.message?.includes('signal is aborted') ||
          error.message?.includes('The user aborted a request');
+};
+
+// Helper function to make OpenRouter API calls
+const callOpenRouter = async (
+  messages: { role: string; content: string | any[] }[],
+  model: string = 'google/gemini-2.0-flash-001',
+  options: { temperature?: number; max_tokens?: number } = {}
+): Promise<string> => {
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'AfriTradeOS'
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: options.temperature ?? 0.7,
+      max_tokens: options.max_tokens ?? 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    if (response.status === 429) {
+      throw { message: '429', status: 'RESOURCE_EXHAUSTED' };
+    }
+    throw new Error(errorData.error?.message || `OpenRouter API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || '';
 };
 
 // 1. Market Intelligence (Search Grounding)
 export const getMarketIntelligence = async (query: string) => {
   try {
-    // Use stable gemini-2.0-flash model
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: query,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const systemPrompt = `You are a market intelligence analyst. Provide accurate, up-to-date market information based on your knowledge. Include relevant statistics, trends, and actionable insights. Focus on African trade markets and the AfCFTA context when relevant.`;
+
+    const text = await callOpenRouter([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: query }
+    ], 'google/gemini-2.0-flash-001');
+
     return {
-      text: response.text,
-      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
+      text,
+      groundingChunks: [] // OpenRouter doesn't support grounding chunks
     };
   } catch (error: any) {
     if (isAbortError(error)) {
-        return { text: "", groundingChunks: [] };
+      return { text: "", groundingChunks: [] };
     }
-    // Graceful degradation for quota limits
     if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
-        console.warn("Market Intel Quota Exceeded");
-        return { 
-            text: "Market intelligence is momentarily unavailable due to high demand. Please try again in a minute.", 
-            groundingChunks: [] 
-        };
+      console.warn("Market Intel Quota Exceeded");
+      return {
+        text: "Market intelligence is momentarily unavailable due to high demand. Please try again in a minute.",
+        groundingChunks: []
+      };
     }
     console.error("Market Intel Error:", error);
     throw error;
   }
 };
 
-// 2. Logistics & Maps (Maps Grounding)
-// Maps is only supported on Gemini 2.5 models
+// 2. Logistics & Maps (Maps functionality)
+// Note: OpenRouter doesn't have maps grounding, so this provides text-based logistics info
 export const getLogisticsInfo = async (query: string, location?: { lat: number; lng: number }) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: query,
-      config: {
-        tools: [{ googleMaps: {} }],
-        toolConfig: location ? {
-          retrievalConfig: {
-            latLng: {
-              latitude: location.lat,
-              longitude: location.lng
-            }
-          }
-        } : undefined
-      },
-    });
+    const locationContext = location
+      ? `The user's current location is approximately at coordinates: ${location.lat}, ${location.lng}.`
+      : '';
+
+    const systemPrompt = `You are a logistics and shipping expert specializing in African trade routes. ${locationContext} Provide practical logistics advice, shipping routes, and transportation recommendations.`;
+
+    const text = await callOpenRouter([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: query }
+    ], 'google/gemini-2.5-flash-preview-05-20');
+
     return {
-      text: response.text,
-      groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks
+      text,
+      groundingChunks: []
     };
   } catch (error: any) {
     if (isAbortError(error)) return { text: "", groundingChunks: [] };
@@ -80,39 +105,33 @@ export const getLogisticsInfo = async (query: string, location?: { lat: number; 
   }
 };
 
-// 3. Compliance & Legal (Thinking Mode)
-// Uses gemini-3-pro-preview with high thinking budget for complex AfCFTA rules
+// 3. Compliance & Legal (Complex Analysis)
+// Uses a capable model for complex AfCFTA rules analysis
 export const analyzeCompliance = async (scenario: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `You are an expert AfCFTA trade lawyer. Analyze the following trade scenario strictly according to Rules of Origin and compliance protocols.
-      
-      Scenario: ${scenario}`,
-      config: {
-        thinkingConfig: { thinkingBudget: 32768 },
-      },
-    });
-    return response.text;
+    const systemPrompt = `You are an expert AfCFTA trade lawyer. Analyze trade scenarios strictly according to Rules of Origin and compliance protocols. Provide detailed, thorough analysis with specific regulatory references when applicable.`;
+
+    const text = await callOpenRouter([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Analyze the following trade scenario:\n\n${scenario}` }
+    ], 'google/gemini-2.5-pro-preview-03-25', { max_tokens: 8192 });
+
+    return text;
   } catch (error: any) {
     if (isAbortError(error)) return "";
-    
-    // Handle Quota limits for Thinking Model (429)
+
     if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
-         console.warn("Compliance Thinking Quota Exceeded. Falling back to standard model.");
-         try {
-             const fallbackResponse = await ai.models.generateContent({
-                model: 'gemini-2.0-flash', // Fallback to stable model
-                contents: `You are an expert AfCFTA trade lawyer. Analyze the following trade scenario strictly according to Rules of Origin and compliance protocols.
-                
-                Scenario: ${scenario}
-                
-                Note: Provide a concise analysis since deep thinking mode is currently unavailable.`,
-             });
-             return fallbackResponse.text + "\n\n(Note: Deep thinking mode was unavailable due to high traffic. This is a standard analysis.)";
-         } catch (fbError) {
-             return "Compliance analysis is currently unavailable due to system capacity. Please try again in a few minutes.";
-         }
+      console.warn("Compliance Analysis Quota Exceeded. Falling back to standard model.");
+      try {
+        const fallbackText = await callOpenRouter([
+          { role: 'system', content: `You are an expert AfCFTA trade lawyer. Provide concise compliance analysis.` },
+          { role: 'user', content: `Analyze the following trade scenario (provide a concise analysis):\n\n${scenario}` }
+        ], 'google/gemini-2.0-flash-001');
+
+        return fallbackText + "\n\n(Note: Deep analysis mode was unavailable due to high traffic. This is a standard analysis.)";
+      } catch (fbError) {
+        return "Compliance analysis is currently unavailable due to system capacity. Please try again in a few minutes.";
+      }
     }
     console.error("Compliance Analysis Error:", error);
     throw error;
@@ -122,25 +141,21 @@ export const analyzeCompliance = async (scenario: string) => {
 // 4. Fast Responses (Chatbot/General)
 export const fastChatResponse = async (message: string, context?: string) => {
   try {
-    const systemInstruction = context 
-      ? `You are an AI Trade Co-Pilot embedded in the AfriTradeOS platform. The user is currently viewing: ${context}. Keep answers concise, actionable, and relevant to this context.` 
+    const systemInstruction = context
+      ? `You are an AI Trade Co-Pilot embedded in the AfriTradeOS platform. The user is currently viewing: ${context}. Keep answers concise, actionable, and relevant to this context.`
       : `You are an AI Trade Co-Pilot. Keep answers concise.`;
 
-    // Use stable gemini-2.0-flash model
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: message,
-      config: {
-        systemInstruction: systemInstruction
-      }
-    });
-    return response.text;
+    const text = await callOpenRouter([
+      { role: 'system', content: systemInstruction },
+      { role: 'user', content: message }
+    ], 'google/gemini-2.0-flash-001');
+
+    return text;
   } catch (error: any) {
     if (isAbortError(error)) return "";
 
-    // Handle quota exhaustion gracefully
     if (error.message?.includes('429') || error.status === 'RESOURCE_EXHAUSTED') {
-        return "AfriTradeOS Strategic Brief: Market stability is currently being monitored. Real-time insights are paused due to high traffic volume.";
+      return "AfriTradeOS Strategic Brief: Market stability is currently being monitored. Real-time insights are paused due to high traffic volume.";
     }
     console.error("Fast Chat Error:", error);
     throw error;
@@ -149,37 +164,52 @@ export const fastChatResponse = async (message: string, context?: string) => {
 
 // 4.1 Explainability (Why is this required?)
 export const explainTradeTerm = async (term: string, context: string) => {
-    return await fastChatResponse(
-        `Explain why "${term}" is required in the context of ${context}. 
-         Focus on compliance risks, financial implications, or logistics necessity. 
-         Keep it under 30 words.`,
-        "Trade Help Tooltip"
-    );
+  return await fastChatResponse(
+    `Explain why "${term}" is required in the context of ${context}.
+     Focus on compliance risks, financial implications, or logistics necessity.
+     Keep it under 30 words.`,
+    "Trade Help Tooltip"
+  );
 };
 
 // 5. Image Generation (Marketing)
+// Note: OpenRouter supports image generation through specific models
 export const generateMarketingImage = async (prompt: string, aspectRatio: string) => {
   try {
-    // Using gemini-3-pro-image-preview for high quality marketing assets
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: {
-        parts: [{ text: prompt }],
+    // Use a text-to-image model available on OpenRouter
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'AfriTradeOS'
       },
-      config: {
-        imageConfig: {
-          aspectRatio: aspectRatio as any, // 1:1, 16:9, etc.
-          imageSize: "1K"
-        }
-      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.0-flash-exp:free',
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a professional marketing image for the following description. Aspect ratio should be ${aspectRatio}.\n\nDescription: ${prompt}`
+          }
+        ],
+      }),
     });
-    
-    // Extract image
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
+
+    if (!response.ok) {
+      throw new Error(`Image generation failed: ${response.status}`);
     }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    // Check if the response contains image data
+    if (typeof content === 'object' && content?.image) {
+      return `data:image/png;base64,${content.image}`;
+    }
+
+    // If no image was generated, return null
+    console.warn("Image generation not available with current model");
     return null;
   } catch (error: any) {
     if (isAbortError(error)) return null;
@@ -191,21 +221,42 @@ export const generateMarketingImage = async (prompt: string, aspectRatio: string
 // 6. Image Analysis (Document Scanning)
 export const analyzeDocument = async (base64Data: string, mimeType: string, prompt: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: {
-        parts: [
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': window.location.origin,
+        'X-Title': 'AfriTradeOS'
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-pro-preview-03-25',
+        messages: [
           {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType
-            }
-          },
-          { text: prompt }
-        ]
-      }
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Data}`
+                }
+              },
+              {
+                type: 'text',
+                text: prompt
+              }
+            ]
+          }
+        ],
+      }),
     });
-    return response.text;
+
+    if (!response.ok) {
+      throw new Error(`Document analysis failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
   } catch (error: any) {
     if (isAbortError(error)) return "";
     console.error("Doc Analysis Error:", error);
@@ -214,25 +265,22 @@ export const analyzeDocument = async (base64Data: string, mimeType: string, prom
 };
 
 // 7. Text to Speech
-export const generateSpeech = async (text: string) => {
+// Note: OpenRouter doesn't directly support TTS, using browser's Web Speech API as fallback
+export const generateSpeech = async (text: string): Promise<string> => {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
-      },
-    });
-    
-    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("No audio generated");
-    
-    return base64Audio;
+    // OpenRouter doesn't have TTS support, so we'll use a workaround
+    // Return empty to trigger fallback to browser TTS in the calling code
+    console.warn("TTS not directly supported via OpenRouter. Using browser speech synthesis.");
+
+    // Use browser's speech synthesis instead
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    return ""; // Return empty as we're using browser TTS
   } catch (error: any) {
     if (isAbortError(error)) return "";
     console.error("TTS Error:", error);
@@ -241,6 +289,8 @@ export const generateSpeech = async (text: string) => {
 };
 
 // 8. Live API (Real-time Voice)
+// Note: OpenRouter doesn't support real-time voice streaming like Gemini's Live API
+// This is a simplified version that uses regular API calls
 export type LiveEvent = {
   type: 'user' | 'model' | 'audio' | 'interrupted' | 'processing';
   text?: string;
@@ -250,111 +300,79 @@ export type LiveEvent = {
 export const connectLiveSession = async (
   onEvent: (event: LiveEvent) => void,
   onClose: () => void,
-  persona: string 
+  persona: string
 ) => {
-  const inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-  const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-  
-  let stream: MediaStream;
-  let isMuted = false;
+  console.warn("Live voice session not fully supported via OpenRouter. Using simplified text-based interaction.");
 
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (err) {
-    console.error("Mic Access Error:", err);
+  let isMuted = false;
+  let isConnected = true;
+  let recognition: SpeechRecognition | null = null;
+
+  // Use Web Speech API for speech recognition as fallback
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = async (event: any) => {
+      if (isMuted || !isConnected) return;
+
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0].transcript)
+        .join('');
+
+      if (event.results[event.results.length - 1].isFinal) {
+        onEvent({ type: 'user', text: transcript });
+        onEvent({ type: 'processing' });
+
+        try {
+          const response = await callOpenRouter([
+            {
+              role: 'system',
+              content: `You are 'AfriTrade Assistant', a helpful voice guide for the AfriTradeOS platform. You are speaking with a user who is a: ${persona}. Tailor your advice and tone to their specific needs. Keep answers concise and professional. Respond naturally as if in a voice conversation.`
+            },
+            { role: 'user', content: transcript }
+          ], 'google/gemini-2.0-flash-001');
+
+          onEvent({ type: 'model', text: response });
+
+          // Use browser TTS for audio output
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(response);
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            window.speechSynthesis.speak(utterance);
+          }
+        } catch (error) {
+          console.error("Live session response error:", error);
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+    };
+
+    recognition.start();
+  } else {
+    console.error("Speech recognition not supported in this browser");
     onClose();
     return null;
   }
 
-  const sessionPromise = ai.live.connect({
-    model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
-      },
-      systemInstruction: `You are 'AfriTrade Assistant', a helpful voice guide for the AfriTradeOS platform. You are speaking with a user who is a: ${persona}. Tailor your advice and tone to their specific needs. Keep answers concise and professional.`,
-      outputAudioTranscription: {}, 
-      inputAudioTranscription: {}, 
-    },
-    callbacks: {
-      onopen: () => {
-        console.log("Live Session Opened");
-        const source = inputAudioContext.createMediaStreamSource(stream);
-        const scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
-        
-        scriptProcessor.onaudioprocess = (e) => {
-          if (isMuted) return;
-          const inputData = e.inputBuffer.getChannelData(0);
-          const pcmBlob = createBlob(inputData);
-          sessionPromise.then(session => {
-            session.sendRealtimeInput({ media: pcmBlob });
-          }).catch(e => {
-             // Suppress aborts during connection/teardown
-             if(!isAbortError(e)) console.warn("Live Input Error:", e);
-          });
-        };
-        
-        source.connect(scriptProcessor);
-        scriptProcessor.connect(inputAudioContext.destination);
-      },
-      onmessage: async (msg: LiveServerMessage) => {
-        if (msg.serverContent?.interrupted) {
-          onEvent({ type: 'interrupted' });
-        }
-
-        if (msg.serverContent?.turnComplete) {
-            onEvent({ type: 'processing' });
-        }
-
-        if (msg.serverContent?.inputTranscription?.text) {
-          onEvent({ type: 'user', text: msg.serverContent.inputTranscription.text });
-        }
-
-        if (msg.serverContent?.outputTranscription?.text) {
-          onEvent({ type: 'model', text: msg.serverContent.outputTranscription.text });
-        }
-
-        const base64Audio = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-        if (base64Audio) {
-           const audioBuffer = await decodeAudioData(
-            decode(base64Audio),
-            outputAudioContext,
-            24000,
-            1
-          );
-          onEvent({ type: 'audio', audio: audioBuffer });
-        }
-      },
-      onclose: () => {
-        console.log("Live Session Closed");
-        onClose();
-        try {
-          stream?.getTracks().forEach(track => track.stop());
-          if(inputAudioContext.state !== 'closed') inputAudioContext.close();
-          if(outputAudioContext.state !== 'closed') outputAudioContext.close();
-        } catch(e) { console.error("Cleanup error", e); }
-      },
-      onerror: (err) => {
-        if (!isAbortError(err)) {
-            console.error("Live Session Error:", err);
-        }
-      }
-    }
-  });
-
   return {
     disconnect: async () => {
-      try {
-          const session = await sessionPromise;
-          session.close();
-      } catch (e) {
-          if (!isAbortError(e)) console.warn("Disconnect Error:", e);
+      isConnected = false;
+      if (recognition) {
+        recognition.stop();
       }
+      window.speechSynthesis?.cancel();
+      onClose();
     },
     setMute: (mute: boolean) => {
       isMuted = mute;
     },
-    outputAudioContext 
+    outputAudioContext: new AudioContext({ sampleRate: 24000 })
   };
 };
