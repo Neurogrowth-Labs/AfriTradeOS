@@ -755,7 +755,7 @@ export default function App() {
       >
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/assets/afritradeos.jpeg" alt="AfriTradeOS" className="w-7 h-7 rounded-lg object-cover shadow-lg" />
+            <img src="/afritradeos.jpeg" alt="AfriTradeOS" className="w-7 h-7 rounded-lg object-cover shadow-lg" />
             <span className="type-header text-white">AfriTradeOS</span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-white/10 shadow-none">

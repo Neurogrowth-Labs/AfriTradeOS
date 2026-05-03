@@ -181,6 +181,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       });
 
       if (error) {
+          // Handle CAPTCHA error - skip for now (needs Supabase dashboard config)
+          if (error.message.includes("captcha") || error.message.includes("captcha_token")) {
+              console.warn("CAPTCHA protection is enabled in Supabase. Disable it in Supabase Dashboard > Auth > Bot and Abuse Protection");
+              // For now, proceed with simulation mode
+              throw new Error("Authentication service is being configured. Please try simulation mode or contact support.");
+          }
           if (error.message.includes("Invalid login credentials")) {
               throw new Error("Incorrect email or password. Please try again.");
           }
@@ -238,13 +244,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       console.log(error);
 
       if (error) {
+        // Handle CAPTCHA error - skip for now (needs Supabase dashboard config)
+        if (error.message.includes("captcha") || error.message.includes("captcha_token")) {
+          console.warn("CAPTCHA protection is enabled in Supabase. Disable it in Supabase Dashboard > Auth > Bot and Abuse Protection");
+          setErrorMsg("Authentication service is being configured. Please try simulation mode or contact support.");
+          setLoading(false);
+          return;
+        }
         // Check for specific error types
         if (error.message.includes('already registered') || error.status === 422) {
           setErrorMsg('This email is already registered. Please sign in instead.');
           setLoading(false);
           return;
         }
-        
+
         // For other errors, show the error message
         setErrorMsg(error.message || 'Failed to create account. Please try again.');
         setLoading(false);
@@ -432,7 +445,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 
                 <div className="relative z-20">
                     <div className="flex items-center gap-3 mb-8">
-                        <img src="/assets/afritradeos.jpeg" alt="AfriTradeOS" className="w-8 h-8 rounded-lg object-cover shadow-lg" />
+                        <img src="/afritradeos.jpeg" alt="AfriTradeOS" className="w-8 h-8 rounded-lg object-cover shadow-lg" />
                         <span className="type-header text-white">AfriTradeOS</span>
                     </div>
                     <h1 className="type-hero text-white mb-4">
