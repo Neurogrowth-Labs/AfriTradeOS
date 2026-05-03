@@ -432,7 +432,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 
                 <div className="relative z-20">
                     <div className="flex items-center gap-3 mb-8">
-                        <div className="w-8 h-8 bg-gradient-to-tr from-trade-secondary to-trade-primary border border-trade-accent rounded-lg flex items-center justify-center font-bold font-heading text-white text-lg shadow-lg">A</div>
+                        <img src="/assets/afritradeos.jpeg" alt="AfriTradeOS" className="w-8 h-8 rounded-lg object-cover shadow-lg" />
                         <span className="type-header text-white">AfriTradeOS</span>
                     </div>
                     <h1 className="type-hero text-white mb-4">
