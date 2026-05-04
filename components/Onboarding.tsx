@@ -297,6 +297,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) return;
+
+    // Check captcha token
+    if (!captchaToken) {
+      setErrorMsg("Please complete the CAPTCHA verification.");
+      return;
+    }
     
     setLoading(true);
     setErrorMsg(null);
@@ -304,7 +310,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: window.location.origin, 
+        redirectTo: window.location.origin,
+        captchaToken: captchaToken,
       });
 
       if (error) {
@@ -320,6 +327,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       setForgotSuccess(true);
     } catch (err: any) {
       setErrorMsg(err.message || "An unexpected error occurred. Please try again.");
+      // Reset captcha on error
+      setCaptchaToken(null);
+      captchaRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -649,9 +659,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                     </div>
                                 </div>
 
+                                {/* Turnstile CAPTCHA */}
+                                <TurnstileCaptcha
+                                    ref={captchaRef}
+                                    onVerify={(token) => setCaptchaToken(token)}
+                                    onExpire={() => setCaptchaToken(null)}
+                                    onError={() => setCaptchaToken(null)}
+                                />
+
                                 <button 
                                     type="submit"
-                                    disabled={loading || !forgotEmail}
+                                    disabled={loading || !forgotEmail || !captchaToken}
                                     className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
                                 >
                                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
