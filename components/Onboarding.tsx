@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
 import {
@@ -8,6 +8,7 @@ import {
   ONBOARDING_STEP_ROLE,
   determineOnboardingStep,
 } from '../services/onboardingService';
+import { TurnstileCaptcha, TurnstileCaptchaRef } from './TurnstileCaptcha';
 import {
   ArrowRight,
   Briefcase,
@@ -67,6 +68,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  // Captcha State
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<TurnstileCaptchaRef>(null);
 
   // Profile State
   const [profile, setProfile] = useState({
@@ -171,22 +176,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMsg(null);
-    
+
+    // Check captcha token
+    if (!captchaToken) {
+      setErrorMsg("Please complete the CAPTCHA verification.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
+        options: {
+          captchaToken: captchaToken,
+        },
       });
 
       if (error) {
-          // Handle CAPTCHA error - skip for now (needs Supabase dashboard config)
-          if (error.message.includes("captcha") || error.message.includes("captcha_token")) {
-              console.warn("CAPTCHA protection is enabled in Supabase. Disable it in Supabase Dashboard > Auth > Bot and Abuse Protection");
-              // For now, proceed with simulation mode
-              throw new Error("Authentication service is being configured. Please try simulation mode or contact support.");
-          }
           if (error.message.includes("Invalid login credentials")) {
               throw new Error("Incorrect email or password. Please try again.");
           }
@@ -199,6 +208,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to login");
+      // Reset captcha on error
+      setCaptchaToken(null);
+      captchaRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -225,7 +237,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         setErrorMsg("You must accept the Terms of Service to continue.");
         return;
     }
-    
+    // Check captcha token
+    if (!captchaToken) {
+      setErrorMsg("Please complete the CAPTCHA verification.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -236,31 +253,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           data: {
             full_name: signupName,
           },
+          captchaToken: captchaToken,
         },
       });
 
-      console.log(signupEmail);
-      console.log(signupPassword);
-      console.log(error);
-
       if (error) {
-        // Handle CAPTCHA error - skip for now (needs Supabase dashboard config)
-        if (error.message.includes("captcha") || error.message.includes("captcha_token")) {
-          console.warn("CAPTCHA protection is enabled in Supabase. Disable it in Supabase Dashboard > Auth > Bot and Abuse Protection");
-          setErrorMsg("Authentication service is being configured. Please try simulation mode or contact support.");
-          setLoading(false);
-          return;
-        }
         // Check for specific error types
         if (error.message.includes('already registered') || error.status === 422) {
           setErrorMsg('This email is already registered. Please sign in instead.');
           setLoading(false);
+          setCaptchaToken(null);
           return;
         }
 
         // For other errors, show the error message
         setErrorMsg(error.message || 'Failed to create account. Please try again.');
         setLoading(false);
+        setCaptchaToken(null);
         return;
       }
 
@@ -539,9 +548,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             </div>
                         </div>
 
-                        <button 
+                        {/* Turnstile CAPTCHA */}
+                        <TurnstileCaptcha
+                            ref={captchaRef}
+                            onVerify={(token) => setCaptchaToken(token)}
+                            onExpire={() => setCaptchaToken(null)}
+                            onError={() => setCaptchaToken(null)}
+                        />
+
+                        <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !captchaToken}
                             className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
@@ -786,9 +803,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             </div>
                         </div>
 
-                        <button 
+                        {/* Turnstile CAPTCHA */}
+                        <TurnstileCaptcha
+                            onVerify={(token) => setCaptchaToken(token)}
+                            onExpire={() => setCaptchaToken(null)}
+                            onError={() => setCaptchaToken(null)}
+                        />
+
+                        <button
                             type="submit"
-                            disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword}
+                            disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword || !captchaToken}
                             className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start with AfriTradeOS'}
