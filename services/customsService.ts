@@ -1,6 +1,26 @@
 import { supabase } from './supabase';
 
 // =============================================================================
+// UTILITIES
+// =============================================================================
+
+/**
+ * Sanitizes user input for use in PostgreSQL ILIKE patterns.
+ * Escapes special characters: %, _, \, and characters that could break .or() syntax
+ */
+function sanitizeSearchInput(input: string): string {
+  return input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/%/g, '\\%')    // Escape % wildcard
+    .replace(/_/g, '\\_')    // Escape _ wildcard
+    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\)/g, '')
+    .trim()
+    .slice(0, 100);          // Limit length to prevent DoS
+}
+
+// =============================================================================
 // TYPES
 // =============================================================================
 
@@ -360,7 +380,8 @@ export const customsService = {
         query = query.lte('created_at', filters.dateTo);
       }
       if (filters?.search) {
-        query = query.or(`declaration_number.ilike.%${filters.search}%,trader_name.ilike.%${filters.search}%,hs_code.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`declaration_number.ilike.%${search}%,trader_name.ilike.%${search}%,hs_code.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(100);
@@ -519,7 +540,8 @@ export const customsService = {
         query = query.eq('aeo_status', filters.aeoStatus);
       }
       if (filters?.search) {
-        query = query.or(`tin.ilike.%${filters.search}%,customs_code.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`tin.ilike.%${search}%,customs_code.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(100);
@@ -649,10 +671,11 @@ export const customsService = {
   // ---- HS CODES ----
   searchHSCodes: async (query: string): Promise<CustomsHSCode[]> => {
     try {
+      const search = sanitizeSearchInput(query);
       const { data, error } = await supabase
         .from('customs_hs_codes')
         .select('*')
-        .or(`hs_code.ilike.%${query}%,description.ilike.%${query}%`)
+        .or(`hs_code.ilike.%${search}%,description.ilike.%${search}%`)
         .limit(20);
 
       if (error) throw error;

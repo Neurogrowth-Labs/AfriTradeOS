@@ -1,5 +1,25 @@
 import { supabase } from './supabase';
 
+// =============================================================================
+// UTILITIES
+// =============================================================================
+
+/**
+ * Sanitizes user input for use in PostgreSQL ILIKE patterns.
+ * Escapes special characters: %, _, \, and characters that could break .or() syntax
+ */
+function sanitizeSearchInput(input: string): string {
+  return input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/%/g, '\\%')    // Escape % wildcard
+    .replace(/_/g, '\\_')    // Escape _ wildcard
+    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\)/g, '')
+    .trim()
+    .slice(0, 100);          // Limit length to prevent DoS
+}
+
 // Types
 export interface FleetVehicle {
   id: string;
@@ -1222,7 +1242,8 @@ export const logisticsProviderService = {
         query = query.eq('issuer_type', filters.issuerType);
       }
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,corridor.ilike.%${filters.search}%,issuer.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`title.ilike.%${search}%,corridor.ilike.%${search}%,issuer.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(50);
