@@ -1,6 +1,26 @@
 import { supabase } from './supabase';
 
 // ============================================================================
+// UTILITIES
+// ============================================================================
+
+/**
+ * Sanitizes user input for use in PostgreSQL ILIKE patterns.
+ * Escapes special characters: %, _, \, and characters that could break .or() syntax
+ */
+function sanitizeSearchInput(input: string): string {
+  return input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/%/g, '\\%')    // Escape % wildcard
+    .replace(/_/g, '\\_')    // Escape _ wildcard
+    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\)/g, '')
+    .trim()
+    .slice(0, 100);          // Limit length to prevent DoS
+}
+
+// ============================================================================
 // TYPES AND INTERFACES
 // ============================================================================
 
@@ -1052,10 +1072,11 @@ export async function getCustomsClearanceMetrics(months: number = 6): Promise<Cu
 
 export async function searchHSCode(query: string): Promise<HSCodeLookup[]> {
   try {
+    const search = sanitizeSearchInput(query);
     const { data, error } = await supabase
       .from('hs_codes')
       .select('*')
-      .or(`code.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`code.ilike.%${search}%,description.ilike.%${search}%`)
       .limit(20);
 
     if (error) throw error;

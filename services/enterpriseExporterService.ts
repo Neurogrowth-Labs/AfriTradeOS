@@ -1,6 +1,26 @@
 import { supabase } from './supabase';
 
 // =============================================================================
+// UTILITIES
+// =============================================================================
+
+/**
+ * Sanitizes user input for use in PostgreSQL ILIKE patterns.
+ * Escapes special characters: %, _, \, and characters that could break .or() syntax
+ */
+function sanitizeSearchInput(input: string): string {
+  return input
+    .replace(/\\/g, '\\\\')  // Escape backslashes first
+    .replace(/%/g, '\\%')    // Escape % wildcard
+    .replace(/_/g, '\\_')    // Escape _ wildcard
+    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\)/g, '')
+    .trim()
+    .slice(0, 100);          // Limit length to prevent DoS
+}
+
+// =============================================================================
 // TYPES
 // =============================================================================
 
@@ -409,7 +429,8 @@ export const enterpriseExporterService = {
         query = query.eq('priority', filters.priority);
       }
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,product.ilike.%${filters.search}%,project_number.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`title.ilike.%${search}%,product.ilike.%${search}%,project_number.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(100);
@@ -556,7 +577,8 @@ export const enterpriseExporterService = {
         query = query.eq('kyc_verified', true);
       }
       if (filters?.search) {
-        query = query.or(`company_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`company_name.ilike.%${search}%,contact_name.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(100);
@@ -701,7 +723,8 @@ export const enterpriseExporterService = {
         query = query.eq('product_category', filters.category);
       }
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(50);
@@ -736,7 +759,8 @@ export const enterpriseExporterService = {
         query = query.eq('contract_type', filters.type);
       }
       if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,counterparty_name.ilike.%${filters.search}%,contract_number.ilike.%${filters.search}%`);
+        const search = sanitizeSearchInput(filters.search);
+        query = query.or(`title.ilike.%${search}%,counterparty_name.ilike.%${search}%,contract_number.ilike.%${search}%`);
       }
 
       const { data, error } = await query.limit(50);
