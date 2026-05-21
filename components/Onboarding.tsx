@@ -3,6 +3,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
 import {
+  clearLoginFailures,
+  getLoginLockoutMessage,
+  recordLoginFailure,
+} from '../lib/loginRateLimitClient';
+import {
   ONBOARDING_STEP_COMPLETE,
   ONBOARDING_STEP_PROFILE,
   ONBOARDING_STEP_ROLE,
@@ -178,6 +183,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     e.preventDefault();
     setErrorMsg(null);
 
+    const lockoutMsg = getLoginLockoutMessage();
+    if (lockoutMsg) {
+      setErrorMsg(lockoutMsg);
+      return;
+    }
+
     // Check captcha token
     if (!captchaToken) {
       setErrorMsg("Please complete the CAPTCHA verification.");
@@ -187,25 +198,68 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-        options: {
-          captchaToken: captchaToken,
-        },
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+          captchaToken,
+        }),
       });
 
-      if (error) {
-          if (error.message.includes("Invalid login credentials")) {
-              throw new Error("Incorrect email or password. Please try again.");
+      // Local Vite dev has no /api routes — fall back to Supabase client (CAPTCHA still required)
+      if (response.status === 404 && import.meta.env.DEV) {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password: loginPassword,
+          options: { captchaToken },
+        });
+        if (error) {
+          if (error.message.includes('Invalid login credentials')) {
+            recordLoginFailure();
+            throw new Error('Incorrect email or password. Please try again.');
+          }
+          if (error.status === 429) {
+            throw new Error('Too many login attempts. Please try again later.');
           }
           throw error;
+        }
+        if (!data.session) {
+          throw new Error('Login succeeded but session was not created.');
+        }
+        clearLoginFailures();
+        return;
       }
 
-      if (!data.session) {
-        throw new Error("Login succeeded but session was not created.");
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 400) {
+          recordLoginFailure();
+        }
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          throw new Error(
+            payload.error ||
+              `Too many login attempts. Try again${retryAfter ? ` in ${retryAfter}s` : ' later'}.`
+          );
+        }
+        throw new Error(payload.error || 'Failed to login');
       }
 
+      if (!payload.session?.access_token || !payload.session?.refresh_token) {
+        throw new Error('Login succeeded but session was not created.');
+      }
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: payload.session.access_token,
+        refresh_token: payload.session.refresh_token,
+      });
+
+      if (sessionError) throw sessionError;
+
+      clearLoginFailures();
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to login");
       // Reset captcha on error
