@@ -501,24 +501,24 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
   // Premium Auth Container for Login/Signup views
   const renderAuthContainer = () => (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 overflow-hidden">
+    <div className="min-h-screen w-full z-[100] flex items-center justify-center p-6 md:p-10 lg:p-16 overflow-auto">
       {/* Deep Navy Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#020617] via-[#071126] to-[#0a1628]" />
+      <div className="fixed inset-0 bg-gradient-to-br from-[#020617] via-[#071126] to-[#0a1628]" />
 
       {/* Ambient Light Effects */}
-      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#1D4FFF]/8 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#E8B547]/6 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#1D4FFF]/4 rounded-full blur-[200px] pointer-events-none" />
+      <div className="fixed top-1/4 left-1/4 w-[600px] h-[600px] bg-[#1D4FFF]/8 rounded-full blur-[150px] pointer-events-none" />
+      <div className="fixed bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#E8B547]/6 rounded-full blur-[120px] pointer-events-none" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#1D4FFF]/4 rounded-full blur-[200px] pointer-events-none" />
 
       {/* Floating Light Streaks */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-64 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/30 to-transparent rotate-12 animate-pulse" />
         <div className="absolute bottom-32 right-20 w-48 h-[1px] bg-gradient-to-r from-transparent via-[#E8B547]/20 to-transparent -rotate-12 animate-pulse" style={{animationDelay: '1s'}} />
         <div className="absolute top-1/3 right-1/4 w-32 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/20 to-transparent rotate-45 animate-pulse" style={{animationDelay: '0.5s'}} />
       </div>
 
-      {/* Main Container */}
-      <div className="relative w-full max-w-[1450px] h-auto min-h-[700px] md:h-[860px] rounded-[32px] overflow-hidden flex flex-col md:flex-row
+      {/* Main Container - Centered Card */}
+      <div className="relative w-full max-w-[1200px] h-auto min-h-[650px] md:h-[750px] rounded-[32px] overflow-hidden flex flex-col md:flex-row
                       bg-gradient-to-br from-[#071B34]/95 to-[#0D2A4D]/90
                       border border-white/[0.08]
                       shadow-[0_0_80px_rgba(29,79,255,0.15),0_0_120px_rgba(232,181,71,0.08),inset_0_1px_0_rgba(255,255,255,0.05)]
@@ -535,7 +535,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
              }} />
 
         {/* LEFT PANEL */}
-        <div className="hidden md:flex md:w-1/2 relative flex-col p-12 lg:p-16 overflow-hidden">
+        <div className="hidden md:flex md:w-1/2 relative flex-col p-10 lg:p-12 overflow-hidden">
           {/* Panel Background Gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#071B34] to-[#0D2A4D]" />
 
@@ -591,16 +591,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           </div>
 
           {/* 3D Globe Visual - Bottom Right Corner */}
-          <div className="absolute bottom-0 right-0 w-[520px] h-[420px] z-10 pointer-events-auto"
-               style={{ transform: 'translate(80px, 60px)' }}>
+          <div className="absolute bottom-0 right-0 w-[420px] h-[350px] z-10 pointer-events-auto"
+               style={{ transform: 'translate(60px, 40px)' }}>
             <Suspense fallback={<GlobeLoader />}>
-              <Globe3D width={520} height={420} />
+              <Globe3D width={420} height={350} />
             </Suspense>
           </div>
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="w-full md:w-1/2 relative flex flex-col p-8 md:p-12 lg:p-16 bg-[#050B19]/80 backdrop-blur-xl">
+        <div className="w-full md:w-1/2 relative flex flex-col p-8 md:p-10 lg:p-12 bg-[#050B19]/80 backdrop-blur-xl">
           {/* Subtle gradient lighting */}
           <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-[#1D4FFF]/5 to-transparent pointer-events-none" />
 
