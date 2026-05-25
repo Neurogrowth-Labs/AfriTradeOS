@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { checkRateLimit, getClientIp } from '../../lib/rateLimit';
+import { checkRateLimit, getClientIp } from '../_lib/rateLimit';
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_PER_IP = 20;
