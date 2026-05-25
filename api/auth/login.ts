@@ -1,9 +1,42 @@
 import { createClient } from '@supabase/supabase-js';
-import { checkRateLimit, getClientIp } from '../_lib/rateLimit';
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_PER_IP = 20;
 const MAX_PER_EMAIL = 5;
+
+// Inline rate limiter (avoid module resolution issues on Vercel)
+type Bucket = { count: number; windowStart: number };
+const rateLimitStore = new Map<string, Bucket>();
+
+type RateLimitResult = { allowed: true } | { allowed: false; retryAfterSec: number };
+
+function checkRateLimit(key: string, maxAttempts: number, windowMs: number): RateLimitResult {
+  const now = Date.now();
+  const existing = rateLimitStore.get(key);
+
+  if (!existing || now - existing.windowStart >= windowMs) {
+    rateLimitStore.set(key, { count: 1, windowStart: now });
+    return { allowed: true };
+  }
+
+  existing.count += 1;
+  rateLimitStore.set(key, existing);
+
+  if (existing.count > maxAttempts) {
+    const retryAfterSec = Math.max(1, Math.ceil((windowMs - (now - existing.windowStart)) / 1000));
+    return { allowed: false, retryAfterSec };
+  }
+
+  return { allowed: true };
+}
+
+function getClientIp(request: Request): string {
+  return (
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip')?.trim() ||
+    'unknown'
+  );
+}
 
 function getSupabaseUrl(): string | undefined {
   return process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
