@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
 import {
@@ -31,21 +31,34 @@ import {
   ArrowLeft,
   Inbox,
   Eye,
-  EyeOff
+  EyeOff,
+  Building2,
+  KeyRound,
+  Shield
 } from 'lucide-react';
+
+// Lazy load the 3D globe for better performance
+const Globe3D = lazy(() => import('./Globe3D'));
+
+// Loading fallback for the globe
+const GlobeLoader = () => (
+  <div className="w-full h-full flex items-center justify-center">
+    <div className="w-[200px] h-[200px] rounded-full bg-gradient-to-br from-[#1D4FFF]/20 to-[#E8B547]/10 animate-pulse" />
+  </div>
+);
 
 interface OnboardingProps {
   onComplete: (role: UserPersona, profile: any) => void;
 }
 
 const AFRICAN_COUNTRIES = [
-  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde", 
-  "Cameroon", "Central African Republic", "Chad", "Comoros", "DR Congo", "Republic of Congo", 
-  "Cote d'Ivoire", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", 
-  "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", 
-  "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", 
-  "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", 
-  "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", 
+  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde",
+  "Cameroon", "Central African Republic", "Chad", "Comoros", "DR Congo", "Republic of Congo",
+  "Cote d'Ivoire", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia",
+  "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia",
+  "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique",
+  "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles",
+  "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo",
   "Tunisia", "Uganda", "Zambia", "Zimbabwe"
 ];
 
@@ -57,6 +70,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
@@ -118,7 +132,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     if (fallbackView) setView(fallbackView);
   };
 
-  // Check if session already exists (e.g. from SQL Trigger creating a skeleton user)
+  // Check if session already exists
   useEffect(() => {
     const checkExistingSession = async () => {
         const { data: { session } } = await supabase.auth.getSession();
@@ -208,7 +222,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         }),
       });
 
-      // Local Vite dev has no /api routes — fall back to Supabase client (CAPTCHA still required)
+      // Local Vite dev has no /api routes — fall back to Supabase client
       if (response.status === 404 && import.meta.env.DEV) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: loginEmail,
@@ -262,7 +276,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       clearLoginFailures();
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to login");
-      // Reset captcha on error
       setCaptchaToken(null);
       captchaRef.current?.reset();
     } finally {
@@ -274,7 +287,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    // Enhanced Validation
     if (!signupName || !signupEmail || !signupPassword) {
         setErrorMsg("Please fill in all fields.");
         return;
@@ -291,7 +303,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         setErrorMsg("You must accept the Terms of Service to continue.");
         return;
     }
-    // Check captcha token
     if (!captchaToken) {
       setErrorMsg("Please complete the CAPTCHA verification.");
       return;
@@ -312,7 +323,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       });
 
       if (error) {
-        // Check for specific error types
         if (error.message.includes('already registered') || error.status === 422) {
           setErrorMsg('This email is already registered. Please sign in instead.');
           setLoading(false);
@@ -320,23 +330,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           return;
         }
 
-        // For other errors, show the error message
         setErrorMsg(error.message || 'Failed to create account. Please try again.');
         setLoading(false);
         setCaptchaToken(null);
         return;
       }
 
-      // Profile will be created later in handleFinalize after role selection
-      // Prepare profile data
       setProfile(prev => ({ ...prev, userName: signupName, email: signupEmail }));
 
-      // Check if email confirmation is required
       if (data.user && !data.session) {
-        // Email confirmation required
         setView('EMAIL_VERIFICATION');
       } else if (data.session) {
-        // Auto-confirmed, proceed to role selection
         setView('ROLE_SELECT');
       }
 
@@ -352,12 +356,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     e.preventDefault();
     if (!forgotEmail) return;
 
-    // Check captcha token
     if (!captchaToken) {
       setErrorMsg("Please complete the CAPTCHA verification.");
       return;
     }
-    
+
     setLoading(true);
     setErrorMsg(null);
     setForgotSuccess(false);
@@ -377,11 +380,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         }
         throw error;
       }
-      
+
       setForgotSuccess(true);
     } catch (err: any) {
       setErrorMsg(err.message || "An unexpected error occurred. Please try again.");
-      // Reset captcha on error
       setCaptchaToken(null);
       captchaRef.current?.reset();
     } finally {
@@ -423,17 +425,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       }
       setLoading(true);
       setErrorMsg(null);
-      
+
       try {
         const { data: userData } = await supabase.auth.getUser();
-        
-        // --- SIMULATION CHECK ---
-        // If there is no real Supabase session, create a mock profile
+
         if (!userData.user) {
             await new Promise(resolve => setTimeout(resolve, 800));
             onComplete(selectedRole, {
                 ...profile,
-                id: `mock_user_${Date.now()}`, // Identifiable mock ID
+                id: `mock_user_${Date.now()}`,
                 role: selectedRole,
                 email: profile.email || 'simulation@afritrade.os',
                 isSimulated: true,
@@ -443,7 +443,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             return;
         }
 
-        // Mark complete only after the required profile fields have been persisted.
         const { error: dbError } = await supabase
             .from('profiles')
             .upsert({
@@ -461,7 +460,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
         if (dbError) {
             console.error("DB Profile Sync Failed:", dbError);
-            // Continue anyway - profile sync is not critical for login
         }
 
         onComplete(selectedRole, {
@@ -488,7 +486,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   ];
 
   const getStrengthColor = (score: number) => {
-      if (score === 0) return 'bg-gray-200 dark:bg-gray-700';
+      if (score === 0) return 'bg-gray-700';
       if (score < 2) return 'bg-red-500';
       if (score < 4) return 'bg-yellow-500';
       return 'bg-green-500';
@@ -501,549 +499,812 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       return 'Strong';
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-trade-bg dark:bg-slate-950 flex items-center justify-center p-4 md:p-6 transition-colors duration-500 font-sans">
-        
-        {/* Background Ambient Glow */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-trade-secondary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-trade-accent/10 rounded-full blur-3xl" />
+  // Premium Auth Container for Login/Signup views
+  const renderAuthContainer = () => (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 overflow-hidden">
+      {/* Deep Navy Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#020617] via-[#071126] to-[#0a1628]" />
 
-        <div className="card-premium relative w-full max-w-5xl overflow-hidden min-h-[600px] flex">
-            
-            {/* Left Panel: Visual & Messaging */}
-            <div className="hidden md:flex w-5/12 bg-trade-primary relative p-10 flex-col justify-between text-white overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-trade-primary/95 to-trade-secondary/95 z-10" />
-                <img src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-30" alt="Trade" />
-                <div className="absolute inset-0 z-10 opacity-[0.04] bg-[radial-gradient(circle_at_20%_20%,white_0.7px,transparent_0.8px)] bg-[length:18px_18px]" />
-                
-                <div className="relative z-20">
-                    <div className="flex items-center gap-3 mb-8">
-                        <img src="/afritradeos.jpeg" alt="AfriTradeOS" className="w-8 h-8 rounded-lg object-cover shadow-lg" />
-                        <span className="type-header text-white">AfriTradeOS</span>
-                    </div>
-                    <h1 className="type-hero text-white mb-4">
-                        {view === 'LOGIN' ? 'Welcome Back.' : 
-                         view === 'FORGOT_PASSWORD' ? 'Secure Reset.' : 
-                         view === 'EMAIL_VERIFICATION' ? 'Verify Email.' :
-                         view === 'SIGNUP' ? 'Real Time Mode.' :
-                         'Setup Profile.'}
-                    </h1>
-                    <p className="type-body text-white/72 max-w-md">
-                        {view === 'LOGIN' || view === 'FORGOT_PASSWORD'
-                            ? 'Securely access your trade dashboard, monitor live shipments, and manage compliance from one unified operating system.'
-                            : view === 'EMAIL_VERIFICATION' 
-                            ? 'We’ve sent a welcome email to your registered address. Please verify your account to continue.'
-                            : 'Experience the power of AfriTradeOS with our instant simulation mode. No backend required.'
-                        }
-                    </p>
-                </div>
+      {/* Ambient Light Effects */}
+      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#1D4FFF]/8 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-[#E8B547]/6 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#1D4FFF]/4 rounded-full blur-[200px] pointer-events-none" />
 
-                <div className="relative z-20 space-y-4">
-                    <div className="flex items-center gap-3 text-sm text-white/78">
-                        <CheckCircle className="w-4 h-4 text-trade-accent" /> 
-                        <span>Instant Rules of Origin Compliance</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-white/78">
-                        <CheckCircle className="w-4 h-4 text-trade-accent" /> 
-                        <span>Verified Partner Network</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-white/78">
-                        <CheckCircle className="w-4 h-4 text-trade-accent" /> 
-                        <span>Access to Trade Finance</span>
-                    </div>
-                </div>
+      {/* Floating Light Streaks */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-64 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/30 to-transparent rotate-12 animate-pulse" />
+        <div className="absolute bottom-32 right-20 w-48 h-[1px] bg-gradient-to-r from-transparent via-[#E8B547]/20 to-transparent -rotate-12 animate-pulse" style={{animationDelay: '1s'}} />
+        <div className="absolute top-1/3 right-1/4 w-32 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/20 to-transparent rotate-45 animate-pulse" style={{animationDelay: '0.5s'}} />
+      </div>
+
+      {/* Main Container */}
+      <div className="relative w-full max-w-[1450px] h-auto min-h-[700px] md:h-[860px] rounded-[32px] overflow-hidden flex flex-col md:flex-row
+                      bg-gradient-to-br from-[#071B34]/95 to-[#0D2A4D]/90
+                      border border-white/[0.08]
+                      shadow-[0_0_80px_rgba(29,79,255,0.15),0_0_120px_rgba(232,181,71,0.08),inset_0_1px_0_rgba(255,255,255,0.05)]
+                      backdrop-blur-xl">
+
+        {/* Glowing Border Effect */}
+        <div className="absolute inset-0 rounded-[32px] pointer-events-none"
+             style={{
+               background: 'linear-gradient(135deg, rgba(29,79,255,0.1) 0%, transparent 50%, rgba(232,181,71,0.1) 100%)',
+               padding: '1px',
+               mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+               maskComposite: 'xor',
+               WebkitMaskComposite: 'xor'
+             }} />
+
+        {/* LEFT PANEL */}
+        <div className="hidden md:flex md:w-1/2 relative flex-col p-12 lg:p-16 overflow-hidden">
+          {/* Panel Background Gradient */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#071B34] to-[#0D2A4D]" />
+
+          {/* Glassmorphism overlay */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent" />
+
+          {/* Separator line */}
+          <div className="absolute right-0 top-8 bottom-8 w-[1px] bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+
+          {/* Content */}
+          <div className="relative z-10 flex-1">
+            {/* Logo */}
+            <div className="flex items-center gap-3 mb-12">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8B547] to-[#D4A43A] flex items-center justify-center shadow-lg shadow-[#E8B547]/20">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#071126]" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+              </div>
+              <span className="text-xl font-bold text-white tracking-tight">AfriTradeOS</span>
             </div>
 
-            {/* Right Panel: Interactive Flow */}
-            <div className="w-full md:w-7/12 p-6 md:p-10 flex flex-col justify-center relative bg-white/90 dark:bg-slate-900/90 transition-all backdrop-blur-sm">
-                
-                {errorMsg && (
-                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-2xl flex items-center gap-2 animate-in slide-in-from-top-2 border border-red-100 dark:border-red-900/40">
-                        <AlertCircle className="w-4 h-4 shrink-0" /> <span className="flex-1">{errorMsg}</span>
-                    </div>
-                )}
+            {/* Hero Text */}
+            <h1 className="text-[4rem] lg:text-[5rem] font-extrabold text-white leading-[1.05] tracking-[-0.03em] mb-8">
+              Welcome<br />
+              Back<span className="text-[#E8B547]">.</span>
+            </h1>
 
-                {/* 1. LOGIN VIEW */}
-                {view === 'LOGIN' && (
-                    <form onSubmit={handleLoginSubmit} className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
-                        <div>
-                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Sign In</h2>
-                            <p className="type-body text-gray-500 dark:text-gray-400">Access your AfriTradeOS account.</p>
-                        </div>
+            {/* Subtext */}
+            <p className="text-base text-white/55 leading-[1.8] max-w-[360px] mb-10">
+              Securely access your trade dashboard,
+              monitor live shipments, and manage
+              compliance from one unified operating system.
+            </p>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Email Address</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                    <input 
-                                        type="email" 
-                                        required
-                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
-                                        placeholder="name@company.com"
-                                        value={loginEmail}
-                                        onChange={e => setLoginEmail(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2 flex justify-between items-center">
-                                    Password
-                                    <button type="button" onClick={() => setView('FORGOT_PASSWORD')} className="text-trade-secondary dark:text-blue-400 hover:underline normal-case font-medium tracking-normal">Forgot?</button>
-                                </label>
-                                <div className="relative group">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                    <input 
-                                        type={showPassword ? "text" : "password"}
-                                        required
-                                        className="input-premium w-full pl-10 pr-10 text-trade-primary dark:text-white"
-                                        placeholder="••••••••"
-                                        value={loginPassword}
-                                        onChange={e => setLoginPassword(e.target.value)}
-                                    />
-                                    <button 
-                                      type="button"
-                                      onClick={() => setShowPassword(!showPassword)}
-                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                                    >
-                                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Turnstile CAPTCHA */}
-                        <TurnstileCaptcha
-                            ref={captchaRef}
-                            onVerify={(token) => setCaptchaToken(token)}
-                            onExpire={() => setCaptchaToken(null)}
-                            onError={() => setCaptchaToken(null)}
-                        />
-
-                        <button
-                            type="submit"
-                            disabled={loading || !captchaToken}
-                            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70"
-                        >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
-                        </button>
-
-                        {/* <div className="relative my-6">
-                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100 dark:border-slate-800"></div></div>
-                            <div className="relative flex justify-center text-xs"><span className="px-2 bg-white dark:bg-slate-900 text-gray-400">Or continue with</span></div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
-                        >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                            </svg>
-                            <span className="text-xs font-bold text-trade-primary dark:text-white">Continue with Google</span>
-                        </button> */}
-
-                        <p className="text-center type-body text-gray-500 mt-6">
-                            Don't have an account? <button type="button" onClick={() => setView('SIGNUP')} className="text-trade-primary dark:text-white font-bold hover:underline">Sign up</button>
-                        </p>
-                    </form>
-                )}
-
-                {/* 2. FORGOT PASSWORD VIEW */}
-                {view === 'FORGOT_PASSWORD' && (
-                    <div className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
-                        <div className="flex items-center justify-between">
-                            <button 
-                                onClick={() => setView('LOGIN')}
-                                className="group flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-trade-primary dark:hover:text-white transition-colors"
-                            >
-                                <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-slate-800 group-hover:bg-gray-200 dark:group-hover:bg-slate-700 flex items-center justify-center transition-colors">
-                                    <ArrowLeft className="w-3 h-3" />
-                                </div>
-                                <span>Back to Login</span>
-                            </button>
-                        </div>
-
-                        <div>
-                            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-5 border border-blue-100 dark:border-blue-800">
-                                <ShieldCheck className="w-6 h-6 text-trade-primary dark:text-blue-400" />
-                            </div>
-                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Forgot Password?</h2>
-                            <p className="type-body text-gray-500 dark:text-gray-400">
-                                Enter the email address associated with your account and we'll send you a secure link to reset your password.
-                            </p>
-                        </div>
-
-                        {forgotSuccess ? (
-                            <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-[20px] p-6 text-center animate-fade-in">
-                                <div className="w-12 h-12 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
-                                    <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
-                                </div>
-                                <h3 className="type-header text-green-800 dark:text-green-300 mb-2">Check your email</h3>
-                                <p className="type-body text-green-700 dark:text-green-400 mb-6">
-                                    If an account exists for <span className="font-bold block mt-1">{forgotEmail}</span>, you will receive a reset link shortly.
-                                </p>
-                                <button 
-                                    type="button"
-                                    onClick={() => setView('LOGIN')}
-                                    className="btn-secondary w-full"
-                                >
-                                    Back to Sign In
-                                </button>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
-                                <div>
-                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2 ml-1">Work Email</label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                        <input 
-                                            type="email" 
-                                            required
-                                            className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white placeholder:text-gray-400"
-                                            placeholder="name@company.com"
-                                            value={forgotEmail}
-                                            onChange={e => setForgotEmail(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Turnstile CAPTCHA */}
-                                <TurnstileCaptcha
-                                    ref={captchaRef}
-                                    onVerify={(token) => setCaptchaToken(token)}
-                                    onExpire={() => setCaptchaToken(null)}
-                                    onError={() => setCaptchaToken(null)}
-                                />
-
-                                <button 
-                                    type="submit"
-                                    disabled={loading || !forgotEmail || !captchaToken}
-                                    className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
-                                >
-                                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                                        <>
-                                            Send Reset Link <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                )}
-
-                {/* 3. EMAIL VERIFICATION VIEW */}
-                {view === 'EMAIL_VERIFICATION' && (
-                    <div className="space-y-6 animate-fade-in max-w-md mx-auto w-full text-center">
-                        <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto border border-blue-100 dark:border-blue-800 shadow-sm relative">
-                            <Inbox className="w-8 h-8 text-trade-primary dark:text-blue-400" />
-                            <div className="absolute -top-1 -right-1 w-6 h-6 bg-trade-accent rounded-full flex items-center justify-center shadow-md animate-bounce">
-                                <Mail className="w-3 h-3 text-white" />
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Check your inbox</h2>
-                            <p className="type-body text-gray-500 dark:text-gray-400">
-                                We've sent a welcome email to <span className="font-bold text-trade-primary dark:text-white">{signupEmail}</span> with a verification link.
-                            </p>
-                            <p className="type-body text-gray-500 dark:text-gray-400 mt-2">
-                                Please click the link in the email to activate your account and access the platform.
-                            </p>
-                        </div>
-                        <div className="pt-4 space-y-3">
-                            <button
-                                onClick={() => setView('LOGIN')}
-                                className="btn-primary w-full flex items-center justify-center gap-2"
-                            >
-                                Go to Sign In
-                            </button>
-                            <p className="type-caption mt-2">
-                                Didn't receive it? Check spam or <button className="text-trade-primary hover:underline" onClick={() => setView('SIGNUP')}>try another email</button>.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* 4. SIGN UP VIEW (Enhanced) */}
-                {view === 'SIGNUP' && (
-                    <form onSubmit={handleSignupSubmit} className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
-                        <div>
-                            <h2 className="type-title text-trade-primary dark:text-white mb-2">Create Account</h2>
-                            <p className="type-body text-gray-500 dark:text-gray-400">Start your AfCFTA journey securely.</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Full Name</label>
-                                <div className="relative group">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                    <input 
-                                        type="text" 
-                                        required
-                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
-                                        placeholder="Kofi Mensah"
-                                        value={signupName}
-                                        onChange={e => setSignupName(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Work Email</label>
-                                <div className="relative group">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                    <input 
-                                        type="email" 
-                                        required
-                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
-                                        placeholder="name@company.com"
-                                        value={signupEmail}
-                                        onChange={e => setSignupEmail(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            
-                            {/* Password Field */}
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Password</label>
-                                <div className="relative group">
-                                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                    <input 
-                                        type={showPassword ? "text" : "password"}
-                                        required
-                                        className="input-premium w-full pl-10 pr-10 text-trade-primary dark:text-white"
-                                        placeholder="Create a strong password"
-                                        value={signupPassword}
-                                        onChange={e => setSignupPassword(e.target.value)}
-                                    />
-                                    <button 
-                                      type="button"
-                                      onClick={() => setShowPassword(!showPassword)}
-                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                                    >
-                                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </button>
-                                </div>
-                                {/* Strength Meter */}
-                                {signupPassword && (
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <div className="flex-1 h-1 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full transition-all duration-300 ${getStrengthColor(passwordStrength)}`} 
-                                                style={{ width: `${(passwordStrength / 4) * 100}%` }} 
-                                            />
-                                        </div>
-                                        <span className="type-caption font-semibold text-gray-500">{getStrengthLabel(passwordStrength)}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Confirm Password Field */}
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Confirm Password</label>
-                                <div className="relative group">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-trade-primary transition-colors" />
-                                    <input 
-                                        type="password" 
-                                        required
-                                        className="input-premium w-full pl-10 pr-4 text-trade-primary dark:text-white"
-                                        placeholder="Repeat your password"
-                                        value={signupConfirmPassword}
-                                        onChange={e => setSignupConfirmPassword(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Terms Checkbox */}
-                            <div className="flex items-start gap-2 pt-2">
-                                <div className="relative flex items-center h-5">
-                                    <input
-                                        id="terms"
-                                        type="checkbox"
-                                        className="w-4 h-4 rounded border-gray-300 text-trade-primary focus:ring-trade-primary/20"
-                                        checked={termsAccepted}
-                                        onChange={(e) => setTermsAccepted(e.target.checked)}
-                                    />
-                                </div>
-                                <label htmlFor="terms" className="type-caption text-gray-500 dark:text-gray-400 leading-relaxed">
-                                    I agree to the <a href="#" className="text-trade-primary dark:text-white font-bold hover:underline">Terms of Service</a> and <a href="#" className="text-trade-primary dark:text-white font-bold hover:underline">Privacy Policy</a>.
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Turnstile CAPTCHA */}
-                        <TurnstileCaptcha
-                            onVerify={(token) => setCaptchaToken(token)}
-                            onExpire={() => setCaptchaToken(null)}
-                            onError={() => setCaptchaToken(null)}
-                        />
-
-                        <button
-                            type="submit"
-                            disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword || !captchaToken}
-                            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start with AfriTradeOS'}
-                        </button>
-
-                        <p className="text-center type-body text-gray-500 mt-6">
-                            Already have an account? <button type="button" onClick={() => setView('LOGIN')} className="text-trade-primary dark:text-white font-bold hover:underline">Sign in</button>
-                        </p>
-                    </form>
-                )}
-
-                {/* 5. ROLE SELECTION (Onboarding Step 1) */}
-                {view === 'ROLE_SELECT' && (
-                    <div className="space-y-6 animate-fade-in max-w-md mx-auto w-full">
-                        <div>
-                             <h2 className="type-header text-trade-primary dark:text-white mb-2">Select Account Type</h2>
-                             <p className="type-body text-gray-500 dark:text-gray-400">Your role determines tools, permissions, and insights.</p>
-                        </div>
-
-                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                            {roles.map(r => (
-                                <button
-                                    key={r.id}
-                                    onClick={() => handleRoleSelect(r.id)}
-                                    className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${
-                                        selectedRole === r.id 
-                                        ? 'border-trade-accent bg-trade-accent/6 ring-1 ring-trade-accent shadow-[0_14px_30px_rgba(201,162,77,0.14)]' 
-                                        : 'border-gray-200 dark:border-slate-700 hover:border-trade-secondary/50 dark:hover:border-slate-600 hover:shadow-[0_12px_24px_rgba(15,23,42,0.08)]'
-                                    }`}
-                                >
-                                    <div className={`p-3 rounded-xl ${selectedRole === r.id ? 'bg-trade-accent text-white' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400'}`}>
-                                        <r.icon className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className={`type-body font-semibold ${selectedRole === r.id ? 'text-trade-primary dark:text-trade-accent' : 'text-trade-primary dark:text-white'}`}>{r.label}</h3>
-                                        <p className="type-caption text-gray-500 dark:text-gray-400">{r.desc}</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-
-                        <button 
-                            onClick={handleRoleNext}
-                            disabled={!selectedRole}
-                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                            Continue <ArrowRight className="w-4 h-4" />
-                        </button>
-                    </div>
-                )}
-
-                {/* 6. PROFILE SETUP (Onboarding Step 2) */}
-                {view === 'PROFILE_SETUP' && (
-                     <div className="space-y-5 animate-fade-in max-w-md mx-auto w-full">
-                         <div>
-                             <h2 className="type-header text-trade-primary dark:text-white mb-2">Organization Profile</h2>
-                             <p className="type-body text-gray-500 dark:text-gray-400">Tell us about your business to optimize the OS.</p>
-                        </div>
-
-                        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Your Name</label>
-                                    <input 
-                                        type="text" 
-                                        className="input-premium w-full text-trade-primary dark:text-white"
-                                        value={profile.userName}
-                                        onChange={(e) => setProfile({...profile, userName: e.target.value})}
-                                        placeholder="John Doe"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Company</label>
-                                    <input 
-                                        type="text" 
-                                        className="input-premium w-full text-trade-primary dark:text-white"
-                                        value={profile.companyName}
-                                        onChange={(e) => setProfile({...profile, companyName: e.target.value})}
-                                        placeholder="Trading Co. Ltd"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Country of Operation</label>
-                                <select 
-                                    className="input-premium w-full text-trade-primary dark:text-white"
-                                    value={profile.country}
-                                    onChange={(e) => setProfile({...profile, country: e.target.value})}
-                                >
-                                    {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Phone</label>
-                                    <input 
-                                        type="tel" 
-                                        className="input-premium w-full text-trade-primary dark:text-white"
-                                        value={profile.phone}
-                                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                                        placeholder="+233..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-trade-primary dark:text-gray-400 mb-2">Size</label>
-                                    <select 
-                                        className="input-premium w-full text-trade-primary dark:text-white"
-                                        value={profile.size}
-                                        onChange={(e) => setProfile({...profile, size: e.target.value})}
-                                    >
-                                        <option>Sole Proprietor</option>
-                                        <option>SME</option>
-                                        <option>Enterprise</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={handleFinalize}
-                            disabled={loading}
-                            className="btn-primary w-full flex items-center justify-center gap-2"
-                        >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Launch Dashboard'}
-                        </button>
-                     </div>
-                )}
-                
-                {/* Global Loading Overlay */}
-                {loading && (
-                    <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex items-center justify-center z-50">
-                        <Loader2 className="w-10 h-10 text-trade-primary animate-spin" />
-                    </div>
-                )}
+            {/* Feature List */}
+            <div className="space-y-4">
+              {[
+                'Instant Rules of Origin Compliance',
+                'Verified Partner Network',
+                'Access to Trade Finance'
+              ].map((feature, i) => (
+                <div key={i} className="flex items-center gap-3 group">
+                  <div className="w-6 h-6 rounded-full border border-[#E8B547]/40 flex items-center justify-center
+                                bg-gradient-to-br from-[#E8B547]/20 to-[#E8B547]/5
+                                shadow-[0_0_12px_rgba(232,181,71,0.2)]
+                                group-hover:shadow-[0_0_20px_rgba(232,181,71,0.4)] transition-shadow">
+                    <CheckCircle className="w-3.5 h-3.5 text-[#E8B547]" />
+                  </div>
+                  <span className="text-sm text-white/70 font-medium">{feature}</span>
+                </div>
+              ))}
             </div>
+          </div>
+
+          {/* 3D Globe Visual - Bottom Right Corner */}
+          <div className="absolute bottom-0 right-0 w-[520px] h-[420px] z-10 pointer-events-auto"
+               style={{ transform: 'translate(80px, 60px)' }}>
+            <Suspense fallback={<GlobeLoader />}>
+              <Globe3D width={520} height={420} />
+            </Suspense>
+          </div>
         </div>
 
-        {/* CSS for custom animations */}
-        <style>{`
-          @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        {/* RIGHT PANEL */}
+        <div className="w-full md:w-1/2 relative flex flex-col p-8 md:p-12 lg:p-16 bg-[#050B19]/80 backdrop-blur-xl">
+          {/* Subtle gradient lighting */}
+          <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-[#1D4FFF]/5 to-transparent pointer-events-none" />
+
+          {/* Security Badge - Top Right */}
+          <div className="absolute top-8 right-8 flex items-center gap-2.5 text-right">
+            <div className="w-9 h-9 rounded-xl bg-[#1D4FFF]/10 border border-[#1D4FFF]/20 flex items-center justify-center">
+              <Shield className="w-4.5 h-4.5 text-[#1D4FFF]" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-white/90">Your data is protected</p>
+              <p className="text-[10px] text-white/50">Enterprise-grade security</p>
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <div className="flex-1 flex flex-col justify-center max-w-md mx-auto w-full relative z-10 mt-12 md:mt-0">
+            {errorMsg && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2">
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <span className="flex-1">{errorMsg}</span>
+              </div>
+            )}
+
+            {/* LOGIN VIEW */}
+            {view === 'LOGIN' && (
+              <form onSubmit={handleLoginSubmit} className="space-y-6 animate-fade-in">
+                <div className="mb-8">
+                  <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">Sign In</h2>
+                  <p className="text-white/50 text-base">Access your AfriTradeOS account.</p>
+                </div>
+
+                <div className="space-y-5">
+                  {/* Email Field */}
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-3">
+                      Email Address
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        className="w-full h-[68px] pl-12 pr-4 rounded-[18px]
+                                 bg-white/[0.03] border border-white/[0.08]
+                                 text-white placeholder-white/30 text-base
+                                 focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                 focus:shadow-[0_0_0_4px_rgba(29,79,255,0.1),inset_0_2px_4px_rgba(0,0,0,0.1)]
+                                 transition-all duration-200"
+                        placeholder="name@company.com"
+                        value={loginEmail}
+                        onChange={e => setLoginEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password Field */}
+                  <div>
+                    <label className="flex justify-between items-center text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-3">
+                      <span>Password</span>
+                      <button
+                        type="button"
+                        onClick={() => setView('FORGOT_PASSWORD')}
+                        className="normal-case text-[#1D4FFF] hover:text-[#3D6FFF] font-medium tracking-normal transition-colors"
+                      >
+                        Forgot?
+                      </button>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        className="w-full h-[68px] pl-12 pr-12 rounded-[18px]
+                                 bg-white/[0.03] border border-white/[0.08]
+                                 text-white placeholder-white/30 text-base
+                                 focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                 focus:shadow-[0_0_0_4px_rgba(29,79,255,0.1),inset_0_2px_4px_rgba(0,0,0,0.1)]
+                                 transition-all duration-200"
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={e => setLoginPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Remember Me & Passkey */}
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-5 h-5 rounded-md border border-white/20 bg-white/5
+                                    peer-checked:bg-[#1D4FFF] peer-checked:border-[#1D4FFF]
+                                    transition-all flex items-center justify-center">
+                        {rememberMe && <CheckCircle className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                    <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors">Remember me</span>
+                  </label>
+
+                  <button type="button" className="flex items-center gap-2 text-sm text-[#1D4FFF] hover:text-[#3D6FFF] transition-colors">
+                    <span>Use passkey</span>
+                    <KeyRound className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Turnstile CAPTCHA */}
+                <div className="pt-2">
+                  <TurnstileCaptcha
+                    ref={captchaRef}
+                    onVerify={(token) => setCaptchaToken(token)}
+                    onExpire={() => setCaptchaToken(null)}
+                    onError={() => setCaptchaToken(null)}
+                  />
+                </div>
+
+                {/* Sign In Button */}
+                <button
+                  type="submit"
+                  disabled={loading || !captchaToken}
+                  className="w-full h-[72px] rounded-[20px]
+                           bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
+                           text-white font-semibold text-base
+                           flex items-center justify-center gap-2
+                           shadow-[0_14px_40px_rgba(29,79,255,0.35),0_4px_12px_rgba(29,79,255,0.2)]
+                           hover:shadow-[0_18px_50px_rgba(29,79,255,0.45),0_6px_16px_rgba(29,79,255,0.25)]
+                           hover:scale-[1.02] active:scale-[0.98]
+                           disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100
+                           transition-all duration-200"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <ArrowRight className="w-5 h-5" />
+                      <span>Sign In</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Sign Up Link */}
+                <p className="text-center text-sm text-white/50 pt-4">
+                  Don&apos;t have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setView('SIGNUP')}
+                    className="text-[#1D4FFF] hover:text-[#3D6FFF] font-semibold transition-colors"
+                  >
+                    Sign up
+                  </button>
+                </p>
+              </form>
+            )}
+
+            {/* FORGOT PASSWORD VIEW */}
+            {view === 'FORGOT_PASSWORD' && (
+              <div className="space-y-6 animate-fade-in">
+                <button
+                  onClick={() => setView('LOGIN')}
+                  className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-white/5 group-hover:bg-white/10 flex items-center justify-center transition-colors">
+                    <ArrowLeft className="w-4 h-4" />
+                  </div>
+                  <span>Back to Login</span>
+                </button>
+
+                <div className="pt-4">
+                  <div className="w-14 h-14 bg-[#1D4FFF]/10 border border-[#1D4FFF]/20 rounded-2xl flex items-center justify-center mb-6">
+                    <ShieldCheck className="w-7 h-7 text-[#1D4FFF]" />
+                  </div>
+                  <h2 className="text-3xl font-bold text-white mb-2">Forgot Password?</h2>
+                  <p className="text-white/50 text-base leading-relaxed">
+                    Enter the email address associated with your account and we&apos;ll send you a secure link to reset your password.
+                  </p>
+                </div>
+
+                {forgotSuccess ? (
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-8 text-center animate-fade-in">
+                    <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Mail className="w-7 h-7 text-green-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-green-400 mb-2">Check your email</h3>
+                    <p className="text-green-400/70 mb-6">
+                      If an account exists for <span className="font-semibold block mt-1">{forgotEmail}</span>, you will receive a reset link shortly.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setView('LOGIN')}
+                      className="w-full h-14 rounded-xl bg-white/5 border border-white/10 text-white font-medium
+                               hover:bg-white/10 transition-all"
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-3">Work Email</label>
+                      <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors">
+                          <Mail className="w-5 h-5" />
+                        </div>
+                        <input
+                          type="email"
+                          required
+                          className="w-full h-[68px] pl-12 pr-4 rounded-[18px]
+                                   bg-white/[0.03] border border-white/[0.08]
+                                   text-white placeholder-white/30 text-base
+                                   focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                   focus:shadow-[0_0_0_4px_rgba(29,79,255,0.1)]
+                                   transition-all duration-200"
+                          placeholder="name@company.com"
+                          value={forgotEmail}
+                          onChange={e => setForgotEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <TurnstileCaptcha
+                      ref={captchaRef}
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken(null)}
+                      onError={() => setCaptchaToken(null)}
+                    />
+
+                    <button
+                      type="submit"
+                      disabled={loading || !forgotEmail || !captchaToken}
+                      className="w-full h-[68px] rounded-[20px]
+                               bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
+                               text-white font-semibold text-base
+                               flex items-center justify-center gap-2
+                               shadow-[0_14px_40px_rgba(29,79,255,0.35)]
+                               hover:shadow-[0_18px_50px_rgba(29,79,255,0.45)]
+                               hover:scale-[1.02]
+                               disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100
+                               transition-all duration-200 group"
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                        <>
+                          Send Reset Link
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* EMAIL VERIFICATION VIEW */}
+            {view === 'EMAIL_VERIFICATION' && (
+              <div className="space-y-6 animate-fade-in text-center">
+                <div className="relative inline-block">
+                  <div className="w-20 h-20 bg-[#1D4FFF]/10 border border-[#1D4FFF]/20 rounded-full flex items-center justify-center mx-auto">
+                    <Inbox className="w-10 h-10 text-[#1D4FFF]" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-8 h-8 bg-[#E8B547] rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                    <Mail className="w-4 h-4 text-[#071126]" />
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white mb-3">Check your inbox</h2>
+                  <p className="text-white/50 text-base leading-relaxed">
+                    We&apos;ve sent a welcome email to <span className="font-semibold text-white">{signupEmail}</span> with a verification link.
+                  </p>
+                  <p className="text-white/50 text-base mt-2">
+                    Please click the link in the email to activate your account.
+                  </p>
+                </div>
+                <div className="pt-4 space-y-3">
+                  <button
+                    onClick={() => setView('LOGIN')}
+                    className="w-full h-[68px] rounded-[20px]
+                             bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
+                             text-white font-semibold text-base
+                             flex items-center justify-center gap-2
+                             shadow-[0_14px_40px_rgba(29,79,255,0.35)]
+                             hover:scale-[1.02] transition-all"
+                  >
+                    Go to Sign In
+                  </button>
+                  <p className="text-xs text-white/40">
+                    Didn&apos;t receive it? Check spam or{' '}
+                    <button className="text-[#1D4FFF] hover:underline" onClick={() => setView('SIGNUP')}>
+                      try another email
+                    </button>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* SIGNUP VIEW */}
+            {view === 'SIGNUP' && (
+              <form onSubmit={handleSignupSubmit} className="space-y-4 animate-fade-in">
+                <div className="mb-4">
+                  <h2 className="text-3xl font-bold text-white mb-1.5">Create Account</h2>
+                  <p className="text-white/50 text-sm">Start your AfCFTA journey securely.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Full Name</label>
+                    <div className="relative group">
+                      <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
+                      <input
+                        type="text"
+                        required
+                        className="w-full h-12 pl-10 pr-4 rounded-[14px]
+                                 bg-white/[0.03] border border-white/[0.08]
+                                 text-white placeholder-white/30 text-sm
+                                 focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                 focus:shadow-[0_0_0_3px_rgba(29,79,255,0.1)]
+                                 transition-all duration-200"
+                        placeholder="Kofi Mensah"
+                        value={signupName}
+                        onChange={e => setSignupName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Work Email</label>
+                    <div className="relative group">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
+                      <input
+                        type="email"
+                        required
+                        className="w-full h-12 pl-10 pr-4 rounded-[14px]
+                                 bg-white/[0.03] border border-white/[0.08]
+                                 text-white placeholder-white/30 text-sm
+                                 focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                 focus:shadow-[0_0_0_3px_rgba(29,79,255,0.1)]
+                                 transition-all duration-200"
+                        placeholder="name@company.com"
+                        value={signupEmail}
+                        onChange={e => setSignupEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Password</label>
+                    <div className="relative group">
+                      <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        className="w-full h-12 pl-10 pr-10 rounded-[14px]
+                                 bg-white/[0.03] border border-white/[0.08]
+                                 text-white placeholder-white/30 text-sm
+                                 focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                 focus:shadow-[0_0_0_3px_rgba(29,79,255,0.1)]
+                                 transition-all duration-200"
+                        placeholder="Create a strong password"
+                        value={signupPassword}
+                        onChange={e => setSignupPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {signupPassword && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${getStrengthColor(passwordStrength)}`}
+                            style={{ width: `${(passwordStrength / 4) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-medium text-white/50">{getStrengthLabel(passwordStrength)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Confirm Password</label>
+                    <div className="relative group">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
+                      <input
+                        type="password"
+                        required
+                        className="w-full h-12 pl-10 pr-4 rounded-[14px]
+                                 bg-white/[0.03] border border-white/[0.08]
+                                 text-white placeholder-white/30 text-sm
+                                 focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                                 focus:shadow-[0_0_0_3px_rgba(29,79,255,0.1)]
+                                 transition-all duration-200"
+                        placeholder="Repeat your password"
+                        value={signupConfirmPassword}
+                        onChange={e => setSignupConfirmPassword(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <label className="flex items-center gap-2.5 pt-1 cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-4 h-4 rounded border border-white/20 bg-white/5
+                                    peer-checked:bg-[#1D4FFF] peer-checked:border-[#1D4FFF]
+                                    transition-all flex items-center justify-center">
+                        {termsAccepted && <CheckCircle className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-white/50 leading-snug">
+                      I agree to the{' '}
+                      <a href="#" className="text-[#1D4FFF] hover:underline font-medium">Terms of Service</a>
+                      {' '}and{' '}
+                      <a href="#" className="text-[#1D4FFF] hover:underline font-medium">Privacy Policy</a>.
+                    </span>
+                  </label>
+                </div>
+
+                <TurnstileCaptcha
+                  onVerify={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken(null)}
+                  onError={() => setCaptchaToken(null)}
+                />
+
+                <button
+                  type="submit"
+                  disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword || !captchaToken}
+                  className="w-full h-14 rounded-[16px]
+                           bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
+                           text-white font-semibold text-sm
+                           flex items-center justify-center gap-2
+                           shadow-[0_12px_32px_rgba(29,79,255,0.35)]
+                           hover:shadow-[0_16px_40px_rgba(29,79,255,0.45)]
+                           hover:scale-[1.02]
+                           disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100
+                           transition-all duration-200"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start with AfriTradeOS'}
+                </button>
+
+                <p className="text-center text-xs text-white/50 pt-1">
+                  Already have an account?{' '}
+                  <button type="button" onClick={() => setView('LOGIN')} className="text-[#1D4FFF] hover:text-[#3D6FFF] font-semibold transition-colors">
+                    Sign in
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Animations */}
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.4s ease-out forwards;
+        }
+        @keyframes ping {
+          75%, 100% {
+            transform: scale(2);
+            opacity: 0;
           }
-          .animate-fade-in {
-            animation: fade-in 0.4s ease-out forwards;
-          }
-          .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-          }
-          .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 4px;
-          }
-          .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: #475569;
-          }
-        `}</style>
+        }
+        .animate-ping {
+          animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+      `}</style>
     </div>
   );
+
+  // Render Role Selection and Profile Setup with original styling
+  const renderOnboardingSteps = () => (
+    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-[#020617] via-[#071126] to-[#0a1628] flex items-center justify-center p-4 md:p-6">
+      {/* Ambient glow */}
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#1D4FFF]/8 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#E8B547]/6 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="relative w-full max-w-xl rounded-[28px] overflow-hidden
+                    bg-gradient-to-br from-[#071B34]/95 to-[#0D2A4D]/90
+                    border border-white/[0.08]
+                    shadow-[0_0_60px_rgba(29,79,255,0.12)]
+                    backdrop-blur-xl p-8 md:p-10">
+
+        {errorMsg && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span className="flex-1">{errorMsg}</span>
+          </div>
+        )}
+
+        {/* ROLE SELECTION */}
+        {view === 'ROLE_SELECT' && (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Select Account Type</h2>
+              <p className="text-white/50 text-base">Your role determines tools, permissions, and insights.</p>
+            </div>
+
+            <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+              {roles.map(r => (
+                <button
+                  key={r.id}
+                  onClick={() => handleRoleSelect(r.id)}
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${
+                    selectedRole === r.id
+                    ? 'border-[#E8B547]/50 bg-[#E8B547]/10 shadow-[0_0_30px_rgba(232,181,71,0.15)]'
+                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                  }`}
+                >
+                  <div className={`p-3 rounded-xl ${selectedRole === r.id ? 'bg-[#E8B547] text-[#071126]' : 'bg-white/10 text-white/60'}`}>
+                    <r.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-base font-semibold ${selectedRole === r.id ? 'text-[#E8B547]' : 'text-white'}`}>{r.label}</h3>
+                    <p className="text-sm text-white/50">{r.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleRoleNext}
+              disabled={!selectedRole || loading}
+              className="w-full h-16 rounded-[18px]
+                       bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
+                       text-white font-semibold text-base
+                       flex items-center justify-center gap-2
+                       shadow-[0_14px_40px_rgba(29,79,255,0.35)]
+                       hover:scale-[1.02]
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                       transition-all duration-200"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                <>Continue <ArrowRight className="w-5 h-5" /></>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* PROFILE SETUP */}
+        {view === 'PROFILE_SETUP' && (
+          <div className="space-y-5 animate-fade-in">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Organization Profile</h2>
+              <p className="text-white/50 text-base">Tell us about your business to optimize the OS.</p>
+            </div>
+
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Your Name</label>
+                  <input
+                    type="text"
+                    className="w-full h-14 px-4 rounded-[14px]
+                             bg-white/[0.03] border border-white/[0.08]
+                             text-white placeholder-white/30 text-sm
+                             focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                             transition-all duration-200"
+                    value={profile.userName}
+                    onChange={(e) => setProfile({...profile, userName: e.target.value})}
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Company</label>
+                  <input
+                    type="text"
+                    className="w-full h-14 px-4 rounded-[14px]
+                             bg-white/[0.03] border border-white/[0.08]
+                             text-white placeholder-white/30 text-sm
+                             focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                             transition-all duration-200"
+                    value={profile.companyName}
+                    onChange={(e) => setProfile({...profile, companyName: e.target.value})}
+                    placeholder="Trading Co. Ltd"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Country of Operation</label>
+                <select
+                  className="w-full h-14 px-4 rounded-[14px]
+                           bg-white/[0.03] border border-white/[0.08]
+                           text-white text-sm
+                           focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                           transition-all duration-200 appearance-none cursor-pointer"
+                  value={profile.country}
+                  onChange={(e) => setProfile({...profile, country: e.target.value})}
+                >
+                  {AFRICAN_COUNTRIES.map(c => <option key={c} value={c} className="bg-[#0D2A4D] text-white">{c}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    className="w-full h-14 px-4 rounded-[14px]
+                             bg-white/[0.03] border border-white/[0.08]
+                             text-white placeholder-white/30 text-sm
+                             focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                             transition-all duration-200"
+                    value={profile.phone}
+                    onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                    placeholder="+233..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Size</label>
+                  <select
+                    className="w-full h-14 px-4 rounded-[14px]
+                             bg-white/[0.03] border border-white/[0.08]
+                             text-white text-sm
+                             focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
+                             transition-all duration-200 appearance-none cursor-pointer"
+                    value={profile.size}
+                    onChange={(e) => setProfile({...profile, size: e.target.value})}
+                  >
+                    <option className="bg-[#0D2A4D] text-white">Sole Proprietor</option>
+                    <option className="bg-[#0D2A4D] text-white">SME</option>
+                    <option className="bg-[#0D2A4D] text-white">Enterprise</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleFinalize}
+              disabled={loading}
+              className="w-full h-16 rounded-[18px]
+                       bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
+                       text-white font-semibold text-base
+                       flex items-center justify-center gap-2
+                       shadow-[0_14px_40px_rgba(29,79,255,0.35)]
+                       hover:scale-[1.02]
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                       transition-all duration-200"
+            >
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Launch Dashboard'}
+            </button>
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-[#071126]/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-[28px]">
+            <Loader2 className="w-10 h-10 text-[#1D4FFF] animate-spin" />
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.4s ease-out forwards;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(255,255,255,0.2);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+      `}</style>
+    </div>
+  );
+
+  // Determine which view to render
+  if (view === 'ROLE_SELECT' || view === 'PROFILE_SETUP') {
+    return renderOnboardingSteps();
+  }
+
+  return renderAuthContainer();
 };
