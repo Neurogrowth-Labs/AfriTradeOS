@@ -1,10 +1,11 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_PER_IP = 20;
 const MAX_PER_EMAIL = 5;
 
-// Inline rate limiter (avoid module resolution issues on Vercel)
+// Inline rate limiter
 type Bucket = { count: number; windowStart: number };
 const rateLimitStore = new Map<string, Bucket>();
 
@@ -30,12 +31,19 @@ function checkRateLimit(key: string, maxAttempts: number, windowMs: number): Rat
   return { allowed: true };
 }
 
-function getClientIp(request: Request): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip')?.trim() ||
-    'unknown'
-  );
+function getClientIp(req: VercelRequest): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    return forwarded.split(',')[0]?.trim() || 'unknown';
+  }
+  if (Array.isArray(forwarded)) {
+    return forwarded[0]?.split(',')[0]?.trim() || 'unknown';
+  }
+  const realIp = req.headers['x-real-ip'];
+  if (typeof realIp === 'string') {
+    return realIp.trim();
+  }
+  return 'unknown';
 }
 
 function getSupabaseUrl(): string | undefined {
@@ -46,66 +54,47 @@ function getSupabaseAnonKey(): string | undefined {
   return process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method !== 'POST') {
-    return Response.json(
-      { error: 'Method not allowed. Use POST.' },
-      { status: 405, headers: { Allow: 'POST' } }
-    );
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).setHeader('Allow', 'POST').json({ error: 'Method not allowed. Use POST.' });
   }
 
-  const ip = getClientIp(request);
+  const ip = getClientIp(req);
   const ipLimit = checkRateLimit(`login:ip:${ip}`, MAX_PER_IP, WINDOW_MS);
   if (ipLimit.allowed === false) {
-    return Response.json(
-      { error: 'Too many login attempts. Please try again later.' },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(ipLimit.retryAfterSec),
-          'Cache-Control': 'no-store',
-        },
-      }
-    );
+    return res
+      .status(429)
+      .setHeader('Retry-After', String(ipLimit.retryAfterSec))
+      .setHeader('Cache-Control', 'no-store')
+      .json({ error: 'Too many login attempts. Please try again later.' });
   }
 
-  let body: { email?: string; password?: string; captchaToken?: string };
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
-  }
-
+  const body = req.body || {};
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const password = typeof body.password === 'string' ? body.password : '';
   const captchaToken = typeof body.captchaToken === 'string' ? body.captchaToken : '';
 
   if (!email || !password) {
-    return Response.json({ error: 'Email and password are required' }, { status: 400 });
+    return res.status(400).json({ error: 'Email and password are required' });
   }
 
   if (!captchaToken) {
-    return Response.json({ error: 'CAPTCHA verification required' }, { status: 400 });
+    return res.status(400).json({ error: 'CAPTCHA verification required' });
   }
 
   const emailLimit = checkRateLimit(`login:email:${email}`, MAX_PER_EMAIL, WINDOW_MS);
   if (emailLimit.allowed === false) {
-    return Response.json(
-      { error: 'Too many login attempts for this account. Please try again later.' },
-      {
-        status: 429,
-        headers: {
-          'Retry-After': String(emailLimit.retryAfterSec),
-          'Cache-Control': 'no-store',
-        },
-      }
-    );
+    return res
+      .status(429)
+      .setHeader('Retry-After', String(emailLimit.retryAfterSec))
+      .setHeader('Cache-Control', 'no-store')
+      .json({ error: 'Too many login attempts for this account. Please try again later.' });
   }
 
   const supabaseUrl = getSupabaseUrl();
   const supabaseAnonKey = getSupabaseAnonKey();
   if (!supabaseUrl || !supabaseAnonKey) {
-    return Response.json({ error: 'Auth service not configured' }, { status: 503 });
+    return res.status(503).json({ error: 'Auth service not configured' });
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -116,24 +105,21 @@ export default async function handler(request: Request): Promise<Response> {
   });
 
   if (error) {
-    const status =
-      error.status === 429 ? 429 : error.message.includes('Invalid login') ? 401 : 400;
-
-    return Response.json(
-      { error: 'Incorrect email or password. Please try again.' },
-      { status, headers: { 'Cache-Control': 'no-store' } }
-    );
+    const status = error.status === 429 ? 429 : error.message.includes('Invalid login') ? 401 : 400;
+    return res
+      .status(status)
+      .setHeader('Cache-Control', 'no-store')
+      .json({ error: 'Incorrect email or password. Please try again.' });
   }
 
   if (!data.session) {
-    return Response.json(
-      { error: 'Email confirmation may be required before login.' },
-      { status: 403 }
-    );
+    return res.status(403).json({ error: 'Email confirmation may be required before login.' });
   }
 
-  return Response.json(
-    {
+  return res
+    .status(200)
+    .setHeader('Cache-Control', 'no-store')
+    .json({
       session: {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -143,7 +129,5 @@ export default async function handler(request: Request): Promise<Response> {
         id: data.user?.id,
         email: data.user?.email,
       },
-    },
-    { status: 200, headers: { 'Cache-Control': 'no-store' } }
-  );
+    });
 }
