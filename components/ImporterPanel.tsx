@@ -1158,7 +1158,7 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
             <div className="flex-1">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">AfCFTA Preferential Trade</h3>
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                You've saved <span className="font-bold text-green-600">{formatCurrency(kpis?.dutySavings || 0)}</span> in duties this year through AfCFTA preferential rates.
+                You&apos;ve saved <span className="font-bold text-green-600">{formatCurrency(kpis?.dutySavings || 0)}</span> in duties this year through AfCFTA preferential rates.
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="p-3 bg-white dark:bg-slate-800 rounded-lg">

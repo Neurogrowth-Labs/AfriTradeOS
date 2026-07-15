@@ -40,7 +40,7 @@ export const LiveAssistant: React.FC = () => {
           if (event.type === 'interrupted') {
              // Stop current playback immediately
              sourcesRef.current.forEach(source => {
-               try { source.stop(); } catch(e){}
+               try { source.stop(); } catch { /* source may already be stopped */ }
              });
              sourcesRef.current.clear();
              // Reset timing to now to avoid large delay for next chunk
