@@ -517,39 +517,19 @@ export async function getDashboardKPIs(): Promise<ImporterKPIs> {
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch KPIs from database, using mock data:', error);
-
-    // Fallback to calculated mock data
-    const activeOrders = MOCK_IMPORT_ORDERS.filter(o =>
-      o.journeyStatus !== 'DELIVERED'
-    ).length;
-
-    const ordersInTransit = MOCK_IMPORT_ORDERS.filter(o =>
-      o.journeyStatus === 'IN_TRANSIT'
-    ).length;
-
-    const ordersPendingClearance = MOCK_IMPORT_ORDERS.filter(o =>
-      o.journeyStatus === 'CUSTOMS_CLEARANCE' || o.journeyStatus === 'AT_PORT'
-    ).length;
-
-    const ordersDelivered = MOCK_IMPORT_ORDERS.filter(o =>
-      o.journeyStatus === 'DELIVERED'
-    ).length;
-
-    const totalImportSpend = MOCK_IMPORT_ORDERS.reduce((sum, o) => sum + o.totalValue, 0);
-
+    console.warn('Failed to fetch importer KPIs from database:', error);
     return {
-      activeOrders,
-      ordersInTransit,
-      ordersPendingClearance,
-      ordersDelivered,
-      totalImportSpend,
-      dutySavings: 12500, // Mock AfCFTA savings
-      averageLeadTime: 32,
-      customsClearanceTime: 48,
-      complianceScore: 94,
-      onTimeDeliveryRate: 89,
-      supplierPerformance: 4.6
+      activeOrders: 0,
+      ordersInTransit: 0,
+      ordersPendingClearance: 0,
+      ordersDelivered: 0,
+      totalImportSpend: 0,
+      dutySavings: 0,
+      averageLeadTime: 0,
+      customsClearanceTime: 0,
+      complianceScore: 0,
+      onTimeDeliveryRate: 0,
+      supplierPerformance: 0
     };
   }
 }
@@ -583,31 +563,8 @@ export async function getImportOrders(filters?: {
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch import orders from database, using mock data:', error);
-
-    let filteredOrders = [...MOCK_IMPORT_ORDERS];
-
-    if (filters) {
-      if (filters.status) {
-        filteredOrders = filteredOrders.filter(o => o.journeyStatus === filters.status);
-      }
-      if (filters.supplier) {
-        filteredOrders = filteredOrders.filter(o =>
-          o.supplier.toLowerCase().includes(filters.supplier!.toLowerCase())
-        );
-      }
-      if (filters.country) {
-        filteredOrders = filteredOrders.filter(o => o.sourceCountry === filters.country);
-      }
-      if (filters.transportMode) {
-        filteredOrders = filteredOrders.filter(o => o.transportMode === filters.transportMode);
-      }
-      if (filters.complianceStatus) {
-        filteredOrders = filteredOrders.filter(o => o.complianceStatus === filters.complianceStatus);
-      }
-    }
-
-    return filteredOrders;
+    console.warn('Failed to fetch import orders from database:', error);
+    return [];
   }
 }
 
@@ -623,8 +580,8 @@ export async function getSuppliers(): Promise<SupplierProfile[]> {
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch suppliers from database, using mock data:', error);
-    return MOCK_SUPPLIERS;
+    console.warn('Failed to fetch suppliers from database:', error);
+    return [];
   }
 }
 
@@ -640,71 +597,9 @@ export async function getShipmentTracking(orderId: string): Promise<ImportShipme
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch shipment tracking from database, using mock data:', error);
+    console.warn('Failed to fetch shipment tracking from database:', error);
 
-    // Mock shipment tracking data
-    const order = MOCK_IMPORT_ORDERS.find(o => o.id === orderId);
-    if (!order) return null;
-
-    const mockMilestones: ShipmentMilestone[] = [
-      {
-        stage: 'PO Created',
-        status: 'COMPLETED',
-        timestamp: order.poDate,
-        location: order.destinationCountry,
-        notes: 'Purchase order confirmed'
-      },
-      {
-        stage: 'Shipment Confirmed',
-        status: order.shipmentDate ? 'COMPLETED' : 'PENDING',
-        timestamp: order.shipmentDate,
-        location: order.sourceCountry,
-        notes: 'Goods ready for shipment'
-      },
-      {
-        stage: 'Departure',
-        status: order.atd ? 'COMPLETED' : 'PENDING',
-        timestamp: order.atd,
-        location: order.sourceCountry,
-        notes: `Departed via ${order.transportMode}`
-      },
-      {
-        stage: 'In Transit',
-        status: order.journeyStatus === 'IN_TRANSIT' ? 'IN_PROGRESS' :
-                order.journeyStatus === 'AT_PORT' || order.journeyStatus === 'CUSTOMS_CLEARANCE' || order.journeyStatus === 'DELIVERED' ? 'COMPLETED' : 'PENDING',
-        location: order.journeyStatus === 'IN_TRANSIT' ? 'International waters' : undefined
-      },
-      {
-        stage: 'Arrival at Port',
-        status: order.journeyStatus === 'AT_PORT' ? 'IN_PROGRESS' :
-                order.journeyStatus === 'CUSTOMS_CLEARANCE' || order.journeyStatus === 'DELIVERED' ? 'COMPLETED' : 'PENDING',
-        location: order.destinationCountry
-      },
-      {
-        stage: 'Customs Clearance',
-        status: order.journeyStatus === 'CUSTOMS_CLEARANCE' ? 'IN_PROGRESS' :
-                order.journeyStatus === 'DELIVERED' ? 'COMPLETED' : 'PENDING',
-        location: order.destinationCountry
-      },
-      {
-        stage: 'Delivery',
-        status: order.journeyStatus === 'DELIVERED' ? 'COMPLETED' : 'PENDING',
-        location: order.destinationCountry
-      }
-    ];
-
-    return {
-      orderId: order.id,
-      orderNo: order.orderNo,
-      currentStatus: order.journeyStatus,
-      milestones: mockMilestones,
-      currentLocation: order.journeyStatus === 'IN_TRANSIT' ? 'Red Sea' : order.destinationCountry,
-      nextMilestone: mockMilestones.find(m => m.status === 'PENDING')?.stage,
-      carrier: order.assignedLogisticsPartner,
-      vesselName: order.transportMode === 'SEA' ? 'MV Oceanic Trader' : undefined,
-      flightNumber: order.transportMode === 'AIR' ? 'EK721' : undefined,
-      trackingNumber: `TRK-${order.orderNo}`
-    };
+    return null;
   }
 }
 
@@ -722,59 +617,8 @@ export async function getDocuments(orderId?: string): Promise<DocumentRecord[]> 
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch documents from database, using mock data:', error);
-
-    // Mock documents
-    const mockDocs: DocumentRecord[] = [
-      {
-        id: 'DOC-001',
-        orderId: 'IMP-001',
-        documentType: 'Commercial Invoice',
-        fileName: 'invoice_PO-2026-0234.pdf',
-        uploadDate: '2026-01-15T10:00:00Z',
-        status: 'VERIFIED',
-        version: 1,
-        uploadedBy: 'admin@company.com',
-        requiresSignature: false
-      },
-      {
-        id: 'DOC-002',
-        orderId: 'IMP-001',
-        documentType: 'Bill of Lading',
-        fileName: 'BOL_MSCU3456789.pdf',
-        uploadDate: '2026-01-22T14:30:00Z',
-        status: 'VERIFIED',
-        version: 1,
-        uploadedBy: 'logistics@company.com',
-        requiresSignature: true,
-        signedBy: ['Maersk Line']
-      },
-      {
-        id: 'DOC-003',
-        orderId: 'IMP-003',
-        documentType: 'Import License',
-        fileName: 'import_license_machinery.pdf',
-        uploadDate: '2026-02-12T11:30:00Z',
-        expiryDate: '2027-02-12',
-        status: 'VERIFIED',
-        version: 1,
-        uploadedBy: 'compliance@company.com',
-        requiresSignature: true
-      },
-      {
-        id: 'DOC-004',
-        orderId: 'IMP-005',
-        documentType: 'Certificate of Origin',
-        fileName: 'COO_PO-2026-0289.pdf',
-        uploadDate: '2026-02-18T15:00:00Z',
-        status: 'UPLOADED',
-        version: 1,
-        uploadedBy: 'admin@company.com',
-        requiresSignature: false
-      }
-    ];
-
-    return orderId ? mockDocs.filter(d => d.orderId === orderId) : mockDocs;
+    console.warn('Failed to fetch documents from database:', error);
+    return [];
   }
 }
 
@@ -791,56 +635,8 @@ export async function getCustomsRequirements(hsCode: string, country: string): P
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch customs requirements from database, using mock data:', error);
-
-    // Mock customs requirements
-    const mockRequirements: Record<string, CustomsRequirement> = {
-      '8517.12.00': {
-        hsCode: '8517.12.00',
-        description: 'Telephones for cellular networks or for other wireless networks',
-        dutyRate: 10,
-        taxRate: 16,
-        restrictionLevel: 'NONE',
-        requiredDocuments: ['Commercial Invoice', 'Packing List', 'Bill of Lading', 'Certificate of Conformity']
-      },
-      '6204.42.00': {
-        hsCode: '6204.42.00',
-        description: 'Women\'s or girls\' dresses of cotton',
-        dutyRate: 25,
-        taxRate: 16,
-        restrictionLevel: 'NONE',
-        requiredDocuments: ['Commercial Invoice', 'Packing List', 'Bill of Lading', 'Certificate of Origin'],
-        quotaApplicable: true,
-        quotaUsed: 125000,
-        quotaLimit: 500000
-      },
-      '8479.89.90': {
-        hsCode: '8479.89.90',
-        description: 'Machines and mechanical appliances having individual functions',
-        dutyRate: 10,
-        taxRate: 16,
-        restrictionLevel: 'RESTRICTED',
-        requiredDocuments: ['Commercial Invoice', 'Packing List', 'Air Waybill', 'Import License', 'Technical Specifications', 'Installation Certificate']
-      },
-      '2204.21.00': {
-        hsCode: '2204.21.00',
-        description: 'Wine of fresh grapes, in containers holding 2 liters or less',
-        dutyRate: 0, // AfCFTA benefit
-        taxRate: 16,
-        restrictionLevel: 'NONE',
-        requiredDocuments: ['Commercial Invoice', 'Packing List', 'Bill of Lading', 'Certificate of Origin (AfCFTA)', 'Health Certificate']
-      },
-      '3004.90.00': {
-        hsCode: '3004.90.00',
-        description: 'Medicaments consisting of mixed or unmixed products',
-        dutyRate: 0,
-        taxRate: 0, // VAT exempt
-        restrictionLevel: 'RESTRICTED',
-        requiredDocuments: ['Commercial Invoice', 'Packing List', 'Air Waybill', 'Import License', 'GMP Certificate', 'Product Registration', 'Batch Testing Report']
-      }
-    };
-
-    return mockRequirements[hsCode] || null;
+    console.warn('Failed to fetch customs requirements from database:', error);
+    return null;
   }
 }
 
@@ -856,32 +652,8 @@ export async function getCostBreakdown(orderId: string): Promise<CostBreakdown |
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch cost breakdown from database, using mock data:', error);
-
-    const order = MOCK_IMPORT_ORDERS.find(o => o.id === orderId);
-    if (!order) return null;
-
-    // Calculate mock costs
-    const purchaseValue = order.totalValue;
-    const dutiesAndTaxes = purchaseValue * 0.26; // 10% duty + 16% VAT
-    const portCharges = 1200;
-    const inlandTransport = 800;
-    const insurance = purchaseValue * 0.015;
-    const otherFees = 450;
-    const totalLandedCost = purchaseValue + dutiesAndTaxes + portCharges + inlandTransport + insurance + otherFees;
-
-    return {
-      orderId: order.id,
-      purchaseValue,
-      dutiesAndTaxes,
-      portCharges,
-      inlandTransport,
-      insurance,
-      otherFees,
-      totalLandedCost,
-      currency: order.currency,
-      costVariance: -3.2 // Mock variance
-    };
+    console.warn('Failed to fetch cost breakdown from database:', error);
+    return null;
   }
 }
 
@@ -899,8 +671,8 @@ export async function getNotifications(unreadOnly: boolean = false): Promise<Wor
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch notifications from database, using mock data:', error);
-    return unreadOnly ? MOCK_NOTIFICATIONS.filter(n => !n.read) : MOCK_NOTIFICATIONS;
+    console.warn('Failed to fetch notifications from database:', error);
+    return [];
   }
 }
 
@@ -916,20 +688,8 @@ export async function getSupplierPerformanceMetrics(): Promise<SupplierPerforman
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch supplier metrics from database, using mock data:', error);
-
-    return MOCK_SUPPLIERS.map(s => ({
-      supplierId: s.id,
-      supplierName: s.name,
-      country: s.country,
-      totalOrders: s.totalOrders,
-      onTimeDeliveryRate: s.onTimeDeliveryRate,
-      averageLeadTime: s.leadTime || 30,
-      qualityIssues: Math.floor(s.totalOrders * (1 - s.qualityScore / 5)),
-      totalValue: s.totalOrders * (s.minimumOrderValue || 50000),
-      lastOrderDate: '2026-02-15',
-      rating: s.rating
-    }));
+    console.warn('Failed to fetch supplier metrics from database:', error);
+    return [];
   }
 }
 
@@ -945,54 +705,8 @@ export async function getCarrierPerformanceMetrics(): Promise<CarrierPerformance
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch carrier metrics from database, using mock data:', error);
-
-    return [
-      {
-        carrierId: 'CAR-001',
-        carrierName: 'Maersk Line',
-        transportMode: 'SEA',
-        totalShipments: 45,
-        onTimeRate: 92,
-        averageDelay: 18,
-        damageRate: 0.5,
-        lostShipments: 0,
-        totalCost: 1250000
-      },
-      {
-        carrierId: 'CAR-002',
-        carrierName: 'CMA CGM',
-        transportMode: 'SEA',
-        totalShipments: 32,
-        onTimeRate: 88,
-        averageDelay: 24,
-        damageRate: 1.2,
-        lostShipments: 0,
-        totalCost: 890000
-      },
-      {
-        carrierId: 'CAR-003',
-        carrierName: 'DHL Global Forwarding',
-        transportMode: 'AIR',
-        totalShipments: 18,
-        onTimeRate: 96,
-        averageDelay: 6,
-        damageRate: 0.2,
-        lostShipments: 0,
-        totalCost: 650000
-      },
-      {
-        carrierId: 'CAR-004',
-        carrierName: 'MSC',
-        transportMode: 'SEA',
-        totalShipments: 28,
-        onTimeRate: 85,
-        averageDelay: 32,
-        damageRate: 1.8,
-        lostShipments: 1,
-        totalCost: 780000
-      }
-    ];
+    console.warn('Failed to fetch carrier metrics from database:', error);
+    return [];
   }
 }
 
@@ -1009,64 +723,8 @@ export async function getCustomsClearanceMetrics(months: number = 6): Promise<Cu
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch customs metrics from database, using mock data:', error);
-
-    return [
-      {
-        month: '2026-02',
-        totalDeclarations: 12,
-        averageClearanceTime: 48,
-        holdRate: 8.3,
-        rejectionRate: 0,
-        dutiesPaid: 185000,
-        complianceScore: 96
-      },
-      {
-        month: '2026-01',
-        totalDeclarations: 18,
-        averageClearanceTime: 52,
-        holdRate: 11.1,
-        rejectionRate: 5.6,
-        dutiesPaid: 245000,
-        complianceScore: 92
-      },
-      {
-        month: '2025-12',
-        totalDeclarations: 15,
-        averageClearanceTime: 45,
-        holdRate: 6.7,
-        rejectionRate: 0,
-        dutiesPaid: 198000,
-        complianceScore: 98
-      },
-      {
-        month: '2025-11',
-        totalDeclarations: 20,
-        averageClearanceTime: 56,
-        holdRate: 15,
-        rejectionRate: 5,
-        dutiesPaid: 312000,
-        complianceScore: 88
-      },
-      {
-        month: '2025-10',
-        totalDeclarations: 16,
-        averageClearanceTime: 50,
-        holdRate: 12.5,
-        rejectionRate: 6.25,
-        dutiesPaid: 228000,
-        complianceScore: 90
-      },
-      {
-        month: '2025-09',
-        totalDeclarations: 14,
-        averageClearanceTime: 47,
-        holdRate: 7.1,
-        rejectionRate: 0,
-        dutiesPaid: 175000,
-        complianceScore: 95
-      }
-    ];
+    console.warn('Failed to fetch customs metrics from database:', error);
+    return [];
   }
 }
 
@@ -1084,55 +742,8 @@ export async function searchHSCode(query: string): Promise<HSCodeLookup[]> {
 
     return data;
   } catch (error) {
-    console.warn('Failed to search HS codes from database, using mock data:', error);
-
-    const mockHSCodes: HSCodeLookup[] = [
-      {
-        code: '8517.12.00',
-        description: 'Telephones for cellular networks or for other wireless networks',
-        dutyRate: 10,
-        taxRate: 16,
-        chapter: '85',
-        chapterDescription: 'Electrical machinery and equipment'
-      },
-      {
-        code: '6204.42.00',
-        description: 'Women\'s or girls\' dresses of cotton',
-        dutyRate: 25,
-        taxRate: 16,
-        chapter: '62',
-        chapterDescription: 'Articles of apparel and clothing accessories, not knitted or crocheted'
-      },
-      {
-        code: '8479.89.90',
-        description: 'Machines and mechanical appliances having individual functions',
-        dutyRate: 10,
-        taxRate: 16,
-        chapter: '84',
-        chapterDescription: 'Nuclear reactors, boilers, machinery and mechanical appliances'
-      },
-      {
-        code: '2204.21.00',
-        description: 'Wine of fresh grapes, in containers holding 2 liters or less',
-        dutyRate: 0,
-        taxRate: 16,
-        chapter: '22',
-        chapterDescription: 'Beverages, spirits and vinegar'
-      },
-      {
-        code: '3004.90.00',
-        description: 'Medicaments consisting of mixed or unmixed products',
-        dutyRate: 0,
-        taxRate: 0,
-        chapter: '30',
-        chapterDescription: 'Pharmaceutical products'
-      }
-    ];
-
-    return mockHSCodes.filter(h =>
-      h.code.includes(query) ||
-      h.description.toLowerCase().includes(query.toLowerCase())
-    );
+    console.warn('Failed to search HS codes from database:', error);
+    return [];
   }
 }
 
@@ -1148,33 +759,7 @@ export async function getTradeAgreementRules(hsCode: string): Promise<TradeAgree
 
     return data;
   } catch (error) {
-    console.warn('Failed to fetch trade agreement rules from database, using mock data:', error);
-
-    const mockRules: Record<string, TradeAgreementRule[]> = {
-      '2204.21.00': [
-        {
-          agreementName: 'AfCFTA',
-          countries: ['South Africa', 'Kenya', 'Ghana', 'Nigeria', 'Ethiopia', 'Rwanda'],
-          hsCode: '2204.21.00',
-          preferentialDutyRate: 0,
-          standardDutyRate: 25,
-          requiredOriginPercentage: 60,
-          requiredDocuments: ['Certificate of Origin (AfCFTA Form)', 'Commercial Invoice', 'Bill of Lading']
-        }
-      ],
-      '6204.42.00': [
-        {
-          agreementName: 'EAC Common External Tariff',
-          countries: ['Kenya', 'Uganda', 'Tanzania', 'Rwanda', 'Burundi', 'South Sudan'],
-          hsCode: '6204.42.00',
-          preferentialDutyRate: 10,
-          standardDutyRate: 25,
-          requiredOriginPercentage: 50,
-          requiredDocuments: ['Certificate of Origin (EAC)', 'Commercial Invoice']
-        }
-      ]
-    };
-
-    return mockRules[hsCode] || [];
+    console.warn('Failed to fetch trade agreement rules from database:', error);
+    return [];
   }
 }
