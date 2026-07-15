@@ -232,14 +232,9 @@ export const mockDatabase = {
         .select('destination_country, value')
         .eq('exporter_id', user.id);
 
-      if (error || !trades || trades.length === 0) {
-        // Return default risk data if no trades
-        return [
-          { country: 'Nigeria', risk: 65, value: 0, percentage: 0 },
-          { country: 'Kenya', risk: 40, value: 0, percentage: 0 },
-          { country: 'Ghana', risk: 30, value: 0, percentage: 0 },
-          { country: 'South Africa', risk: 25, value: 0, percentage: 0 },
-        ];
+      if (error) throw error;
+      if (!trades || trades.length === 0) {
+        return [];
       }
 
       // Country risk ratings (simplified - in production, use external API)
@@ -317,7 +312,7 @@ export const mockDatabase = {
           ...request,
           applicant_id: user.id,
           status: 'pending',
-          risk_score: Math.floor(Math.random() * 30) + 50, // Mock risk score 50-80
+          risk_score: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -410,14 +405,8 @@ export const mockDatabase = {
       console.log("createTrade - Success:", data);
       return data as DbTrade;
     } catch (e: any) {
-      console.error("Create Trade Error (Falling back to local mock):", e.message || e);
-      // Fallback for demo purposes if table doesn't exist yet
-      return { 
-        id: `TRD-${Math.floor(Math.random() * 1000)}`, 
-        exporter_id: 'mock_user', 
-        created_at: new Date().toISOString(),
-        ...tradeData 
-      } as DbTrade;
+      console.error("Create Trade Error:", e.message || e);
+      return null;
     }
   },
 
@@ -438,8 +427,7 @@ export const mockDatabase = {
       return data as DbTrade;
     } catch (e) {
       console.error("Update Trade Error:", e);
-      // Return mock update for demo
-      return { id: tradeId, ...updates } as DbTrade;
+      return null;
     }
   },
 

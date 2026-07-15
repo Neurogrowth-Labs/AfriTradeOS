@@ -808,7 +808,7 @@ export const KYCVerification: React.FC = () => {
             <h3 className="font-bold text-blue-800 dark:text-blue-300">Verification In Progress</h3>
             <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
               Your documents are being reviewed. This typically takes 1-2 business days.
-              You'll receive a notification once the review is complete.
+              You&apos;ll receive a notification once the review is complete.
             </p>
           </div>
         </div>

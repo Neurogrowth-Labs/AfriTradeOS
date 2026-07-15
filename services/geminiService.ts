@@ -306,7 +306,7 @@ export const connectLiveSession = async (
 
   let isMuted = false;
   let isConnected = true;
-  let recognition: SpeechRecognition | null = null;
+  let recognition: any = null;
 
   // Use Web Speech API for speech recognition as fallback
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {

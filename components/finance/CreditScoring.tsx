@@ -144,7 +144,7 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
           </div>
           <h3 className="text-xl font-semibold text-white mb-2">Credit Assessment</h3>
           <p className="text-slate-400 mb-6 max-w-md mx-auto">
-            Run an AI-powered credit assessment to evaluate the applicant's creditworthiness, 
+            Run an AI-powered credit assessment to evaluate the applicant&apos;s creditworthiness,
             financial health, and risk profile.
           </p>
           <button
