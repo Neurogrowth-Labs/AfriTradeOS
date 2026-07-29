@@ -1,7 +1,7 @@
 // PayPal Payment Service for AfriTradeOS
 // Uses PayPal JS SDK for client-side payment processing
 
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AfZeh_0yL_i2rNiGWbrQzltPlZlQmxOXbNdMmODlcukBdWII3Fimtcsf6xPozEK08aWfh28sX71Hvirv';
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 
 export interface UpgradePlan {
   id: string;
@@ -134,6 +134,10 @@ interface PayPalCaptureResult {
 // Load PayPal SDK script
 export function loadPayPalScript(): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (!PAYPAL_CLIENT_ID) {
+      reject(new Error('PayPal client ID is not configured. Set VITE_PAYPAL_CLIENT_ID in the deployment environment.'));
+      return;
+    }
     // Check if PayPal is already available
     if (window.paypal) {
       resolve();

@@ -9,6 +9,8 @@ import {
   Sun,
   Coins,
   Languages,
+  Globe,
+  Wifi,
   UserCircle,
   Key,
   CheckCircle,
@@ -25,6 +27,7 @@ import {
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { useCurrency, CURRENCIES } from './contexts/CurrencyContext';
+import { useLanguage } from './contexts/LanguageContext';
 import { Dashboard } from './components/Dashboard';
 import { TradeLifecycle } from './components/TradeLifecycle';
 import { MarketIntel } from './components/MarketIntel';
@@ -282,10 +285,12 @@ export default function App() {
   const isSimulatedRef = useRef(false);
 
   // Localization State
-  const [language, setLanguage] = useState('EN');
+  const { language, setLanguage, t, LANGUAGES } = useLanguage();
   const { currency, setCurrency } = useCurrency();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const currencyRef = useRef<HTMLDivElement>(null);
+  const languageRef = useRef<HTMLDivElement>(null);
 
   // Notifications State
   interface Notification {
@@ -318,14 +323,7 @@ export default function App() {
       setNotifications(data || []);
     } catch (e) {
       console.error('Failed to fetch notifications:', e);
-      // Fallback mock notifications for demo
-      setNotifications([
-        { id: '1', type: 'trade_created', title: 'New Trade Created', message: 'Your export order #EXP-2024-001 has been created successfully.', link: '/trade', is_read: false, created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-        { id: '2', type: 'kyc_approved', title: 'KYC Approved', message: 'Your business verification has been approved. You can now access all features.', link: '/kyc', is_read: false, created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-        { id: '3', type: 'payment_received', title: 'Payment Received', message: 'You received $12,500 from Euro Imports Ltd for order #ORD-789.', link: '/finance', is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-        { id: '4', type: 'document_approved', title: 'Document Verified', message: 'Your Certificate of Origin has been verified and approved.', link: '/compliance', is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-        { id: '5', type: 'system_alert', title: 'System Maintenance', message: 'Scheduled maintenance on Feb 15, 2024 from 2:00 AM - 4:00 AM UTC.', link: null, is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
-      ]);
+      setNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
@@ -378,11 +376,23 @@ export default function App() {
     }
   };
 
-  // Fetch notifications when user profile is loaded
+  // Fetch and subscribe to notifications when user profile is loaded
   useEffect(() => {
-    if (userProfile?.id) {
-      fetchNotifications();
-    }
+    if (!userProfile?.id) return;
+    fetchNotifications();
+
+    const channel = supabase
+      .channel(`notifications:${userProfile.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` },
+        () => fetchNotifications()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userProfile?.id, fetchNotifications]);
 
   // Close dropdowns when clicking outside
@@ -393,6 +403,9 @@ export default function App() {
       }
       if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
         setShowCurrencyDropdown(false);
+      }
+      if (languageRef.current && !languageRef.current.contains(event.target as Node)) {
+        setShowLanguageDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -835,9 +848,9 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative rounded-l-[28px] bg-[#f7f7f8] dark:bg-slate-950 shadow-[inset_1px_0_0_rgba(148,163,184,0.18)]">
         {/* Header */}
-        <header className="h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-5 lg:px-6 transition-colors duration-300 shrink-0">
+        <header className="h-16 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-gray-200/80 dark:border-slate-800 flex items-center justify-between px-5 lg:px-6 transition-colors duration-300 shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
               <Menu className="w-5 h-5" />
@@ -861,13 +874,13 @@ export default function App() {
                 currentView === AppView.LOGISTICS ? 'Trade Flows' :
                 currentView === AppView.KYC_VERIFICATION ? 'Entity Verification' :
                 currentView === AppView.MARKETPLACE ? 'Business Registry' :
-                'Settings'
+                t('settings')
               ) : userRole === UserPersona.LOGISTICS ? (
                 currentView === AppView.LOGISTICS_PROVIDER ? 'Logistics Command Center' :
-                currentView === AppView.PROFILE ? 'Settings' :
+                currentView === AppView.PROFILE ? t('settings') :
                 'Logistics Command Center'
               ) : (
-                currentView === AppView.DASHBOARD ? 'Command Center' : 
+                currentView === AppView.DASHBOARD ? t('commandCenter') : 
                 currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
                 currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
                 currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
@@ -887,15 +900,43 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
+              <Wifi className="w-3 h-3" />
+              {t('realTimeReady')}
+            </div>
             {/* Localization UI */}
             <div className="hidden md:flex items-center gap-2 mr-4 bg-gray-50 dark:bg-slate-800 rounded-lg p-1 border border-gray-100 dark:border-slate-700">
-               <button 
-                  className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
-                  title="Switch Language"
-               >
-                   <Languages className="w-3 h-3 text-trade-accent" />
-                   {language}
-               </button>
+               <div className="relative" ref={languageRef}>
+                  <button 
+                    onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
+                    title="Switch Language"
+                  >
+                    <Languages className="w-3 h-3 text-trade-accent" />
+                    {language}
+                  </button>
+                  {showLanguageDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectLanguage')}</span>
+                      </div>
+                      {LANGUAGES.map(item => (
+                        <button
+                          key={item.code}
+                          onClick={() => { setLanguage(item.code); setShowLanguageDropdown(false); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${language === item.code ? 'bg-trade-accent/10' : ''}`}
+                        >
+                          <Globe className="w-4 h-4 text-trade-accent" />
+                          <div className="flex-1">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white">{item.label}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.nativeLabel}</p>
+                          </div>
+                          {language === item.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+               </div>
                <div className="w-px h-3 bg-gray-200 dark:bg-slate-700" />
                <div className="relative" ref={currencyRef}>
                   <button 
@@ -910,7 +951,7 @@ export default function App() {
                   {showCurrencyDropdown && (
                     <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Select Currency</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectCurrency')}</span>
                       </div>
                       <div className="max-h-72 overflow-y-auto">
                         <div className="px-2 py-1.5">
@@ -983,7 +1024,7 @@ export default function App() {
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-700/50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-trade-accent" />
-                      <span className="type-body font-semibold text-gray-900 dark:text-white">Notifications</span>
+                      <span className="type-body font-semibold text-gray-900 dark:text-white">{t('notifications')}</span>
                       {unreadCount > 0 && (
                         <span className="px-1.5 py-0.5 bg-trade-accent text-white text-[10px] font-bold rounded-full">
                           {unreadCount} new
@@ -995,7 +1036,7 @@ export default function App() {
                         <button 
                           onClick={markAllAsRead}
                           className="btn-icon p-0 text-gray-500 hover:text-trade-accent hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
-                          title="Mark all as read"
+                          title={t('markAllRead')}
                         >
                           <CheckCheck className="w-4 h-4" />
                         </button>
@@ -1003,7 +1044,7 @@ export default function App() {
                       <button 
                         onClick={clearAllNotifications}
                         className="btn-icon p-0 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
-                        title="Clear all"
+                        title={t('clearAll')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1019,7 +1060,7 @@ export default function App() {
                     ) : notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-slate-400">
                         <Bell className="w-10 h-10 mb-2 opacity-30" />
-                        <p className="text-sm">No notifications</p>
+                        <p className="text-sm">{t('noNotifications')}</p>
                       </div>
                     ) : (
                       notifications.map(notification => (
@@ -1093,8 +1134,8 @@ export default function App() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-4 lg:p-5 relative flex flex-col">
-          <div>
+        <div className="flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar">
+          <div className="mx-auto w-full max-w-7xl">
             {renderView()}
           </div>
         </div>
