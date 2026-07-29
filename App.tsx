@@ -9,6 +9,8 @@ import {
   Sun,
   Coins,
   Languages,
+  Globe,
+  Wifi,
   UserCircle,
   Key,
   CheckCircle,
@@ -25,6 +27,7 @@ import {
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { useCurrency, CURRENCIES } from './contexts/CurrencyContext';
+import { useLanguage } from './contexts/LanguageContext';
 import { Dashboard } from './components/Dashboard';
 import { TradeLifecycle } from './components/TradeLifecycle';
 import { MarketIntel } from './components/MarketIntel';
@@ -282,10 +285,12 @@ export default function App() {
   const isSimulatedRef = useRef(false);
 
   // Localization State
-  const [language, setLanguage] = useState('EN');
+  const { language, setLanguage, t, LANGUAGES } = useLanguage();
   const { currency, setCurrency } = useCurrency();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const currencyRef = useRef<HTMLDivElement>(null);
+  const languageRef = useRef<HTMLDivElement>(null);
 
   // Notifications State
   interface Notification {
@@ -318,14 +323,7 @@ export default function App() {
       setNotifications(data || []);
     } catch (e) {
       console.error('Failed to fetch notifications:', e);
-      // Fallback mock notifications for demo
-      setNotifications([
-        { id: '1', type: 'trade_created', title: 'New Trade Created', message: 'Your export order #EXP-2024-001 has been created successfully.', link: '/trade', is_read: false, created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString() },
-        { id: '2', type: 'kyc_approved', title: 'KYC Approved', message: 'Your business verification has been approved. You can now access all features.', link: '/kyc', is_read: false, created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-        { id: '3', type: 'payment_received', title: 'Payment Received', message: 'You received $12,500 from Euro Imports Ltd for order #ORD-789.', link: '/finance', is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-        { id: '4', type: 'document_approved', title: 'Document Verified', message: 'Your Certificate of Origin has been verified and approved.', link: '/compliance', is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-        { id: '5', type: 'system_alert', title: 'System Maintenance', message: 'Scheduled maintenance on Feb 15, 2024 from 2:00 AM - 4:00 AM UTC.', link: null, is_read: true, created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString() },
-      ]);
+      setNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
@@ -378,11 +376,23 @@ export default function App() {
     }
   };
 
-  // Fetch notifications when user profile is loaded
+  // Fetch and subscribe to notifications when user profile is loaded
   useEffect(() => {
-    if (userProfile?.id) {
-      fetchNotifications();
-    }
+    if (!userProfile?.id) return;
+    fetchNotifications();
+
+    const channel = supabase
+      .channel(`notifications:${userProfile.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` },
+        () => fetchNotifications()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userProfile?.id, fetchNotifications]);
 
   // Close dropdowns when clicking outside
@@ -393,6 +403,9 @@ export default function App() {
       }
       if (currencyRef.current && !currencyRef.current.contains(event.target as Node)) {
         setShowCurrencyDropdown(false);
+      }
+      if (languageRef.current && !languageRef.current.contains(event.target as Node)) {
+        setShowLanguageDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -438,8 +451,7 @@ export default function App() {
   
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' || 
-             (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      return localStorage.getItem('theme') !== 'light';
     }
     return false;
   });
@@ -735,7 +747,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-trade-bg dark:bg-slate-950 overflow-hidden transition-colors duration-300 font-sans">
+    <div className="dark-gold-platform flex h-screen overflow-hidden transition-colors duration-300 font-sans">
       {/* Password Reset Overlay */}
       {showPasswordReset && <PasswordResetModal onClose={() => setShowPasswordReset(false)} />}
 
@@ -749,16 +761,16 @@ export default function App() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-60 bg-trade-primary dark:bg-slate-950 border-r border-slate-800 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-60 bg-[#070707] border-r border-[#C9A24D]/25 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 border-b border-[#C9A24D]/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/afritradeos.jpeg" alt="AfriTradeOS" className="w-7 h-7 rounded-lg object-cover shadow-lg" />
             <span className="type-header text-white">AfriTradeOS</span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-white/10 shadow-none">
+          <button onClick={() => setSidebarOpen(false)} className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-[#C9A24D]/20 shadow-none">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -800,7 +812,7 @@ export default function App() {
           )}
         </nav>
         
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-white/10 bg-trade-primary dark:bg-slate-950">
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-[#C9A24D]/20 bg-[#070707]">
           <div
             className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors"
             onClick={() => {
@@ -819,7 +831,7 @@ export default function App() {
           </div>
           {/* Role badge and Logout button */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-[#15110A] rounded-lg border border-[#C9A24D]/25">
                 <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
                 <span className="text-[10px] font-medium text-slate-300">{userRole}</span>
             </div>
@@ -835,14 +847,14 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative rounded-l-[28px] bg-[#0B0B0B] shadow-[inset_1px_0_0_rgba(201,162,77,0.22)]">
         {/* Header */}
-        <header className="h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between px-5 lg:px-6 transition-colors duration-300 shrink-0">
+        <header className="h-16 bg-[#0F0F0F]/90 backdrop-blur-xl border-b border-[#C9A24D]/20 flex items-center justify-between px-5 lg:px-6 transition-colors duration-300 shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="type-header text-trade-primary dark:text-gray-100">
+            <h1 className="type-header text-[#F7E7B1]">
               {userRole === UserPersona.ANALYST ? (
                 currentView === AppView.DASHBOARD ? 'Analytics Hub' :
                 currentView === AppView.MARKET_INTEL ? 'Market Research' :
@@ -861,13 +873,13 @@ export default function App() {
                 currentView === AppView.LOGISTICS ? 'Trade Flows' :
                 currentView === AppView.KYC_VERIFICATION ? 'Entity Verification' :
                 currentView === AppView.MARKETPLACE ? 'Business Registry' :
-                'Settings'
+                t('settings')
               ) : userRole === UserPersona.LOGISTICS ? (
                 currentView === AppView.LOGISTICS_PROVIDER ? 'Logistics Command Center' :
-                currentView === AppView.PROFILE ? 'Settings' :
+                currentView === AppView.PROFILE ? t('settings') :
                 'Logistics Command Center'
               ) : (
-                currentView === AppView.DASHBOARD ? 'Command Center' : 
+                currentView === AppView.DASHBOARD ? t('commandCenter') : 
                 currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
                 currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
                 currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
@@ -887,20 +899,48 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-3">
+            <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-[#C9A24D]/35 bg-[#C9A24D]/10 px-3 py-1 text-[11px] font-semibold text-[#F7E7B1]">
+              <Wifi className="w-3 h-3" />
+              {t('realTimeReady')}
+            </div>
             {/* Localization UI */}
-            <div className="hidden md:flex items-center gap-2 mr-4 bg-gray-50 dark:bg-slate-800 rounded-lg p-1 border border-gray-100 dark:border-slate-700">
-               <button 
-                  className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
-                  title="Switch Language"
-               >
-                   <Languages className="w-3 h-3 text-trade-accent" />
-                   {language}
-               </button>
-               <div className="w-px h-3 bg-gray-200 dark:bg-slate-700" />
+            <div className="hidden md:flex items-center gap-2 mr-4 bg-[#15110A] rounded-lg p-1 border border-[#C9A24D]/25">
+               <div className="relative" ref={languageRef}>
+                  <button 
+                    onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-[#F7E7B1] hover:bg-[#C9A24D]/10"
+                    title="Switch Language"
+                  >
+                    <Languages className="w-3 h-3 text-trade-accent" />
+                    {language}
+                  </button>
+                  {showLanguageDropdown && (
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectLanguage')}</span>
+                      </div>
+                      {LANGUAGES.map(item => (
+                        <button
+                          key={item.code}
+                          onClick={() => { setLanguage(item.code); setShowLanguageDropdown(false); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${language === item.code ? 'bg-trade-accent/10' : ''}`}
+                        >
+                          <Globe className="w-4 h-4 text-trade-accent" />
+                          <div className="flex-1">
+                            <p className="text-xs font-bold text-gray-900 dark:text-white">{item.label}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.nativeLabel}</p>
+                          </div>
+                          {language === item.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+               </div>
+               <div className="w-px h-3 bg-[#C9A24D]/25" />
                <div className="relative" ref={currencyRef}>
                   <button 
                     onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-trade-primary dark:text-gray-300 hover:bg-white dark:hover:bg-slate-700"
+                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-[#F7E7B1] hover:bg-[#C9A24D]/10"
                     title="Switch Currency"
                   >
                     <Coins className="w-3 h-3 text-trade-accent" />
@@ -910,7 +950,7 @@ export default function App() {
                   {showCurrencyDropdown && (
                     <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">Select Currency</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectCurrency')}</span>
                       </div>
                       <div className="max-h-72 overflow-y-auto">
                         <div className="px-2 py-1.5">
@@ -957,7 +997,7 @@ export default function App() {
 
             <button 
               onClick={toggleTheme}
-              className="btn-icon p-0 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent"
+              className="btn-icon p-0 text-[#C9A24D] hover:text-[#F7E7B1]"
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -966,7 +1006,7 @@ export default function App() {
             <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="btn-icon relative p-0 text-trade-secondary hover:text-trade-primary dark:text-gray-400 dark:hover:text-trade-accent"
+                className="btn-icon relative p-0 text-[#C9A24D] hover:text-[#F7E7B1]"
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
@@ -983,7 +1023,7 @@ export default function App() {
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-700/50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-trade-accent" />
-                      <span className="type-body font-semibold text-gray-900 dark:text-white">Notifications</span>
+                      <span className="type-body font-semibold text-gray-900 dark:text-white">{t('notifications')}</span>
                       {unreadCount > 0 && (
                         <span className="px-1.5 py-0.5 bg-trade-accent text-white text-[10px] font-bold rounded-full">
                           {unreadCount} new
@@ -995,7 +1035,7 @@ export default function App() {
                         <button 
                           onClick={markAllAsRead}
                           className="btn-icon p-0 text-gray-500 hover:text-trade-accent hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
-                          title="Mark all as read"
+                          title={t('markAllRead')}
                         >
                           <CheckCheck className="w-4 h-4" />
                         </button>
@@ -1003,7 +1043,7 @@ export default function App() {
                       <button 
                         onClick={clearAllNotifications}
                         className="btn-icon p-0 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
-                        title="Clear all"
+                        title={t('clearAll')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -1019,7 +1059,7 @@ export default function App() {
                     ) : notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-slate-400">
                         <Bell className="w-10 h-10 mb-2 opacity-30" />
-                        <p className="text-sm">No notifications</p>
+                        <p className="text-sm">{t('noNotifications')}</p>
                       </div>
                     ) : (
                       notifications.map(notification => (
@@ -1093,8 +1133,8 @@ export default function App() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-4 lg:p-5 relative flex flex-col">
-          <div>
+        <div className="flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar">
+          <div className="mx-auto w-full max-w-7xl">
             {renderView()}
           </div>
         </div>

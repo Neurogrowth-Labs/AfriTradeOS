@@ -14,14 +14,14 @@
           extend: {
             colors: {
               trade: {
-                primary: '#0B1F33', // Deep Trade Blue
-                secondary: '#163A5F', // Lighter Blue for gradients/hovers
+                primary: '#070707', // Institutional black
+                secondary: '#15110A', // Dark gold surface
                 accent: '#C9A24D',  // Pan-African Gold
                 success: '#1FA971',
                 warning: '#F5A623',
                 error: '#D64545',
-                bg: '#F7F9FC',      // Light Background
-                surface: '#FFFFFF'
+                bg: '#0B0B0B',
+                surface: '#111111'
               },
               slate: {
                 750: '#2d3748', 
@@ -43,19 +43,25 @@
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
       @import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700,800&display=swap');
       :root {
-        --text-primary: #0f172a;
-        --text-secondary: rgba(15, 23, 42, 0.68);
-        --text-muted: rgba(15, 23, 42, 0.48);
-        --surface-base: rgba(255, 255, 255, 0.9);
-        --surface-elevated: rgba(255, 255, 255, 0.94);
-        --surface-border: rgba(148, 163, 184, 0.18);
-        --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08), 0 2px 10px rgba(15, 23, 42, 0.04);
-        --shadow-card: 0 18px 45px rgba(15, 23, 42, 0.08), 0 8px 20px rgba(15, 23, 42, 0.04);
-        --noise-opacity: 0.035;
+        --gold: #C9A24D;
+        --gold-soft: #F7E7B1;
+        --gold-muted: rgba(201, 162, 77, 0.62);
+        --ink: #070707;
+        --ink-2: #0B0B0B;
+        --ink-3: #111111;
+        --text-primary: #F8F3E3;
+        --text-secondary: rgba(248, 243, 227, 0.74);
+        --text-muted: rgba(248, 243, 227, 0.52);
+        --surface-base: rgba(11, 11, 11, 0.92);
+        --surface-elevated: rgba(17, 17, 17, 0.96);
+        --surface-border: rgba(201, 162, 77, 0.22);
+        --shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.34), 0 2px 10px rgba(201, 162, 77, 0.06);
+        --shadow-card: 0 20px 50px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(201, 162, 77, 0.12);
+        --noise-opacity: 0.065;
       }
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #F7F9FC;
+        background: radial-gradient(circle at top left, rgba(201, 162, 77, 0.14), transparent 32rem), #070707;
         color: var(--text-primary);
         font-size: 16px;
         line-height: 1.6;
@@ -72,9 +78,9 @@
         pointer-events: none;
         opacity: var(--noise-opacity);
         background-image:
-          radial-gradient(circle at 20% 20%, rgba(15, 23, 42, 0.2) 0.5px, transparent 0.8px),
-          radial-gradient(circle at 80% 30%, rgba(15, 23, 42, 0.12) 0.5px, transparent 0.8px),
-          radial-gradient(circle at 30% 80%, rgba(15, 23, 42, 0.16) 0.5px, transparent 0.8px);
+          radial-gradient(circle at 20% 20%, rgba(201, 162, 77, 0.28) 0.5px, transparent 0.8px),
+          radial-gradient(circle at 80% 30%, rgba(247, 231, 177, 0.16) 0.5px, transparent 0.8px),
+          radial-gradient(circle at 30% 80%, rgba(201, 162, 77, 0.2) 0.5px, transparent 0.8px);
         background-size: 18px 18px, 22px 22px, 26px 26px;
         mix-blend-mode: multiply;
         z-index: 0;
@@ -141,17 +147,27 @@
         width: min(100%, 60rem);
       }
       .surface-glass {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(17, 17, 17, 0.82);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(201, 162, 77, 0.2);
       }
       .card-premium {
         background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+          linear-gradient(180deg, rgba(20, 20, 20, 0.98), rgba(10, 10, 10, 0.94));
         border: 1px solid var(--surface-border);
-        border-radius: 1.25rem;
+        border-radius: 1rem;
         box-shadow: var(--shadow-card);
+      }
+
+      .institutional-data-shell {
+        border-radius: 1.25rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(17, 17, 17, 0.94);
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+      }
+      .dark .institutional-data-shell {
+        background: rgba(15, 23, 42, 0.88);
       }
       .divider-soft {
         border-color: rgba(148, 163, 184, 0.16);
@@ -159,8 +175,8 @@
       .input-premium {
         min-height: 3rem;
         border-radius: 0.9rem;
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        background: rgba(248, 250, 252, 0.9);
+        border: 1px solid rgba(201, 162, 77, 0.22);
+        background: rgba(10, 10, 10, 0.88);
         padding: 0.75rem 1rem;
         font-size: 0.9375rem;
         line-height: 1.5;
@@ -168,9 +184,9 @@
       }
       .input-premium:focus {
         outline: none;
-        border-color: rgba(11, 31, 51, 0.35);
-        box-shadow: 0 0 0 4px rgba(11, 31, 51, 0.08);
-        background: rgba(255, 255, 255, 0.98);
+        border-color: rgba(201, 162, 77, 0.58);
+        box-shadow: 0 0 0 4px rgba(201, 162, 77, 0.12);
+        background: rgba(17, 17, 17, 0.98);
       }
       .btn-primary,
       .btn-secondary,
@@ -195,8 +211,8 @@
         line-height: 1.2;
         font-weight: 600;
         letter-spacing: -0.01em;
-        background: linear-gradient(135deg, #0b1f33 0%, #163a5f 100%);
-        color: #fff;
+        background: linear-gradient(135deg, #C9A24D 0%, #8A6A21 100%);
+        color: #070707;
         box-shadow: 0 14px 28px rgba(11, 31, 51, 0.18), 0 4px 12px rgba(11, 31, 51, 0.08);
       }
       .btn-primary:hover {
@@ -210,9 +226,9 @@
         line-height: 1.2;
         font-weight: 600;
         letter-spacing: -0.01em;
-        border: 1px solid rgba(148, 163, 184, 0.26);
-        color: var(--text-primary);
-        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid rgba(201, 162, 77, 0.26);
+        color: var(--gold-soft);
+        background: rgba(17, 17, 17, 0.86);
         box-shadow: var(--shadow-soft);
       }
       .btn-icon {
@@ -222,46 +238,106 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(201, 162, 77, 0.24);
+        background: rgba(17, 17, 17, 0.82);
         box-shadow: var(--shadow-soft);
       }
       .dark {
-        --text-primary: #f8fafc;
-        --text-secondary: rgba(248, 250, 252, 0.72);
-        --text-muted: rgba(248, 250, 252, 0.5);
-        --surface-base: rgba(15, 23, 42, 0.82);
-        --surface-elevated: rgba(15, 23, 42, 0.9);
-        --surface-border: rgba(148, 163, 184, 0.16);
-        --shadow-soft: 0 14px 36px rgba(2, 6, 23, 0.32), 0 4px 16px rgba(2, 6, 23, 0.18);
-        --shadow-card: 0 20px 50px rgba(2, 6, 23, 0.36), 0 8px 20px rgba(2, 6, 23, 0.2);
+        --text-primary: #F8F3E3;
+        --text-secondary: rgba(248, 243, 227, 0.74);
+        --text-muted: rgba(248, 243, 227, 0.52);
+        --surface-base: rgba(11, 11, 11, 0.92);
+        --surface-elevated: rgba(17, 17, 17, 0.96);
+        --surface-border: rgba(201, 162, 77, 0.22);
+        --shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.38), 0 4px 16px rgba(201, 162, 77, 0.08);
+        --shadow-card: 0 22px 52px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(201, 162, 77, 0.14);
       }
       .dark body::before {
         mix-blend-mode: screen;
       }
       .dark .surface-glass {
-        background: rgba(15, 23, 42, 0.72);
-        border-color: rgba(148, 163, 184, 0.18);
+        background: rgba(17, 17, 17, 0.82);
+        border-color: rgba(201, 162, 77, 0.22);
       }
       .dark .card-premium {
         background:
-          linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.88));
+          linear-gradient(180deg, rgba(20, 20, 20, 0.98), rgba(10, 10, 10, 0.94));
       }
       .dark .input-premium {
-        background: rgba(30, 41, 59, 0.72);
-        color: #f8fafc;
-        border-color: rgba(148, 163, 184, 0.18);
+        background: rgba(10, 10, 10, 0.86);
+        color: #F8F3E3;
+        border-color: rgba(201, 162, 77, 0.24);
       }
       .dark .input-premium:focus {
-        background: rgba(30, 41, 59, 0.92);
-        border-color: rgba(201, 162, 77, 0.45);
-        box-shadow: 0 0 0 4px rgba(201, 162, 77, 0.08);
+        background: rgba(17, 17, 17, 0.98);
+        border-color: rgba(201, 162, 77, 0.56);
+        box-shadow: 0 0 0 4px rgba(201, 162, 77, 0.12);
       }
       .dark .btn-secondary,
       .dark .btn-icon {
-        background: rgba(15, 23, 42, 0.74);
-        color: #f8fafc;
-        border-color: rgba(148, 163, 184, 0.18);
+        background: rgba(17, 17, 17, 0.84);
+        color: var(--gold-soft);
+        border-color: rgba(201, 162, 77, 0.26);
+      }
+
+      .dark-gold-platform,
+      .dark-gold-platform * {
+        scrollbar-color: rgba(201, 162, 77, 0.55) rgba(7, 7, 7, 0.9);
+      }
+      .dark-gold-platform .bg-white,
+      .dark-gold-platform .bg-gray-50,
+      .dark-gold-platform .bg-slate-50,
+      .dark-gold-platform .bg-trade-bg,
+      .dark-gold-platform .bg-trade-surface {
+        background-color: rgba(17, 17, 17, 0.94) !important;
+      }
+      .dark-gold-platform .bg-white\/85,
+      .dark-gold-platform .bg-white\/90,
+      .dark-gold-platform .bg-white\/80 {
+        background-color: rgba(15, 15, 15, 0.9) !important;
+      }
+      .dark-gold-platform .text-gray-900,
+      .dark-gold-platform .text-slate-900,
+      .dark-gold-platform .text-trade-primary {
+        color: var(--gold-soft) !important;
+      }
+      .dark-gold-platform .text-gray-700,
+      .dark-gold-platform .text-slate-700,
+      .dark-gold-platform .text-gray-600,
+      .dark-gold-platform .text-slate-600 {
+        color: var(--text-secondary) !important;
+      }
+      .dark-gold-platform .text-gray-500,
+      .dark-gold-platform .text-slate-500,
+      .dark-gold-platform .text-gray-400,
+      .dark-gold-platform .text-slate-400 {
+        color: var(--text-muted) !important;
+      }
+      .dark-gold-platform .border-gray-100,
+      .dark-gold-platform .border-gray-200,
+      .dark-gold-platform .border-slate-200,
+      .dark-gold-platform .border-slate-700,
+      .dark-gold-platform .border-slate-800 {
+        border-color: rgba(201, 162, 77, 0.2) !important;
+      }
+      .dark-gold-platform .text-blue-500,
+      .dark-gold-platform .text-blue-600,
+      .dark-gold-platform .text-indigo-500,
+      .dark-gold-platform .text-purple-600 {
+        color: var(--gold) !important;
+      }
+      .dark-gold-platform .bg-blue-50,
+      .dark-gold-platform .bg-blue-100,
+      .dark-gold-platform .bg-indigo-50,
+      .dark-gold-platform .bg-purple-50 {
+        background-color: rgba(201, 162, 77, 0.12) !important;
+      }
+      .dark-gold-platform table,
+      .dark-gold-platform thead,
+      .dark-gold-platform tbody,
+      .dark-gold-platform tr {
+        color: var(--text-primary);
+        border-color: rgba(201, 162, 77, 0.16) !important;
       }
       /* Custom scrollbar for data tables */
       .custom-scrollbar::-webkit-scrollbar {
@@ -269,17 +345,17 @@
         width: 6px;
       }
       .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f5f9;
+        background: #070707;
       }
       .dark .custom-scrollbar::-webkit-scrollbar-track {
-        background: #1e293b;
+        background: #070707;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: rgba(201, 162, 77, 0.55);
         border-radius: 3px;
       }
       .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #475569;
+        background: rgba(201, 162, 77, 0.65);
       }
       /* Leaflet custom styles */
       .leaflet-container {
@@ -319,7 +395,7 @@
 }
 </script>
 </head>
-  <body class="bg-trade-bg text-trade-primary dark:bg-slate-950 dark:text-slate-50 transition-colors duration-300">
+  <body class="bg-trade-bg text-trade-primary dark text-slate-50 transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

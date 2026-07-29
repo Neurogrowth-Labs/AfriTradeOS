@@ -553,3 +553,13 @@ This document breaks down the AfriTrade OS implementation into manageable develo
 - Accessibility (WCAG 2.1) should be considered throughout
 - Performance benchmarks should be established early
 - Security review should be conducted at the end of each phase
+
+## Current UI, Settings, and Payment Alignment
+
+- [x] Apply a ChatGPT-inspired institutional shell: fixed navigation, calm white workspace, constrained content width, softer cards, and real-time status affordance.
+- [x] Remove generated fallback notifications from the app shell; notification state now comes from Supabase and updates through realtime subscriptions.
+- [x] Add multilingual preference infrastructure for English, French, Arabic, Swahili, and Portuguese with persisted language selection.
+- [x] Add a Whop payment service adapter that reads `VITE_WHOP_PAYMENT_API_KEY` from the deployment environment instead of committing secrets.
+- [x] Replace hard-coded PayPal client fallback with environment-based configuration to keep payment credentials out of source control.
+- [ ] Continue replacing legacy demo datasets in role-specific analytics panels with verified Supabase-backed datasets as schemas are finalized.
+- [x] Enforce the dark-and-gold institutional theme across the global shell and common utility surfaces so role panels inherit the same visual system.
