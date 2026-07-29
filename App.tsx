@@ -847,9 +847,6 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative rounded-l-[28px] bg-[#0B0B0B] shadow-[inset_1px_0_0_rgba(201,162,77,0.22)]">
-        {/* Header */}
-        <header className="h-16 bg-[#0F0F0F]/90 backdrop-blur-xl border-b border-[#C9A24D]/20 flex items-center justify-between px-5 lg:px-6 transition-colors duration-300 shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
               <Menu className="w-5 h-5" />
@@ -899,16 +896,10 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-[#C9A24D]/35 bg-[#C9A24D]/10 px-3 py-1 text-[11px] font-semibold text-[#F7E7B1]">
               <Wifi className="w-3 h-3" />
               {t('realTimeReady')}
             </div>
             {/* Localization UI */}
-            <div className="hidden md:flex items-center gap-2 mr-4 bg-[#15110A] rounded-lg p-1 border border-[#C9A24D]/25">
-               <div className="relative" ref={languageRef}>
-                  <button 
-                    onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
-                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-[#F7E7B1] hover:bg-[#C9A24D]/10"
                     title="Switch Language"
                   >
                     <Languages className="w-3 h-3 text-trade-accent" />
@@ -936,7 +927,6 @@ export default function App() {
                     </div>
                   )}
                </div>
-               <div className="w-px h-3 bg-[#C9A24D]/25" />
                <div className="relative" ref={currencyRef}>
                   <button 
                     onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
