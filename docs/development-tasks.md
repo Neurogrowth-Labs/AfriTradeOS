@@ -562,3 +562,4 @@ This document breaks down the AfriTrade OS implementation into manageable develo
 - [x] Add a Whop payment service adapter that reads `VITE_WHOP_PAYMENT_API_KEY` from the deployment environment instead of committing secrets.
 - [x] Replace hard-coded PayPal client fallback with environment-based configuration to keep payment credentials out of source control.
 - [ ] Continue replacing legacy demo datasets in role-specific analytics panels with verified Supabase-backed datasets as schemas are finalized.
+
