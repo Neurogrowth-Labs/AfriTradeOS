@@ -5,7 +5,6 @@ const WINDOW_MS = 15 * 60 * 1000;
 const MAX_PER_IP = 20;
 const MAX_PER_EMAIL = 5;
 
-// Inline rate limiter
 type Bucket = { count: number; windowStart: number };
 const rateLimitStore = new Map<string, Bucket>();
 
