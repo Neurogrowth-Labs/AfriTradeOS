@@ -88,6 +88,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
+  // Email Verification State
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
   // Captcha State
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const captchaRef = useRef<TurnstileCaptchaRef>(null);
@@ -319,6 +323,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             full_name: signupName,
           },
           captchaToken: captchaToken,
+          emailRedirectTo: `${window.location.origin}/?confirmed=true`,
         },
       });
 
@@ -388,6 +393,38 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       captchaRef.current?.reset();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!signupEmail || resendingEmail) return;
+
+    setResendingEmail(true);
+    setResendSuccess(false);
+    setErrorMsg(null);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: signupEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/?confirmed=true`,
+        },
+      });
+
+      if (error) {
+        if (error.status === 429) {
+          setErrorMsg('Too many requests. Please wait a few minutes before trying again.');
+        } else {
+          throw error;
+        }
+      } else {
+        setResendSuccess(true);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to resend verification email.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -888,6 +925,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     Please click the link in the email to activate your account.
                   </p>
                 </div>
+
+                {/* Resend success message */}
+                {resendSuccess && (
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-400 text-sm rounded-2xl flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Verification email sent! Check your inbox.</span>
+                  </div>
+                )}
+
                 <div className="pt-4 space-y-3">
                   <button
                     onClick={() => setView('LOGIN')}
@@ -900,6 +946,32 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   >
                     Go to Sign In
                   </button>
+
+                  {/* Resend verification email button */}
+                  <button
+                    onClick={handleResendVerificationEmail}
+                    disabled={resendingEmail}
+                    className="w-full h-12 rounded-xl
+                             bg-white/5 border border-white/10
+                             text-white/80 font-medium text-sm
+                             flex items-center justify-center gap-2
+                             hover:bg-white/10 hover:text-white
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             transition-all"
+                  >
+                    {resendingEmail ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        <span>Resend verification email</span>
+                      </>
+                    )}
+                  </button>
+
                   <p className="text-xs text-white/40">
                     Didn&apos;t receive it? Check spam or{' '}
                     <button className="text-[#1D4FFF] hover:underline" onClick={() => setView('SIGNUP')}>

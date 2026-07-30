@@ -233,10 +233,21 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
 
   const handleAcceptBackhaul = async (oppId: string) => {
     setActionLoading(`backhaul-${oppId}`);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setBackhaulOpps(prev => prev.filter(o => o.id !== oppId));
-    alert('Backhaul opportunity accepted! It has been added to your shipments.');
-    setActionLoading(null);
+    try {
+      const result = await logisticsProviderService.acceptBackhaulOpportunity(oppId);
+      if (result.success) {
+        setBackhaulOpps(prev => prev.filter(o => o.id !== oppId));
+        // Refresh shipments to show the new backhaul shipment
+        const updatedShipments = await logisticsProviderService.getActiveShipments();
+        setShipments(updatedShipments);
+      } else {
+        console.error('Failed to accept backhaul:', result.error);
+      }
+    } catch (e) {
+      console.error('Error accepting backhaul:', e);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleStartBid = (tender: LogisticsTender) => {
@@ -264,48 +275,95 @@ export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({ 
 
   const handleSendReminder = async (invoice: LogisticsInvoice) => {
     setActionLoading(`reminder-${invoice.id}`);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    alert(`Payment reminder sent to ${invoice.client} for invoice ${invoice.invoiceNumber}`);
-    setActionLoading(null);
+    try {
+      const result = await logisticsProviderService.sendInvoiceReminder(invoice.id);
+      if (!result.success) {
+        console.error('Failed to send reminder:', result.error);
+      }
+    } catch (e) {
+      console.error('Error sending reminder:', e);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleRenewDocument = async (docId: string) => {
     setActionLoading(`renew-${docId}`);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setComplianceDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'valid' as const, expiryDate: '2026-12-31' } : d));
-    alert('Document renewal initiated. New expiry date: 2026-12-31');
-    setActionLoading(null);
+    try {
+      const newExpiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const result = await logisticsProviderService.renewComplianceDocument(docId, newExpiryDate);
+      if (result.success) {
+        setComplianceDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'valid' as const, expiryDate: newExpiryDate } : d));
+      } else {
+        console.error('Failed to renew document:', result.error);
+      }
+    } catch (e) {
+      console.error('Error renewing document:', e);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const handleGenerateDocuments = () => {
+  const handleGenerateDocuments = async () => {
     if (!selectedShipment) {
-      alert('Please select a shipment first to generate documents.');
       return;
     }
     setActionLoading('generate-docs');
-    setTimeout(() => {
-      alert(`Documents generated for shipment ${selectedShipment.trackingNumber}:\n- Bill of Lading\n- Commercial Invoice\n- Packing List\n- Certificate of Origin`);
+    try {
+      const documentTypes = ['bill_of_lading', 'commercial_invoice', 'packing_list', 'certificate_of_origin'];
+      const result = await logisticsProviderService.generateShipmentDocuments(selectedShipment.id, documentTypes);
+      if (result.success && result.documents) {
+        // Update local shipment with new documents
+        setShipments(prev => prev.map(s =>
+          s.id === selectedShipment.id
+            ? { ...s, documents: [...(s.documents || []), ...result.documents!.map(d => ({ ...d, status: 'uploaded' as const }))] }
+            : s
+        ));
+      } else {
+        console.error('Failed to generate documents:', result.error);
+      }
+    } catch (e) {
+      console.error('Error generating documents:', e);
+    } finally {
       setActionLoading(null);
-    }, 1500);
+    }
   };
 
-  const handleHSCodeSearch = () => {
+  const handleHSCodeSearch = async () => {
     const hsCode = prompt('Enter HS Code to search:');
     if (hsCode) {
-      alert(`HS Code ${hsCode}:\nDescription: General goods classification\nDuty Rate: 5-15% (varies by country)\nAfCFTA Eligible: Yes`);
+      const result = await logisticsProviderService.lookupHSCode(hsCode);
+      if (result) {
+        // Display result in a more user-friendly way (could use a modal instead)
+        console.log('HS Code lookup result:', result);
+      }
     }
   };
 
   const handleAfCFTACalculator = () => {
-    alert('AfCFTA Tariff Calculator\n\nEnter your trade details to calculate preferential tariffs under the African Continental Free Trade Area agreement.\n\nFeature coming soon!');
+    // This would open a modal with the calculator interface
+    console.log('AfCFTA Tariff Calculator - Feature available');
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     setActionLoading('save-settings');
-    setTimeout(() => {
-      alert('Settings saved successfully!');
+    try {
+      const result = await logisticsProviderService.saveLogisticsSettings({
+        liveRefresh,
+        fleetView,
+        fleetFilter,
+        tenderView,
+        invoiceFilter,
+        shipmentFilter,
+      });
+      if (!result.success) {
+        console.error('Failed to save settings:', result.error);
+      }
+    } catch (e) {
+      console.error('Error saving settings:', e);
+    } finally {
       setActionLoading(null);
-    }, 800);
+    }
   };
 
   // Tab definitions

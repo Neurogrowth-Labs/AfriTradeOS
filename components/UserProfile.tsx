@@ -108,14 +108,28 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     status?: 'success' | 'failed';
   }>({});
   const [auditPage, setAuditPage] = useState(0);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
 
-  // Get current user ID
-  const userId = profileData?.id || 'user-001';
-  const organizationId = profile?.organizationId || organization?.id || 'org-001';
+  // Get current user ID from auth or profile data
+  const userId = authUserId || profileData?.id || '';
+  const organizationId = profile?.organizationId || organization?.id || '';
 
-  // Fetch all data on mount
+  // Fetch authenticated user ID on mount
   useEffect(() => {
-    fetchAllData();
+    const getAuthUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        setAuthUserId(user.id);
+      }
+    };
+    getAuthUser();
+  }, []);
+
+  // Fetch all data when userId is available
+  useEffect(() => {
+    if (userId) {
+      fetchAllData();
+    }
   }, [userId]);
 
   // Fetch audit logs when filters change
@@ -195,6 +209,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
   // Save handlers
   const handleSaveProfile = async () => {
+    if (!userId) {
+      setSaveError('User not authenticated. Please log in again.');
+      return;
+    }
     setIsSaving(true);
     setSaveError(null);
     try {
@@ -236,6 +254,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   };
 
   const handleSavePreferences = async (updates: Partial<UserPreferences>) => {
+    if (!userId) {
+      console.error('Cannot save preferences: User not authenticated');
+      return;
+    }
     setIsSaving(true);
     try {
       const success = await updateUserPreferences(userId, updates);

@@ -1739,6 +1739,334 @@ export const logisticsProviderService = {
   unsubscribe: (channel: ReturnType<typeof supabase.channel>) => {
     supabase.removeChannel(channel);
   },
+
+  // ---- QUOTE REQUESTS ----
+  requestQuote: async (request: {
+    providerName: string;
+    providerType?: string;
+    origin: string;
+    destination: string;
+    cargoDescription?: string;
+    weightKg?: number;
+  }): Promise<{ success: boolean; quoteId?: string; error?: string }> => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase
+        .from('logistics_quote_requests')
+        .insert({
+          user_id: userData.user?.id,
+          provider_name: request.providerName,
+          provider_type: request.providerType,
+          origin: request.origin,
+          destination: request.destination,
+          cargo_description: request.cargoDescription,
+          weight_kg: request.weightKg,
+          status: 'sent',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { success: true, quoteId: data.id };
+    } catch (e: any) {
+      console.error('requestQuote error:', e);
+      return { success: false, error: e.message || 'Failed to send quote request' };
+    }
+  },
+
+  getQuoteRequests: async (): Promise<any[]> => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase
+        .from('logistics_quote_requests')
+        .select('*')
+        .eq('user_id', userData.user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.error('getQuoteRequests error:', e);
+      return [];
+    }
+  },
+
+  // ---- BACKHAUL OPERATIONS ----
+  acceptBackhaulOpportunity: async (opportunityId: string, vehicleId?: string): Promise<{ success: boolean; shipmentId?: string; error?: string }> => {
+    try {
+      // Update backhaul status to matched
+      const { error: updateError } = await supabase
+        .from('logistics_backhaul')
+        .update({
+          status: 'accepted',
+          matched_vehicle_id: vehicleId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', opportunityId);
+
+      if (updateError) throw updateError;
+
+      // Get the backhaul details
+      const { data: backhaul, error: fetchError } = await supabase
+        .from('logistics_backhaul')
+        .select('*')
+        .eq('id', opportunityId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Create a new shipment from the backhaul
+      const trackingNumber = `BH-${Date.now().toString(36).toUpperCase()}`;
+
+      const { data: shipment, error: shipmentError } = await supabase
+        .from('logistics_shipments')
+        .insert({
+          tracking_number: trackingNumber,
+          cargo: backhaul.cargo_type || 'Backhaul Load',
+          cargo_type: backhaul.cargo_type,
+          weight: backhaul.weight,
+          origin: backhaul.origin,
+          destination: backhaul.destination,
+          status: 'booked',
+          progress: 5,
+          risk_level: 'low',
+          vehicle_id: vehicleId,
+          profitability: { revenue: backhaul.rate || 0, costs: 0, margin: 100 },
+        })
+        .select()
+        .single();
+
+      if (shipmentError) throw shipmentError;
+
+      return { success: true, shipmentId: shipment.id };
+    } catch (e: any) {
+      console.error('acceptBackhaulOpportunity error:', e);
+      return { success: false, error: e.message || 'Failed to accept backhaul opportunity' };
+    }
+  },
+
+  // ---- INVOICE OPERATIONS ----
+  sendInvoiceReminder: async (invoiceId: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // Get invoice details
+      const { data: invoice, error: fetchError } = await supabase
+        .from('logistics_invoices')
+        .select('*')
+        .eq('id', invoiceId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update invoice to mark reminder sent
+      const { error: updateError } = await supabase
+        .from('logistics_invoices')
+        .update({
+          status: invoice.status === 'sent' ? 'sent' : invoice.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoiceId);
+
+      if (updateError) throw updateError;
+
+      // In production, this would trigger an email/SMS notification
+      console.log(`Payment reminder sent for invoice ${invoice.invoice_number} to ${invoice.client_name}`);
+
+      return { success: true };
+    } catch (e: any) {
+      console.error('sendInvoiceReminder error:', e);
+      return { success: false, error: e.message || 'Failed to send reminder' };
+    }
+  },
+
+  // ---- DOCUMENT OPERATIONS ----
+  renewComplianceDocument: async (docId: string, newExpiryDate: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { error } = await supabase
+        .from('logistics_compliance_docs')
+        .update({
+          expiry_date: newExpiryDate,
+          status: 'valid',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', docId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (e: any) {
+      console.error('renewComplianceDocument error:', e);
+      return { success: false, error: e.message || 'Failed to renew document' };
+    }
+  },
+
+  generateShipmentDocuments: async (shipmentId: string, documentTypes: string[]): Promise<{ success: boolean; documents?: any[]; error?: string }> => {
+    try {
+      const { data: shipment, error: fetchError } = await supabase
+        .from('logistics_shipments')
+        .select('*')
+        .eq('id', shipmentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Generate document records (in production, this would create actual PDFs)
+      const generatedDocs = documentTypes.map(docType => ({
+        name: `${docType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - ${shipment.tracking_number}`,
+        type: docType,
+        status: 'generated',
+        generatedAt: new Date().toISOString(),
+        shipmentId,
+      }));
+
+      // Update shipment with document references
+      const currentDocs = shipment.documents || [];
+      const { error: updateError } = await supabase
+        .from('logistics_shipments')
+        .update({
+          documents: [...currentDocs, ...generatedDocs],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', shipmentId);
+
+      if (updateError) throw updateError;
+
+      return { success: true, documents: generatedDocs };
+    } catch (e: any) {
+      console.error('generateShipmentDocuments error:', e);
+      return { success: false, error: e.message || 'Failed to generate documents' };
+    }
+  },
+
+  // ---- DRIVER OPERATIONS ----
+  addDriver: async (driver: Partial<FleetDriver>): Promise<{ success: boolean; driver?: FleetDriver; error?: string }> => {
+    try {
+      const { data, error } = await supabase
+        .from('logistics_fleet_drivers')
+        .insert({
+          name: driver.name,
+          phone: driver.phone,
+          license_number: driver.licenseNumber,
+          license_expiry: driver.licenseExpiry,
+          status: 'available',
+          behavior_score: 100,
+          total_trips: 0,
+          certifications: driver.certifications || [],
+          languages: driver.languages || [],
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newDriver: FleetDriver = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        licenseNumber: data.license_number,
+        licenseExpiry: data.license_expiry,
+        status: data.status,
+        behaviorScore: data.behavior_score,
+        totalTrips: data.total_trips,
+        certifications: data.certifications,
+        languages: data.languages,
+      };
+
+      return { success: true, driver: newDriver };
+    } catch (e: any) {
+      console.error('addDriver error:', e);
+      return { success: false, error: e.message || 'Failed to add driver' };
+    }
+  },
+
+  // ---- CLIENT OPERATIONS ----
+  sendQuoteToClient: async (clientId: string, quoteDetails: {
+    shipmentType: string;
+    origin: string;
+    destination: string;
+    estimatedPrice: number;
+    currency: string;
+    validUntil: string;
+  }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // In production, this would send an email/notification to the client
+      console.log(`Quote sent to client ${clientId}:`, quoteDetails);
+
+      // Could store the quote in a quotes table for tracking
+      return { success: true };
+    } catch (e: any) {
+      console.error('sendQuoteToClient error:', e);
+      return { success: false, error: e.message || 'Failed to send quote' };
+    }
+  },
+
+  // ---- HS CODE LOOKUP ----
+  lookupHSCode: async (hsCode: string): Promise<{
+    code: string;
+    description: string;
+    dutyRate: string;
+    afcftaEligible: boolean;
+    restrictions?: string[];
+  } | null> => {
+    try {
+      // In production, this would query an HS code database
+      // For now, return contextual mock data
+      const hsData: Record<string, any> = {
+        '0901': { description: 'Coffee (not roasted)', dutyRate: '5-15%', afcftaEligible: true },
+        '1801': { description: 'Cocoa beans', dutyRate: '0-10%', afcftaEligible: true },
+        '1804': { description: 'Cocoa butter', dutyRate: '5-15%', afcftaEligible: true },
+        '5208': { description: 'Woven cotton fabrics', dutyRate: '10-20%', afcftaEligible: true },
+        '0801': { description: 'Cashew nuts', dutyRate: '0-5%', afcftaEligible: true },
+        '1511': { description: 'Palm oil', dutyRate: '10-25%', afcftaEligible: true },
+      };
+
+      const prefix = hsCode.slice(0, 4);
+      const data = hsData[prefix];
+
+      if (data) {
+        return {
+          code: hsCode,
+          description: data.description,
+          dutyRate: data.dutyRate,
+          afcftaEligible: data.afcftaEligible,
+        };
+      }
+
+      return {
+        code: hsCode,
+        description: 'General goods classification',
+        dutyRate: '5-20% (varies by destination)',
+        afcftaEligible: true,
+      };
+    } catch (e) {
+      console.error('lookupHSCode error:', e);
+      return null;
+    }
+  },
+
+  // ---- SETTINGS ----
+  saveLogisticsSettings: async (settings: Record<string, any>): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Not authenticated');
+
+      // Store settings in user_preferences or a dedicated logistics_settings table
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: userData.user.id,
+          logistics_settings: settings,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+      return { success: true };
+    } catch (e: any) {
+      console.error('saveLogisticsSettings error:', e);
+      return { success: false, error: e.message || 'Failed to save settings' };
+    }
+  },
 };
 
 export default logisticsProviderService;

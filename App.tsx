@@ -571,10 +571,23 @@ export default function App() {
     };
     checkSession();
 
-    // Listen for auth changes (Login, Logout, Password Recovery)
+    // Listen for auth changes (Login, Logout, Password Recovery, Email Confirmation)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
           setShowPasswordReset(true);
+        }
+
+        // Handle email confirmation - user clicked the link in their email
+        if (event === 'SIGNED_IN' && session) {
+          // Check if this is from email confirmation redirect
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('confirmed') === 'true') {
+            // Clean up the URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          // Fetch profile and continue onboarding
+          fetchProfile(session);
+          return;
         }
 
         if (session) {
@@ -847,6 +860,8 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
+      <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
+        <header className="sticky top-0 z-30 h-14 bg-gradient-to-r from-[#1A1505] via-[#15110A] to-[#1A1505] border-b border-[#C9A24D]/20 flex items-center justify-between px-4 lg:px-6 shadow-lg">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
               <Menu className="w-5 h-5" />
@@ -896,93 +911,97 @@ export default function App() {
           </div>
           
           <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30">
               <Wifi className="w-3 h-3" />
               {t('realTimeReady')}
             </div>
             {/* Localization UI */}
-                    title="Switch Language"
-                  >
-                    <Languages className="w-3 h-3 text-trade-accent" />
-                    {language}
-                  </button>
-                  {showLanguageDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectLanguage')}</span>
+            <div className="relative" ref={languageRef}>
+              <button
+                onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-[#F7E7B1] hover:bg-[#C9A24D]/10"
+                title="Switch Language"
+              >
+                <Languages className="w-3 h-3 text-trade-accent" />
+                {language}
+              </button>
+              {showLanguageDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectLanguage')}</span>
+                  </div>
+                  {LANGUAGES.map(item => (
+                    <button
+                      key={item.code}
+                      onClick={() => { setLanguage(item.code); setShowLanguageDropdown(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${language === item.code ? 'bg-trade-accent/10' : ''}`}
+                    >
+                      <Globe className="w-4 h-4 text-trade-accent" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{item.label}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.nativeLabel}</p>
                       </div>
-                      {LANGUAGES.map(item => (
-                        <button
-                          key={item.code}
-                          onClick={() => { setLanguage(item.code); setShowLanguageDropdown(false); }}
-                          className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${language === item.code ? 'bg-trade-accent/10' : ''}`}
-                        >
-                          <Globe className="w-4 h-4 text-trade-accent" />
-                          <div className="flex-1">
-                            <p className="text-xs font-bold text-gray-900 dark:text-white">{item.label}</p>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.nativeLabel}</p>
-                          </div>
-                          {language === item.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
-                        </button>
-                      ))}
+                      {language === item.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="relative" ref={currencyRef}>
+              <button
+                onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-[#F7E7B1] hover:bg-[#C9A24D]/10"
+                title="Switch Currency"
+              >
+                <Coins className="w-3 h-3 text-trade-accent" />
+                <span>{CURRENCIES.find(c => c.code === currency)?.flag}</span>
+                {currency}
+              </button>
+              {showCurrencyDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectCurrency')}</span>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    <div className="px-2 py-1.5">
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">African Currencies</span>
                     </div>
-                  )}
-               </div>
-               <div className="relative" ref={currencyRef}>
-                  <button 
-                    onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-                    className="btn-secondary min-h-0 px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-[#F7E7B1] hover:bg-[#C9A24D]/10"
-                    title="Switch Currency"
-                  >
-                    <Coins className="w-3 h-3 text-trade-accent" />
-                    <span>{CURRENCIES.find(c => c.code === currency)?.flag}</span>
-                    {currency}
-                  </button>
-                  {showCurrencyDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                        <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectCurrency')}</span>
-                      </div>
-                      <div className="max-h-72 overflow-y-auto">
-                        <div className="px-2 py-1.5">
-                          <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">African Currencies</span>
+                    {CURRENCIES.filter(c => ['NGN', 'KES', 'ZAR', 'EGP', 'GHS', 'XOF', 'MAD'].includes(c.code)).map(c => (
+                      <button
+                        key={c.code}
+                        onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
+                      >
+                        <span className="text-base">{c.flag}</span>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
                         </div>
-                        {CURRENCIES.filter(c => ['NGN', 'KES', 'ZAR', 'EGP', 'GHS', 'XOF', 'MAD'].includes(c.code)).map(c => (
-                          <button
-                            key={c.code}
-                            onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
-                          >
-                            <span className="text-base">{c.flag}</span>
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
-                              <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
-                            </div>
-                            <span className="text-xs text-gray-400">{c.symbol}</span>
-                            {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
-                          </button>
-                        ))}
-                        <div className="px-2 py-1.5 border-t border-gray-100 dark:border-slate-700">
-                          <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">International</span>
-                        </div>
-                        {CURRENCIES.filter(c => ['USD', 'EUR', 'GBP', 'CNY', 'INR'].includes(c.code)).map(c => (
-                          <button
-                            key={c.code}
-                            onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
-                            className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
-                          >
-                            <span className="text-base">{c.flag}</span>
-                            <div className="flex-1">
-                              <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
-                              <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
-                            </div>
-                            <span className="text-xs text-gray-400">{c.symbol}</span>
-                            {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
-                          </button>
-                        ))}
-                      </div>
+                        <span className="text-xs text-gray-400">{c.symbol}</span>
+                        {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                      </button>
+                    ))}
+                    <div className="px-2 py-1.5 border-t border-gray-100 dark:border-slate-700">
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">International</span>
                     </div>
-                  )}
-               </div>
+                    {CURRENCIES.filter(c => ['USD', 'EUR', 'GBP', 'CNY', 'INR'].includes(c.code)).map(c => (
+                      <button
+                        key={c.code}
+                        onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
+                      >
+                        <span className="text-base">{c.flag}</span>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
+                        </div>
+                        <span className="text-xs text-gray-400">{c.symbol}</span>
+                        {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button 
