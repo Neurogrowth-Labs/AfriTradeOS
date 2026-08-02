@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu,
   X,
@@ -28,52 +27,54 @@ import {
 import { AppView, UserPersona } from './types';
 import { useCurrency, CURRENCIES } from './contexts/CurrencyContext';
 import { useLanguage } from './contexts/LanguageContext';
-import { Dashboard } from './components/Dashboard';
-import { TradeLifecycle } from './components/TradeLifecycle';
-import { MarketIntel } from './components/MarketIntel';
-import { Compliance } from './components/Compliance';
-import { Logistics } from './components/Logistics';
-import { LiveAssistant } from './components/LiveAssistant';
-import { MarketingStudio } from './components/MarketingStudio';
-import { TradeFinance } from './components/TradeFinance';
-import { Marketplace } from './components/Marketplace';
-import { UserProfile } from './components/UserProfile';
-import { CoPilot } from './components/CoPilot';
-import { Onboarding } from './components/Onboarding';
-import { AdminDashboard } from './components/AdminDashboard';
-import { RegulatorDashboard } from './components/RegulatorDashboard';
-import { SystemDiagnostic } from './components/SystemDiagnostic';
-import { KYCVerification } from './components/KYCVerification';
-import { TenderManagement } from './components/TenderManagement';
-import { SmartContracts } from './components/SmartContracts';
-import { AnalyticsHub } from './components/AnalyticsHub';
-import { AnalystMarketResearch } from './components/AnalystMarketResearch';
-import { AnalystTradeTrends } from './components/AnalystTradeTrends';
-import { AnalystRegulatoryData } from './components/AnalystRegulatoryData';
-import { AnalystLogisticsData } from './components/AnalystLogisticsData';
-import { AnalystFinanceMetrics } from './components/AnalystFinanceMetrics';
-import { AnalystMarketPlayers } from './components/AnalystMarketPlayers';
-import { AnalystTenderAnalysis } from './components/AnalystTenderAnalysis';
-import { GovAgencyDashboard } from './components/GovAgencyDashboard';
-import { GovPolicyCompliance } from './components/GovPolicyCompliance';
-import { GovTradeAgreements } from './components/GovTradeAgreements';
-import { GovTradeStatistics } from './components/GovTradeStatistics';
-import { GovTradeFlows } from './components/GovTradeFlows';
-import { GovEntityVerification } from './components/GovEntityVerification';
-import { GovBusinessRegistry } from './components/GovBusinessRegistry';
-import { CustomsAuthorityPanel } from './components/CustomsAuthorityPanel';
-import { LogisticsProviderPanel } from './components/LogisticsProviderPanel';
-import ImporterPanel from './components/ImporterPanel';
-import BankFinanceDashboard from './components/BankFinanceDashboard';
-import BankFinanceApplications from './components/BankFinanceApplications';
-import BankDueDiligence from './components/BankDueDiligence';
-import BankRiskClients from './components/BankRiskClients';
-import BankAccountSettings from './components/BankAccountSettings';
-import BankTradeTools from './components/BankTradeTools';
+import { useAuth } from './contexts/AuthContext';
+import { useNotifications } from './contexts/NotificationContext';
 import { supabase } from './services/supabase';
-import { mockDatabase } from './services/mockDatabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
-import { buildOnboardingProfileState, isOnboardingComplete } from './services/onboardingService';
+
+// --- Lazy-loaded route components (code splitting) ---
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const TradeLifecycle = lazy(() => import('./components/TradeLifecycle').then(m => ({ default: m.TradeLifecycle })));
+const MarketIntel = lazy(() => import('./components/MarketIntel').then(m => ({ default: m.MarketIntel })));
+const Compliance = lazy(() => import('./components/Compliance').then(m => ({ default: m.Compliance })));
+const Logistics = lazy(() => import('./components/Logistics').then(m => ({ default: m.Logistics })));
+const LiveAssistant = lazy(() => import('./components/LiveAssistant').then(m => ({ default: m.LiveAssistant })));
+const MarketingStudio = lazy(() => import('./components/MarketingStudio').then(m => ({ default: m.MarketingStudio })));
+const TradeFinance = lazy(() => import('./components/TradeFinance').then(m => ({ default: m.TradeFinance })));
+const Marketplace = lazy(() => import('./components/Marketplace').then(m => ({ default: m.Marketplace })));
+const UserProfile = lazy(() => import('./components/UserProfile').then(m => ({ default: m.UserProfile })));
+const CoPilot = lazy(() => import('./components/CoPilot').then(m => ({ default: m.CoPilot })));
+const Onboarding = lazy(() => import('./components/Onboarding').then(m => ({ default: m.Onboarding })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const RegulatorDashboard = lazy(() => import('./components/RegulatorDashboard').then(m => ({ default: m.RegulatorDashboard })));
+const SystemDiagnostic = lazy(() => import('./components/SystemDiagnostic').then(m => ({ default: m.SystemDiagnostic })));
+const KYCVerification = lazy(() => import('./components/KYCVerification').then(m => ({ default: m.KYCVerification })));
+const TenderManagement = lazy(() => import('./components/TenderManagement').then(m => ({ default: m.TenderManagement })));
+const SmartContracts = lazy(() => import('./components/SmartContracts').then(m => ({ default: m.SmartContracts })));
+const AnalyticsHub = lazy(() => import('./components/AnalyticsHub').then(m => ({ default: m.AnalyticsHub })));
+const AnalystMarketResearch = lazy(() => import('./components/AnalystMarketResearch').then(m => ({ default: m.AnalystMarketResearch })));
+const AnalystTradeTrends = lazy(() => import('./components/AnalystTradeTrends').then(m => ({ default: m.AnalystTradeTrends })));
+const AnalystRegulatoryData = lazy(() => import('./components/AnalystRegulatoryData').then(m => ({ default: m.AnalystRegulatoryData })));
+const AnalystLogisticsData = lazy(() => import('./components/AnalystLogisticsData').then(m => ({ default: m.AnalystLogisticsData })));
+const AnalystFinanceMetrics = lazy(() => import('./components/AnalystFinanceMetrics').then(m => ({ default: m.AnalystFinanceMetrics })));
+const AnalystMarketPlayers = lazy(() => import('./components/AnalystMarketPlayers').then(m => ({ default: m.AnalystMarketPlayers })));
+const AnalystTenderAnalysis = lazy(() => import('./components/AnalystTenderAnalysis').then(m => ({ default: m.AnalystTenderAnalysis })));
+const GovAgencyDashboard = lazy(() => import('./components/GovAgencyDashboard').then(m => ({ default: m.GovAgencyDashboard })));
+const GovPolicyCompliance = lazy(() => import('./components/GovPolicyCompliance').then(m => ({ default: m.GovPolicyCompliance })));
+const GovTradeAgreements = lazy(() => import('./components/GovTradeAgreements').then(m => ({ default: m.GovTradeAgreements })));
+const GovTradeStatistics = lazy(() => import('./components/GovTradeStatistics').then(m => ({ default: m.GovTradeStatistics })));
+const GovTradeFlows = lazy(() => import('./components/GovTradeFlows').then(m => ({ default: m.GovTradeFlows })));
+const GovEntityVerification = lazy(() => import('./components/GovEntityVerification').then(m => ({ default: m.GovEntityVerification })));
+const GovBusinessRegistry = lazy(() => import('./components/GovBusinessRegistry').then(m => ({ default: m.GovBusinessRegistry })));
+const CustomsAuthorityPanel = lazy(() => import('./components/CustomsAuthorityPanel').then(m => ({ default: m.CustomsAuthorityPanel })));
+const LogisticsProviderPanel = lazy(() => import('./components/LogisticsProviderPanel').then(m => ({ default: m.LogisticsProviderPanel })));
+const ImporterPanel = lazy(() => import('./components/ImporterPanel'));
+const BankFinanceDashboard = lazy(() => import('./components/BankFinanceDashboard'));
+const BankFinanceApplications = lazy(() => import('./components/BankFinanceApplications'));
+const BankDueDiligence = lazy(() => import('./components/BankDueDiligence'));
+const BankRiskClients = lazy(() => import('./components/BankRiskClients'));
+const BankAccountSettings = lazy(() => import('./components/BankAccountSettings'));
+const BankTradeTools = lazy(() => import('./components/BankTradeTools'));
 
 // Internal Component: Password Reset Modal
 const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
@@ -211,36 +212,23 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.IMPORTER_PANEL]: '/importer',
 };
 
-// Get default route for each role
-const getDefaultRouteForRole = (role: UserPersona): string => {
-  switch (role) {
-    case UserPersona.CUSTOMS:
-      return '/customs';
-    case UserPersona.LOGISTICS:
-      return '/logistics-provider';
-    case UserPersona.GOVERNMENT:
-      return '/regulator';
-    case UserPersona.ADMIN:
-      return '/admin';
-    case UserPersona.ANALYST:
-      return '/dashboard';
-    case UserPersona.BANK:
-      return '/bank-dashboard';
-    case UserPersona.IMPORTER:
-      return '/importer';
-    default:
-      return '/dashboard';
-  }
-};
+// Suspense fallback
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-64">
+    <Loader2 className="w-8 h-8 animate-spin text-trade-accent" />
+  </div>
+);
 
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthLoading, isOnboarded, userRole, userProfile, showPasswordReset, setShowPasswordReset, handleLogout, handleOnboardingComplete } = useAuth();
+  const { notifications, notificationsLoading, unreadCount, markAsRead, markAllAsRead, clearAllNotifications } = useNotifications();
 
   // Initialize sidebar based on screen size
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window !== 'undefined') {
-      return window.innerWidth >= 1024; // lg breakpoint
+      return window.innerWidth >= 1024;
     }
     return true;
   });
@@ -252,37 +240,26 @@ export default function App() {
         setSidebarOpen(false);
       }
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  
+
   const currentView = routeToView[location.pathname] || AppView.DASHBOARD;
-  
-  const [isOnboarded, setIsOnboarded] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [userRole, setUserRole] = useState<UserPersona>(UserPersona.EXPORTER_SME);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  
+
   const setCurrentView = (view: AppView) => {
-    // Check if user can access this view
     if (!canAccessView(userRole, view)) {
       navigate('/dashboard');
       return;
     }
     navigate(viewToRoute[view] || '/dashboard');
   };
-  
-  // Route protection: redirect if user tries to access unauthorized route
+
+  // Route protection
   useEffect(() => {
     if (isOnboarded && currentView && !canAccessView(userRole, currentView)) {
       navigate('/dashboard');
     }
   }, [location.pathname, userRole, isOnboarded, currentView, navigate]);
-  
-  // Track if current session is a simulation (bypass Auth listeners)
-  const isSimulatedRef = useRef(false);
 
   // Localization State
   const { language, setLanguage, t, LANGUAGES } = useLanguage();
@@ -291,109 +268,8 @@ export default function App() {
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const currencyRef = useRef<HTMLDivElement>(null);
   const languageRef = useRef<HTMLDivElement>(null);
-
-  // Notifications State
-  interface Notification {
-    id: string;
-    type: string;
-    title: string;
-    message: string;
-    link: string | null;
-    is_read: boolean;
-    created_at: string;
-  }
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
-
-  // Fetch notifications from Supabase
-  const fetchNotifications = useCallback(async () => {
-    if (!userProfile?.id) return;
-    setNotificationsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userProfile.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (e) {
-      console.error('Failed to fetch notifications:', e);
-      setNotifications([]);
-    } finally {
-      setNotificationsLoading(false);
-    }
-  }, [userProfile?.id]);
-
-  // Mark notification as read
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq('id', notificationId);
-      
-      setNotifications(prev => prev.map(n => 
-        n.id === notificationId ? { ...n, is_read: true } : n
-      ));
-    } catch (e) {
-      console.error('Failed to mark notification as read:', e);
-    }
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    try {
-      if (userProfile?.id) {
-        await supabase
-          .from('notifications')
-          .update({ is_read: true, read_at: new Date().toISOString() })
-          .eq('user_id', userProfile.id)
-          .eq('is_read', false);
-      }
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    } catch (e) {
-      console.error('Failed to mark all as read:', e);
-    }
-  };
-
-  // Clear all notifications
-  const clearAllNotifications = async () => {
-    try {
-      if (userProfile?.id) {
-        await supabase
-          .from('notifications')
-          .delete()
-          .eq('user_id', userProfile.id);
-      }
-      setNotifications([]);
-    } catch (e) {
-      console.error('Failed to clear notifications:', e);
-    }
-  };
-
-  // Fetch and subscribe to notifications when user profile is loaded
-  useEffect(() => {
-    if (!userProfile?.id) return;
-    fetchNotifications();
-
-    const channel = supabase
-      .channel(`notifications:${userProfile.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` },
-        () => fetchNotifications()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userProfile?.id, fetchNotifications]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -447,203 +323,28 @@ export default function App() {
     return date.toLocaleDateString();
   };
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
-  
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') !== 'light';
     }
-    return false;
+    return true;
   });
-
-  const fetchProfile = async (session: any) => {
-      try {
-        // 1. Try to get profile from DB (Single Source of Truth)
-        const dbProfile = await mockDatabase.getUserProfile(session.user.id);
-        
-        // 2. Fallback to Auth Metadata if DB is empty (First login race condition)
-        const meta = session.user.user_metadata || {};
-        
-        if (dbProfile) {
-            const role = dbProfile.role || UserPersona.EXPORTER_SME;
-            const onboarding = buildOnboardingProfileState(dbProfile);
-            if (dbProfile.role) setUserRole(role);
-            setUserProfile({
-              userName: dbProfile.full_name || meta.full_name || '',
-              companyName: dbProfile.company_name || '',
-              email: dbProfile.email || session.user.email,
-              country: dbProfile.country || 'Ghana',
-              phone: dbProfile.phone || meta.phone || '',
-              id: dbProfile.id,
-              onboardingCompleted: onboarding.onboardingCompleted,
-              onboardingStep: onboarding.onboardingStep,
-              ...meta
-            });
-            setIsOnboarded(onboarding.onboardingCompleted);
-
-            if (onboarding.onboardingCompleted) {
-              const defaultRoute = getDefaultRouteForRole(role);
-              if (location.pathname === '/' || location.pathname === '/dashboard') {
-                navigate(defaultRoute);
-              }
-            } else if (location.pathname !== '/') {
-              navigate('/');
-            }
-        } else {
-            console.log("No completed onboarding profile found, redirecting to onboarding...");
-            setUserRole(UserPersona.EXPORTER_SME);
-            setUserProfile({
-              userName: meta.full_name || '',
-              email: session.user.email,
-              id: session.user.id,
-              onboardingCompleted: false,
-              onboardingStep: 1,
-            });
-            setIsOnboarded(false);
-            if (location.pathname !== '/') {
-              navigate('/');
-            }
-        }
-      } catch (error) {
-        console.error("Profile fetch error:", error);
-
-        const meta = session.user.user_metadata || {};
-        const fallbackProfile = {
-          userName: meta.full_name || '',
-          email: session.user.email,
-          id: session.user.id,
-          onboardingCompleted: false,
-          onboardingStep: 1,
-        };
-
-        setUserProfile(fallbackProfile);
-        setIsOnboarded(false);
-        if (location.pathname !== '/') {
-          navigate('/');
-        }
-      }
-  };
-
-  useEffect(() => {
-    if (!isAuthLoading && userProfile && !isOnboarded && location.pathname !== '/') {
-      navigate('/');
-    }
-  }, [isAuthLoading, isOnboarded, location.pathname, navigate, userProfile]);
-
-  const handleAuthProfileLoaded = (profile: any, role?: UserPersona) => {
-    if (role) {
-      setUserRole(role);
-    }
-    setUserProfile(profile);
-    const completed = isOnboardingComplete({
-      role: role || userRole,
-      full_name: profile?.userName,
-      email: profile?.email,
-      country: profile?.country,
-      company_name: profile?.companyName,
-      onboarding_completed: profile?.onboardingCompleted,
-    });
-    setIsOnboarded(completed);
-    if (completed) {
-      navigate(getDefaultRouteForRole(role || userRole));
-    } else {
-      navigate('/');
-    }
-  };
-
-  // Check for Supabase Session
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.warn("Session check error:", error.message);
-          setIsOnboarded(false);
-          setUserProfile(null);
-          return;
-        }
-        if (session) {
-          await fetchProfile(session);
-        }
-      } finally {
-        setIsAuthLoading(false);
-      }
-    };
-    checkSession();
-
-    // Listen for auth changes (Login, Logout, Password Recovery, Email Confirmation)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          setShowPasswordReset(true);
-        }
-
-        // Handle email confirmation - user clicked the link in their email
-        if (event === 'SIGNED_IN' && session) {
-          // Check if this is from email confirmation redirect
-          const urlParams = new URLSearchParams(window.location.search);
-          if (urlParams.get('confirmed') === 'true') {
-            // Clean up the URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-          // Fetch profile and continue onboarding
-          fetchProfile(session);
-          return;
-        }
-
-        if (session) {
-            fetchProfile(session);
-        } else {
-            // CRITICAL: If we are in Simulation Mode, IGNORE the "signed out" event
-            // because there is no real session, but the app should remain logged in.
-            if (isSimulatedRef.current) return;
-
-            setIsOnboarded(false);
-            setUserProfile(null);
-        }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.documentElement.style.colorScheme = 'dark';
       localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.documentElement.style.colorScheme = 'light';
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);
 
   const toggleTheme = () => setIsDark(!isDark);
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      isSimulatedRef.current = false;
-      setIsOnboarded(false);
-      setUserProfile(null);
-      setUserRole(UserPersona.EXPORTER_SME);
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const handleOnboardingComplete = (role: UserPersona, profile: any) => {
-      // Mark as simulated if ID starts with mock_
-      if (profile.id && profile.id.startsWith('mock_')) {
-          isSimulatedRef.current = true;
-      }
-      handleAuthProfileLoaded(
-        {
-          ...profile,
-          onboardingCompleted: true,
-          onboardingStep: 3,
-        },
-        role
-      );
-  };
 
   const renderView = () => {
     // Trade Analyst gets dedicated analyst-specific components
@@ -738,8 +439,8 @@ export default function App() {
       }}
       className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 text-xs font-medium border-l-4 ${
         currentView === view
-          ? 'bg-white/10 text-trade-accent border-trade-accent shadow-sm'
-          : 'text-slate-400 border-transparent hover:bg-white/5 hover:text-white'
+          ? `${isDark ? 'bg-white/10' : 'bg-trade-accent/10'} text-trade-accent border-trade-accent shadow-sm`
+          : `${isDark ? 'text-slate-400 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'} border-transparent`
       }`}
     >
       <Icon className={`w-4 h-4 ${currentView === view ? 'text-trade-accent' : ''}`} />
@@ -756,11 +457,15 @@ export default function App() {
   }
 
   if (!isOnboarded) {
-      return <Onboarding onComplete={handleOnboardingComplete} />;
+      return (
+        <Suspense fallback={<LoadingFallback />}>
+          <Onboarding onComplete={handleOnboardingComplete} />
+        </Suspense>
+      );
   }
 
   return (
-    <div className="dark-gold-platform flex h-screen overflow-hidden transition-colors duration-300 font-sans">
+    <div className={`${isDark ? 'dark-gold-platform' : 'light-gold-platform'} flex h-screen overflow-hidden transition-colors duration-300 font-sans ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}>
       {/* Password Reset Overlay */}
       {showPasswordReset && <PasswordResetModal onClose={() => setShowPasswordReset(false)} />}
 
@@ -774,14 +479,14 @@ export default function App() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-60 bg-[#070707] border-r border-[#C9A24D]/25 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-60 ${isDark ? 'bg-[#070707] text-white' : 'bg-white text-gray-900'} border-r ${isDark ? 'border-[#C9A24D]/25' : 'border-gray-200'} transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="p-5 border-b border-[#C9A24D]/20 flex items-center justify-between">
+        <div className={`p-5 border-b ${isDark ? 'border-[#C9A24D]/20' : 'border-gray-200'} flex items-center justify-between`}>
           <div className="flex items-center gap-2">
             <img src="/afritradeos.jpeg" alt="AfriTradeOS" className="w-7 h-7 rounded-lg object-cover shadow-lg" />
-            <span className="type-header text-white">AfriTradeOS</span>
+            <span className={`type-header ${isDark ? 'text-white' : 'text-gray-900'}`}>AfriTradeOS</span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-[#C9A24D]/20 shadow-none">
             <X className="w-5 h-5" />
@@ -814,7 +519,7 @@ export default function App() {
           ) : (
             getMenuForRole(userRole).map((section, sectionIdx) => (
               <div key={section.title}>
-                <div className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold text-slate-400 uppercase tracking-wider font-heading`}>
+                <div className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-gray-400'} uppercase tracking-wider font-heading`}>
                   {section.title}
                 </div>
                 {section.items.map((item) => (
@@ -825,9 +530,9 @@ export default function App() {
           )}
         </nav>
         
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-[#C9A24D]/20 bg-[#070707]">
+        <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-[#C9A24D]/20 bg-[#070707]' : 'border-gray-200 bg-white'}`}>
           <div
-            className="flex items-center gap-2 mb-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors"
+            className={`flex items-center gap-2 mb-2 cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'} p-2 rounded-lg transition-colors`}
             onClick={() => {
               if (userRole === UserPersona.BANK) {
                 setCurrentView(AppView.BANK_SETTINGS);
@@ -838,15 +543,15 @@ export default function App() {
           >
             <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.userName || 'User')}&background=C9A24D&color=fff`} alt="User" className="w-7 h-7 rounded-full ring-2 ring-trade-accent" />
             <div className="overflow-hidden">
-              <p className="text-sm font-medium text-slate-200 truncate">{userProfile?.userName || 'User'}</p>
-              <p className="type-caption text-slate-400 truncate">{userRole}</p>
+              <p className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-gray-800'} truncate`}>{userProfile?.userName || 'User'}</p>
+              <p className={`type-caption ${isDark ? 'text-slate-400' : 'text-gray-500'} truncate`}>{userRole}</p>
             </div>
           </div>
           {/* Role badge and Logout button */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 px-3 py-1.5 bg-[#15110A] rounded-lg border border-[#C9A24D]/25">
+            <div className={`flex-1 flex items-center gap-2 px-3 py-1.5 ${isDark ? 'bg-[#15110A] border-[#C9A24D]/25' : 'bg-gray-50 border-gray-200'} rounded-lg border`}>
                 <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
-                <span className="text-[10px] font-medium text-slate-300">{userRole}</span>
+                <span className={`text-[10px] font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{userRole}</span>
             </div>
             <button
               onClick={handleLogout}
@@ -861,12 +566,12 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        <header className="sticky top-0 z-30 h-14 bg-gradient-to-r from-[#1A1505] via-[#15110A] to-[#1A1505] border-b border-[#C9A24D]/20 flex items-center justify-between px-4 lg:px-6 shadow-lg">
+        <header className={`sticky top-0 z-30 h-14 ${isDark ? 'bg-gradient-to-r from-[#1A1505] via-[#15110A] to-[#1A1505] border-[#C9A24D]/20' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-4 lg:px-6 shadow-lg`}>
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
               <Menu className="w-5 h-5" />
             </button>
-            <h1 className="type-header text-[#F7E7B1]">
+            <h1 className={`type-header ${isDark ? 'text-[#F7E7B1]' : 'text-gray-900'}`}>
               {userRole === UserPersona.ANALYST ? (
                 currentView === AppView.DASHBOARD ? 'Analytics Hub' :
                 currentView === AppView.MARKET_INTEL ? 'Market Research' :
@@ -1006,7 +711,7 @@ export default function App() {
 
             <button 
               onClick={toggleTheme}
-              className="btn-icon p-0 text-[#C9A24D] hover:text-[#F7E7B1]"
+              className={`btn-icon p-0 ${isDark ? 'text-[#C9A24D] hover:text-[#F7E7B1]' : 'text-[#8B7025] hover:text-[#6b5a2e]'}`}
               title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -1142,14 +847,18 @@ export default function App() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar">
+        <div className={`flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}>
           <div className="mx-auto w-full max-w-7xl">
-            {renderView()}
+            <Suspense fallback={<LoadingFallback />}>
+              {renderView()}
+            </Suspense>
           </div>
         </div>
 
         {/* Global AI Co-Pilot Overlay */}
-        <CoPilot currentView={currentView} />
+        <Suspense fallback={null}>
+          <CoPilot currentView={currentView} />
+        </Suspense>
       </main>
     </div>
   );
