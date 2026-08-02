@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   Shield, FileText, Search, AlertTriangle, CheckCircle, XCircle, Clock,
-  MapPin, Package, TrendingUp, TrendingDown, Users, Building, Globe,
-  BarChart3, PieChart as PieChartIcon, Activity, Zap, Eye, Filter,
-  Download, RefreshCw, ChevronRight, ChevronDown, ArrowUpRight,
-  ArrowDownRight, Truck, Ship, Plane, FileCheck, FileWarning, Scale,
-  DollarSign, Loader2, AlertCircle, Ban, ShieldCheck, ShieldAlert,
-  Clipboard, ClipboardCheck, Timer, Target, Gauge, Radio, Wifi,
-  ThermometerSun, Lock, Unlock, QrCode, Fingerprint, FileSpreadsheet
+  MapPin, Package, Users, Building, Globe,
+  BarChart3, PieChart as PieChartIcon, Activity, Eye,
+  Download, ChevronRight, ArrowUpRight,
+  ArrowDownRight, Truck, Ship, Plane, FileCheck,
+  DollarSign, Loader2, AlertCircle, Ban, ShieldCheck,
+  Clipboard, ClipboardCheck, Gauge, Radio, Wifi, Lock, Unlock, QrCode, Fingerprint, FileSpreadsheet
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, Legend
+  PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { customsService, CustomsDeclaration, CustomsAlert, CustomsTrader, CustomsShipment, CustomsCertificate, CustomsOfficer } from '../services/customsService';
 
@@ -181,7 +180,7 @@ export const CustomsAuthorityPanel: React.FC = () => {
   };
 
   // Handle certificate detail view
-  const handleViewCertificate = (cert: CustomsCertificate) => {
+  const _handleViewCertificate = (cert: CustomsCertificate) => {
     setSelectedCertificate(cert);
     setShowCertificateModal(true);
   };

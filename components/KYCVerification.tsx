@@ -12,18 +12,15 @@ import {
   Camera,
   Loader2,
   Eye,
-  Trash2,
   RefreshCw,
   ChevronRight,
   Info,
   ArrowLeft,
-  ChevronDown,
   Check,
   Fingerprint,
   ScanLine,
   History,
   Lock,
-  Globe,
   Zap,
   Download
 } from 'lucide-react';

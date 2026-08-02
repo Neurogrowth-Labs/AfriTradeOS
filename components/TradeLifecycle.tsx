@@ -17,11 +17,9 @@ import {
   Columns,
   Upload,
   Clock,
-  MessageSquare,
   User,
   Zap,
   GripVertical,
-  Plus,
   X,
   FolderOpen,
   Download,
@@ -38,7 +36,6 @@ import {
   Globe,
   DollarSign
 } from 'lucide-react';
-import { analyzeCompliance } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';
 import { enterpriseExporterService, ExportProject } from '../services/enterpriseExporterService';
 import { DbTrade } from '../types';

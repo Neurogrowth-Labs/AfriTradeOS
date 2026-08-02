@@ -3,7 +3,6 @@ import {
   FileText,
   Plus,
   Search,
-  Filter,
   Eye,
   Edit3,
   CheckCircle,
@@ -21,7 +20,6 @@ import {
   Scale,
   Send,
   Download,
-  MoreVertical,
   Loader2,
   X,
   Check,
@@ -31,14 +29,13 @@ import {
   ClipboardList,
   PenTool,
   History,
-  MessageSquare,
   Mail,
   Share2,
   FileDown
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { enterpriseExporterService, TradeContract } from '../services/enterpriseExporterService';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
 
 // Types
 interface Contract {

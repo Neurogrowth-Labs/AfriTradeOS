@@ -7,7 +7,6 @@ import {
   TrendingDown,
   AlertTriangle,
   Search,
-  Filter,
   Plus,
   Eye,
   Edit2,
@@ -18,7 +17,6 @@ import {
   Calendar,
   DollarSign,
   BarChart3,
-  PieChart,
   Activity,
   Shield,
   Star,
@@ -33,10 +31,8 @@ import {
   ArrowDownRight,
   Percent,
   Target,
-  Zap,
   RefreshCw,
-  Download,
-  Upload
+  Download
 } from 'lucide-react';
 
 interface Client {

@@ -6,8 +6,6 @@ import {
   TrendingDown,
   Download,
   Search,
-  Filter,
-  Calendar,
   Globe,
   Users,
   Zap,
@@ -15,13 +13,8 @@ import {
   ArrowDownRight,
   Package,
   DollarSign,
-  Percent,
-  FileSpreadsheet,
   MessageSquare,
   Lightbulb,
-  SlidersHorizontal,
-  ChevronRight,
-  PieChart as PieChartIcon,
   Loader2
 } from 'lucide-react';
 import { governmentService } from '../services/governmentService';

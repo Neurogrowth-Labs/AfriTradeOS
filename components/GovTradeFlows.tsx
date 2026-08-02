@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
   Truck,
-  Globe,
   Ship,
   Plane,
   Train,
   MapPin,
-  Clock,
   AlertTriangle,
   TrendingUp,
   TrendingDown,
   ArrowRight,
-  Eye,
   Download,
-  Filter,
   ChevronRight,
-  BarChart3,
   Zap,
   Activity,
   Radio,
   Package,
   Anchor,
-  Gauge,
   Loader2
 } from 'lucide-react';
 import { governmentService } from '../services/governmentService';

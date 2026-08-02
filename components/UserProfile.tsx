@@ -3,12 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   User, Building2, Shield, CreditCard, FileText, CheckCircle, AlertTriangle,
-  Globe, Smartphone, Mail, Zap, LogOut, Users, Download, HelpCircle, Loader2,
-  Key, Save, Plus, Upload, Eye, EyeOff, X, Settings, Bell, Lock, Link2,
-  Brain, BarChart3, Clock, Trash2, RefreshCw, Copy, ExternalLink, Check,
-  Camera, MapPin, Phone, AtSign, Briefcase, Calendar, Activity, Filter,
-  ChevronRight, ChevronDown, AlertCircle, Info, Database, FileCheck,
-  CreditCard as CardIcon, Building, Award, TrendingUp, Wallet, Receipt,
+  Globe, Smartphone, Mail, Zap, Users, Download, Loader2,
+  Key, Save, Plus, Upload, Eye, EyeOff, X, Settings, Lock, Link2,
+  Brain, Clock, Trash2, RefreshCw, Copy, Check,
+  Camera, Phone, Briefcase, Activity, Filter, Database,
+  CreditCard as CardIcon, Award, TrendingUp, Receipt,
   Sparkles, Crown, Star
 } from 'lucide-react';
 import { UserPersona } from '../types';
@@ -19,20 +18,19 @@ import {
   getUserProfile, updateUserProfile, uploadProfilePhoto, verifyEmail,
   getOrganization, updateOrganization, uploadOrganizationLogo,
   getUserPreferences, updateUserPreferences,
-  getSecuritySettings, enableTwoFactor, disableTwoFactor, updatePassword,
-  getActiveSessions, revokeSession, revokeAllSessions, connectSSO,
+  getSecuritySettings, enableTwoFactor, disableTwoFactor, updatePassword, revokeSession, revokeAllSessions, connectSSO,
   getIntegrations, connectIntegration, disconnectIntegration,
   getAPIKeys, generateAPIKey, revokeAPIKey,
   getAIDataSettings, updateAIDataSettings, exportUserData, requestDataDeletion,
-  getBillingInfo, getUsageMetrics, getInvoices, downloadInvoice,
-  getAuditLogs, createAuditLog, exportAuditLogs,
-  getTeamMembers, inviteTeamMember, updateTeamMember, removeTeamMember,
-  getRoles, createRole, updateRole, deleteRole,
-  getTradeAssociations, connectTradeAssociation, syncCurrencyRates,
+  getBillingInfo, downloadInvoice,
+  getAuditLogs, exportAuditLogs,
+  getTeamMembers, inviteTeamMember, removeTeamMember,
+  getRoles,
+  getTradeAssociations, syncCurrencyRates,
   upgradePlan,
   UserProfile as UserProfileType, Organization, UserPreferences, SecuritySettings,
   Integration, APIKey, AIDataSettings, BillingInfo, AuditLog, TeamMember, Role,
-  TradeAssociation, UserSession
+  TradeAssociation
 } from '../services/settingsService';
 
 type Tab = 'identity' | 'organization' | 'preferences' | 'security' | 'integrations' | 'ai' | 'billing' | 'audit';
@@ -424,7 +422,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     }
   };
 
-  const handleConnectIntegration = async (integration: Partial<Integration>) => {
+  const _handleConnectIntegration = async (integration: Partial<Integration>) => {
     setIsSaving(true);
     try {
       const result = await connectIntegration(userId, integration);

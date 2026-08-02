@@ -10,7 +10,6 @@ import {
 import {
   ONBOARDING_STEP_COMPLETE,
   ONBOARDING_STEP_PROFILE,
-  ONBOARDING_STEP_ROLE,
   determineOnboardingStep,
 } from '../services/onboardingService';
 import { TurnstileCaptcha, TurnstileCaptchaRef } from './TurnstileCaptcha';
@@ -32,7 +31,6 @@ import {
   Inbox,
   Eye,
   EyeOff,
-  Building2,
   KeyRound,
   Shield
 } from 'lucide-react';
@@ -177,7 +175,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     setPasswordStrength(score);
   }, [signupPassword]);
 
-  const handleGoogleLogin = async () => {
+  const _handleGoogleLogin = async () => {
     setLoading(true);
     setErrorMsg(null);
 

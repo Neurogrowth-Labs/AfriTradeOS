@@ -8,29 +8,17 @@ import {
   Calculator,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Clock,
   Search,
   RefreshCw,
   Download,
-  ChevronDown,
-  ChevronUp,
   DollarSign,
-  Percent,
   Building2,
-  Ship,
-  Package,
-  MapPin,
-  Calendar,
-  Lock,
-  Unlock,
-  Eye,
   Copy,
   ExternalLink,
   Info,
   TrendingUp,
-  TrendingDown,
-  Activity
+  TrendingDown
 } from 'lucide-react';
 
 interface InsuranceQuote {

@@ -252,7 +252,7 @@ export const customsService = {
 
       const declarations = declarationsRes.data || [];
       const revenue = revenueRes.data || [];
-      const alerts = alertsRes.data || [];
+      const _alerts = alertsRes.data || [];
       const officers = officersRes.data || [];
 
       // Calculate KPIs

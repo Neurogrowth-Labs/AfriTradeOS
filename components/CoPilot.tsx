@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  MessageSquare, 
   X, 
   Send, 
-  Mic, 
-  Sparkles, 
-  Keyboard, 
-  ChevronRight,
+  Sparkles,
   Maximize2,
   Minimize2,
   Zap,

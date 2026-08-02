@@ -23,7 +23,7 @@ import {
   Zap,
   Calendar
 } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { mockDatabase } from '../services/mockDatabase';
 import { DbOrganization } from '../types';
@@ -235,7 +235,7 @@ export const Marketplace: React.FC = () => {
     setShowMeetingScheduler(true);
   };
 
-  const handleApplyFilters = () => {
+  const _handleApplyFilters = () => {
     setShowFilters(false);
     // Re-fetch with filters applied
     setLoading(true);

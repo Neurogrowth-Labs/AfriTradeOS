@@ -27,7 +27,6 @@ import {
   YAxis,
   Tooltip,
   Cell,
-  LineChart,
   Line,
   CartesianGrid,
   AreaChart,
@@ -54,7 +53,7 @@ const LATENCY_DATA = [
 ];
 
 // Uptime history (last 30 days)
-const UPTIME_HISTORY = Array.from({ length: 30 }, (_, i) => ({
+const _UPTIME_HISTORY = Array.from({ length: 30 }, (_, i) => ({
   day: i + 1,
   uptime: 99.5 + Math.random() * 0.5,
   incidents: Math.random() > 0.9 ? 1 : 0

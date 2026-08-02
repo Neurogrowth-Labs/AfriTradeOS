@@ -22,7 +22,7 @@ import {
   CheckCircle2,
   Info
 } from 'lucide-react';
-import { ApplicationFormData, FinanceApplication } from './FinanceApplicationTypes';
+import { ApplicationFormData } from './FinanceApplicationTypes';
 
 interface ApplicationBuilderProps {
   onSubmit: (data: ApplicationFormData) => void;

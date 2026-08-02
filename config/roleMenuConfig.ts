@@ -18,12 +18,10 @@ import {
   FileSignature,
   TrendingUp,
   Package,
-  ClipboardCheck,
   BarChart3,
   Shield,
   LucideIcon,
-  Zap,
-  Link2
+  Zap
 } from 'lucide-react';
 
 export interface MenuItem {

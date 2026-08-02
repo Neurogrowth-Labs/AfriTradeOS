@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Package, TrendingUp, TrendingDown, Clock, CheckCircle, AlertTriangle,
+  Package, TrendingUp, Clock, CheckCircle, AlertTriangle,
   Ship, Plane, Truck, FileText, Scale, DollarSign, BarChart3, Settings,
-  Search, Filter, Download, Upload, Eye, Edit, MapPin, Calendar,
-  Users, Award, Target, Activity, Bell, ChevronRight, ExternalLink,
-  Building2, Globe, Shield, Percent, FileCheck, AlertCircle, XCircle
+  Search, Filter, Download, Upload, Eye, Edit, MapPin, Award, Activity, Bell, ChevronRight, ExternalLink,
+  Building2, Shield, Percent, FileCheck, AlertCircle, XCircle
 } from 'lucide-react';
 import { UserPersona, AppView } from '../types';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -14,14 +13,11 @@ import {
   getSuppliers,
   getShipmentTracking,
   getDocuments,
-  getCustomsRequirements,
   getCostBreakdown,
   getNotifications,
   getSupplierPerformanceMetrics,
   getCarrierPerformanceMetrics,
   getCustomsClearanceMetrics,
-  searchHSCode,
-  getTradeAgreementRules,
   ImportOrder,
   SupplierProfile,
   ImportShipmentTracking,
@@ -36,7 +32,7 @@ import {
   ComplianceStatus,
   ImporterKPIs
 } from '../services/importerService';
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 type ImporterTab = 'dashboard' | 'orders' | 'shipments' | 'documents' | 'compliance' | 'finance' | 'analytics' | 'settings';
 
@@ -48,7 +44,7 @@ interface ImporterPanelProps {
 const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) => {
   const [activeTab, setActiveTab] = useState<ImporterTab>('dashboard');
   const [loading, setLoading] = useState(true);
-  const { formatCurrency, currency } = useCurrency();
+  const { formatCurrency, currency: _currency } = useCurrency();
 
   // Data states
   const [kpis, setKpis] = useState<ImporterKPIs | null>(null);

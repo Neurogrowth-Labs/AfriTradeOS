@@ -125,7 +125,7 @@ const AFRICAN_HUBS: Hub[] = [
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ userRole, navigateTo }) => {
-  const { currencySymbol, formatCurrency } = useCurrency();
+  const { currencySymbol: _currencySymbol, formatCurrency } = useCurrency();
   const [insight, setInsight] = useState("Loading AI strategic brief...");
   const [selectedLane, setSelectedLane] = useState<TradeLane | null>(null);
   const [myTrades, setMyTrades] = useState<DbTrade[]>([]);

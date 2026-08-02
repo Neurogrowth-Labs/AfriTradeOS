@@ -14,12 +14,11 @@ import {
   Sparkles,
   Search,
   Filter,
-  MoreVertical,
   X,
   ZoomIn,
   ChevronDown
 } from 'lucide-react';
-import { ApplicationDocument, ExtractedDocumentData, DocumentExtractionResult } from './FinanceApplicationTypes';
+import { ApplicationDocument, DocumentExtractionResult } from './FinanceApplicationTypes';
 
 interface DocumentExtractionProps {
   applicationId: string;

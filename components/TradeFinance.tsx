@@ -10,9 +10,6 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip,
-  LineChart,
-  Line,
-  Legend,
   Area,
   AreaChart
 } from 'recharts';
@@ -30,9 +27,7 @@ import {
   DollarSign,
   Calculator,
   Shield,
-  AlertTriangle,
   TrendingDown,
-  Percent,
   Info,
   RefreshCw,
   Zap

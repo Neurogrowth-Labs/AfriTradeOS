@@ -12,7 +12,6 @@ import {
   Globe,
   Building2,
   DollarSign,
-  FileText,
   RefreshCw,
   ChevronDown,
   ChevronUp,
@@ -20,7 +19,7 @@ import {
   Target,
   Zap
 } from 'lucide-react';
-import { CreditAssessment, ScoreComponent, FinancialRatio, RiskFactor } from './FinanceApplicationTypes';
+import { CreditAssessment, FinancialRatio, RiskFactor } from './FinanceApplicationTypes';
 
 interface CreditScoringProps {
   applicationId: string;

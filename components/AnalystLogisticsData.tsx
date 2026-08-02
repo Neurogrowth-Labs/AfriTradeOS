@@ -18,10 +18,8 @@ import {
   Star,
   Phone,
   Mail,
-  ExternalLink,
   ThermometerSnowflake,
-  Shield,
-  Clock
+  Shield
 } from 'lucide-react';
 import {
   BarChart,
@@ -154,7 +152,7 @@ const getModeIcon = (mode: string) => {
 };
 
 export const AnalystLogisticsData: React.FC = () => {
-  const { currencySymbol, formatCurrency } = useCurrency();
+  const { currencySymbol, formatCurrency: _formatCurrency } = useCurrency();
   const [activeTab, setActiveTab] = useState<'ports' | 'routes' | 'freight' | 'corridors' | 'warehouses'>('ports');
   const [selectedPort, setSelectedPort] = useState<PortData | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseData | null>(null);
@@ -474,7 +472,7 @@ export const AnalystLogisticsData: React.FC = () => {
                 <path d="M 280 60 Q 200 100 150 250 Q 130 350 160 450 Q 200 550 300 620 Q 350 680 420 750 Q 480 780 520 720 Q 560 650 580 550 Q 620 450 650 350 Q 660 250 600 150 Q 550 80 450 60 Q 370 50 280 60 Z"
                   fill="#1e293b" stroke="#334155" strokeWidth="1" />
                 {filteredWarehouses.map(w => {
-                  const config = WAREHOUSE_TYPE_CONFIG[w.type];
+                  const _config = WAREHOUSE_TYPE_CONFIG[w.type];
                   const color = w.type === 'bonded' ? '#3b82f6' : w.type === 'cold_storage' ? '#06b6d4' : w.type === 'hazmat' ? '#ef4444' : '#6b7280';
                   return (
                     <g key={w.id} onClick={() => setSelectedWarehouse(selectedWarehouse?.id === w.id ? null : w)} className="cursor-pointer">

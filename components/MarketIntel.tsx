@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   TrendingUp, 
-  Map as MapIcon, 
   Users, 
   BrainCircuit, 
   ArrowRight, 
@@ -11,7 +10,6 @@ import {
   Globe,
   AlertTriangle,
   Target,
-  BarChart3,
   Bell,
   BellRing,
   Plus,
@@ -19,8 +17,7 @@ import {
   TrendingDown,
   Zap,
   PieChart as PieIcon,
-  Activity,
-  CheckCircle
+  Activity
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -33,16 +30,9 @@ import {
   BarChart, 
   Bar,
   Legend,
-  LineChart,
-  Line,
   PieChart,
   Pie,
-  Cell,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis
+  Cell
 } from 'recharts';
 import { getMarketIntelligence } from '../services/geminiService';
 import { mockDatabase } from '../services/mockDatabase';

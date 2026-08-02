@@ -20,7 +20,6 @@ import {
   Globe,
   ToggleLeft,
   ToggleRight,
-  Upload,
   UserCog,
   Layers,
   CreditCard,
@@ -368,7 +367,7 @@ export const AdminDashboard: React.FC = () => {
     // API: PATCH /api/roles/{roleId}/permissions
   };
 
-  const handleReorderRoles = async (roleIds: string[]) => {
+  const _handleReorderRoles = async (roleIds: string[]) => {
     setRolePermissions(prev => {
       const reordered = roleIds.map((id, index) => {
         const role = prev.find(r => r.id === id);

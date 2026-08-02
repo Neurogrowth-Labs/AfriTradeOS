@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   FileText,
   Upload,
@@ -6,25 +6,14 @@ import {
   GitBranch,
   Plus,
   Search,
-  Filter,
-  ChevronDown,
   Clock,
   CheckCircle2,
-  AlertCircle,
   XCircle,
   Eye,
   Edit2,
-  Trash2,
-  RefreshCw,
-  Download,
   MoreVertical,
-  Building2,
   DollarSign,
-  Calendar,
-  ArrowUpRight,
-  ArrowDownRight,
-  TrendingUp,
-  Sparkles
+  TrendingUp
 } from 'lucide-react';
 import { ApplicationBuilder } from './finance/ApplicationBuilder';
 import { DocumentExtraction } from './finance/DocumentExtraction';
@@ -35,7 +24,6 @@ import {
   ApplicationFormData,
   ApplicationDocument,
   CreditAssessment,
-  WorkflowStage,
   WorkflowTemplate,
   WorkflowAction,
   ApplicationTab,

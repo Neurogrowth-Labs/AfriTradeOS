@@ -154,7 +154,7 @@ const DEMAND_FORECAST = [
 ];
 
 export const AnalyticsHub: React.FC = () => {
-  const { currencySymbol, formatCurrency } = useCurrency();
+  const { currencySymbol: _currencySymbol, formatCurrency } = useCurrency();
   const [timeRange, setTimeRange] = useState<TimeRange>('quarter');
   const [preset, setPreset] = useState<DashboardPreset>('analyst');
   const [selectedCountry, setSelectedCountry] = useState('All Africa');

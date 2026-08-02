@@ -4,25 +4,14 @@ import {
   Navigation, 
   Truck, 
   Loader2, 
-  ExternalLink, 
-  Package, 
   Clock, 
   AlertTriangle, 
   CheckCircle, 
-  Ship, 
-  Anchor, 
-  ArrowRight, 
-  Filter,
-  DollarSign,
-  Star,
+  ArrowRight,
   Zap,
-  MoreHorizontal,
-  Plus,
   Map as MapIcon,
   ShieldCheck,
   Calendar,
-  ChevronDown,
-  ChevronRight,
   Circle,
   X,
   ZoomIn,
@@ -58,7 +47,7 @@ interface RouteRisk {
 }
 
 // Route map node for SVG visualization
-interface RouteNode {
+interface _RouteNode {
   id: string;
   name: string;
   x: number;

@@ -20,11 +20,8 @@ import {
   UserPlus,
   Send,
   Paperclip,
-  FolderOpen,
-  Calendar,
   CheckSquare,
   Plus,
-  MoreVertical,
   Edit3,
   Trash2
 } from 'lucide-react';

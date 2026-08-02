@@ -3,31 +3,23 @@ import {
   FileSignature,
   Globe,
   Search,
-  ChevronRight,
   CheckCircle,
   XCircle,
-  Clock,
   MapPin,
   Shield,
   Calculator,
   ArrowRight,
   Download,
-  Eye,
   BarChart3,
   TrendingUp,
   TrendingDown,
   Zap,
   Lock,
-  FileText,
-  Layers,
   Scale,
   DollarSign,
-  Percent,
-  ArrowUpRight,
-  Package,
   Loader2
 } from 'lucide-react';
-import { governmentService, GovTradeAgreement, GovTariffSchedule } from '../services/governmentService';
+import { governmentService } from '../services/governmentService';
 import {
   BarChart,
   Bar,
@@ -35,8 +27,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  Cell
+  ResponsiveContainer
 } from 'recharts';
 
 const AGREEMENT_COLORS: Record<string, string> = {

@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  LayoutDashboard,
   TrendingUp,
-  TrendingDown,
-  DollarSign,
   Shield,
   AlertTriangle,
   Clock,
@@ -14,32 +11,23 @@ import {
   Filter,
   Search,
   Bell,
-  MapPin,
   Ship,
   FileText,
-  Users,
-  Building,
   Globe,
   Zap,
   ChevronRight,
-  MoreHorizontal,
   ArrowUpRight,
   ArrowDownRight,
   Landmark,
   CreditCard,
   Percent,
-  Calendar,
   AlertOctagon,
   Activity,
-  Eye,
   Flag,
   Anchor,
-  Package,
   Banknote
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -48,12 +36,9 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
   Line,
   Area,
-  AreaChart,
-  Legend,
-  ComposedChart
+  AreaChart
 } from 'recharts';
 import { supabase } from '../services/supabase';
 

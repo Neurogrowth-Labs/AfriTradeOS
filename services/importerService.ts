@@ -242,7 +242,7 @@ export interface TradeAgreementRule {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_IMPORT_ORDERS: ImportOrder[] = [
+const _MOCK_IMPORT_ORDERS: ImportOrder[] = [
   {
     id: 'IMP-001',
     orderNo: 'PO-2026-0234',
@@ -376,7 +376,7 @@ const MOCK_IMPORT_ORDERS: ImportOrder[] = [
   }
 ];
 
-const MOCK_SUPPLIERS: SupplierProfile[] = [
+const _MOCK_SUPPLIERS: SupplierProfile[] = [
   {
     id: 'SUP-CN-001',
     name: 'Shanghai Electronics Co.',
@@ -454,7 +454,7 @@ const MOCK_SUPPLIERS: SupplierProfile[] = [
   }
 ];
 
-const MOCK_NOTIFICATIONS: WorkflowNotification[] = [
+const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
   {
     id: 'NOT-001',
     orderId: 'IMP-003',

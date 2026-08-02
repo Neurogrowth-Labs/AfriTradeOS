@@ -6,24 +6,20 @@ import {
   Circle,
   AlertCircle,
   Play,
-  Pause,
   RotateCcw,
   User,
   Calendar,
-  ChevronRight,
   ArrowRight,
   FileText,
   Shield,
   DollarSign,
   Send,
   MessageSquare,
-  Bell,
   Settings,
   Plus,
-  X,
-  Edit2
+  X
 } from 'lucide-react';
-import { WorkflowStage, WorkflowAction, WorkflowEvent, WorkflowTemplate } from './FinanceApplicationTypes';
+import { WorkflowStage, WorkflowAction, WorkflowTemplate } from './FinanceApplicationTypes';
 
 interface WorkflowAutomationProps {
   applicationId: string;
