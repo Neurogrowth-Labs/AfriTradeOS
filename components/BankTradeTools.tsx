@@ -18,7 +18,7 @@ import {
   ExternalLink,
   Info,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
 } from 'lucide-react';
 
 interface InsuranceQuote {
@@ -75,8 +75,12 @@ const MOCK_INSURANCE_QUOTES: InsuranceQuote[] = [
     currency: 'USD',
     deductible: 25000,
     validUntil: '2024-02-15',
-    terms: ['90-day payment default coverage', 'Political risk included', 'Currency inconvertibility'],
-    rating: 4.8
+    terms: [
+      '90-day payment default coverage',
+      'Political risk included',
+      'Currency inconvertibility',
+    ],
+    rating: 4.8,
   },
   {
     id: 'INS-002',
@@ -88,7 +92,7 @@ const MOCK_INSURANCE_QUOTES: InsuranceQuote[] = [
     deductible: 15000,
     validUntil: '2024-02-15',
     terms: ['All-risk marine cargo', 'Warehouse to warehouse', 'General average'],
-    rating: 4.5
+    rating: 4.5,
   },
   {
     id: 'INS-003',
@@ -100,8 +104,8 @@ const MOCK_INSURANCE_QUOTES: InsuranceQuote[] = [
     deductible: 50000,
     validUntil: '2024-02-15',
     terms: ['Expropriation', 'War and civil disturbance', 'Breach of contract'],
-    rating: 4.9
-  }
+    rating: 4.9,
+  },
 ];
 
 const MOCK_BLOCKCHAIN_RECORDS: BlockchainRecord[] = [
@@ -114,7 +118,7 @@ const MOCK_BLOCKCHAIN_RECORDS: BlockchainRecord[] = [
     network: 'Ethereum',
     status: 'verified',
     issuer: 'Maersk Line',
-    verifications: 12
+    verifications: 12,
   },
   {
     id: 'BLK-002',
@@ -125,7 +129,7 @@ const MOCK_BLOCKCHAIN_RECORDS: BlockchainRecord[] = [
     network: 'Ethereum',
     status: 'verified',
     issuer: 'Kenya Chamber of Commerce',
-    verifications: 8
+    verifications: 8,
   },
   {
     id: 'BLK-003',
@@ -136,13 +140,13 @@ const MOCK_BLOCKCHAIN_RECORDS: BlockchainRecord[] = [
     network: 'Ethereum',
     status: 'pending',
     issuer: 'ATI Insurance',
-    verifications: 3
-  }
+    verifications: 3,
+  },
 ];
 
 export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
   const [activeTool, setActiveTool] = useState<'insurance' | 'blockchain' | 'afcfta'>('insurance');
-  
+
   // Insurance state
   const [insuranceForm, setInsuranceForm] = useState({
     shipmentValue: 250000,
@@ -151,7 +155,7 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
     destination: 'Germany',
     goodsType: 'Agricultural Products',
     coverageType: 'cargo' as InsuranceQuote['coverageType'],
-    shipmentDate: '2024-02-01'
+    shipmentDate: '2024-02-01',
   });
   const [insuranceQuotes, setInsuranceQuotes] = useState<InsuranceQuote[]>([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
@@ -166,7 +170,7 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
     hsCode: '',
     originCountry: 'Kenya',
     destinationCountry: 'Nigeria',
-    productDescription: ''
+    productDescription: '',
   });
   const [afcftaResult, setAfcftaResult] = useState<AfCFTAResult | null>(null);
   const [checkingAfcfta, setCheckingAfcfta] = useState(false);
@@ -182,11 +186,11 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
     if (!documentHash) return;
     setVerifying(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const found = MOCK_BLOCKCHAIN_RECORDS.find(r => 
+
+    const found = MOCK_BLOCKCHAIN_RECORDS.find(r =>
       r.documentHash.toLowerCase().includes(documentHash.toLowerCase().slice(0, 10))
     );
-    
+
     if (found) {
       setVerificationResult(found);
     } else {
@@ -199,7 +203,7 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
         network: 'Ethereum',
         status: 'invalid',
         issuer: 'Unknown',
-        verifications: 0
+        verifications: 0,
       });
     }
     setVerifying(false);
@@ -209,7 +213,7 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
     if (!afcftaForm.hsCode) return;
     setCheckingAfcfta(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     setAfcftaResult({
       hsCode: afcftaForm.hsCode,
       productDescription: afcftaForm.productDescription || 'Coffee, not roasted, not decaffeinated',
@@ -224,21 +228,68 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
         'AfCFTA Certificate of Origin',
         'Commercial Invoice',
         'Packing List',
-        'Bill of Lading'
+        'Bill of Lading',
       ],
-      notes: 'Product qualifies for preferential treatment under AfCFTA. Ensure Certificate of Origin is issued by authorized body.'
+      notes:
+        'Product qualifies for preferential treatment under AfCFTA. Ensure Certificate of Origin is issued by authorized body.',
     });
     setCheckingAfcfta(false);
   };
 
   const AFRICAN_COUNTRIES = [
-    'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi', 'Cameroon', 'Cape Verde',
-    'Central African Republic', 'Chad', 'Comoros', 'Congo', 'Cote d\'Ivoire', 'Djibouti', 'Egypt',
-    'Equatorial Guinea', 'Eritrea', 'Eswatini', 'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea',
-    'Guinea-Bissau', 'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
-    'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger', 'Nigeria', 'Rwanda',
-    'Sao Tome and Principe', 'Senegal', 'Seychelles', 'Sierra Leone', 'Somalia', 'South Africa',
-    'South Sudan', 'Sudan', 'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe'
+    'Algeria',
+    'Angola',
+    'Benin',
+    'Botswana',
+    'Burkina Faso',
+    'Burundi',
+    'Cameroon',
+    'Cape Verde',
+    'Central African Republic',
+    'Chad',
+    'Comoros',
+    'Congo',
+    "Cote d'Ivoire",
+    'Djibouti',
+    'Egypt',
+    'Equatorial Guinea',
+    'Eritrea',
+    'Eswatini',
+    'Ethiopia',
+    'Gabon',
+    'Gambia',
+    'Ghana',
+    'Guinea',
+    'Guinea-Bissau',
+    'Kenya',
+    'Lesotho',
+    'Liberia',
+    'Libya',
+    'Madagascar',
+    'Malawi',
+    'Mali',
+    'Mauritania',
+    'Mauritius',
+    'Morocco',
+    'Mozambique',
+    'Namibia',
+    'Niger',
+    'Nigeria',
+    'Rwanda',
+    'Sao Tome and Principe',
+    'Senegal',
+    'Seychelles',
+    'Sierra Leone',
+    'Somalia',
+    'South Africa',
+    'South Sudan',
+    'Sudan',
+    'Tanzania',
+    'Togo',
+    'Tunisia',
+    'Uganda',
+    'Zambia',
+    'Zimbabwe',
   ];
 
   const renderInsuranceTool = () => (
@@ -258,7 +309,12 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
               <input
                 type="number"
                 value={insuranceForm.shipmentValue}
-                onChange={e => setInsuranceForm(prev => ({ ...prev, shipmentValue: parseFloat(e.target.value) || 0 }))}
+                onChange={e =>
+                  setInsuranceForm(prev => ({
+                    ...prev,
+                    shipmentValue: parseFloat(e.target.value) || 0,
+                  }))
+                }
                 className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -281,7 +337,12 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
             <label className="block text-sm font-medium text-slate-300 mb-1">Coverage Type</label>
             <select
               value={insuranceForm.coverageType}
-              onChange={e => setInsuranceForm(prev => ({ ...prev, coverageType: e.target.value as InsuranceQuote['coverageType'] }))}
+              onChange={e =>
+                setInsuranceForm(prev => ({
+                  ...prev,
+                  coverageType: e.target.value as InsuranceQuote['coverageType'],
+                }))
+              }
               className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="cargo">Cargo Insurance</option>
@@ -298,7 +359,11 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
               onChange={e => setInsuranceForm(prev => ({ ...prev, origin: e.target.value }))}
               className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {AFRICAN_COUNTRIES.map(c => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -367,11 +432,15 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                   </div>
                   <div>
                     <h4 className="text-white font-semibold">{quote.provider}</h4>
-                    <p className="text-sm text-slate-400 capitalize">{quote.coverageType.replace('_', ' ')} Insurance</p>
+                    <p className="text-sm text-slate-400 capitalize">
+                      {quote.coverageType.replace('_', ' ')} Insurance
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-white">{quote.currency} {quote.premium.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-white">
+                    {quote.currency} {quote.premium.toLocaleString()}
+                  </p>
                   <p className="text-sm text-slate-400">Premium</p>
                 </div>
               </div>
@@ -379,11 +448,15 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
               <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-700">
                 <div>
                   <p className="text-xs text-slate-500">Coverage</p>
-                  <p className="text-white font-medium">{quote.currency} {quote.coverage.toLocaleString()}</p>
+                  <p className="text-white font-medium">
+                    {quote.currency} {quote.coverage.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Deductible</p>
-                  <p className="text-white font-medium">{quote.currency} {quote.deductible.toLocaleString()}</p>
+                  <p className="text-white font-medium">
+                    {quote.currency} {quote.deductible.toLocaleString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Valid Until</p>
@@ -399,7 +472,10 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                 <p className="text-xs text-slate-500 mb-2">Coverage Terms</p>
                 <div className="flex flex-wrap gap-2">
                   {quote.terms.map((term, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded">
+                    <span
+                      key={idx}
+                      className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded"
+                    >
                       {term}
                     </span>
                   ))}
@@ -469,17 +545,25 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
 
       {/* Verification Result */}
       {verificationResult && (
-        <div className={`bg-slate-900 rounded-xl border p-6 ${
-          verificationResult.status === 'verified' ? 'border-green-500/50' :
-          verificationResult.status === 'pending' ? 'border-amber-500/50' :
-          'border-red-500/50'
-        }`}>
+        <div
+          className={`bg-slate-900 rounded-xl border p-6 ${
+            verificationResult.status === 'verified'
+              ? 'border-green-500/50'
+              : verificationResult.status === 'pending'
+                ? 'border-amber-500/50'
+                : 'border-red-500/50'
+          }`}
+        >
           <div className="flex items-start gap-4">
-            <div className={`p-3 rounded-lg ${
-              verificationResult.status === 'verified' ? 'bg-green-500/20' :
-              verificationResult.status === 'pending' ? 'bg-amber-500/20' :
-              'bg-red-500/20'
-            }`}>
+            <div
+              className={`p-3 rounded-lg ${
+                verificationResult.status === 'verified'
+                  ? 'bg-green-500/20'
+                  : verificationResult.status === 'pending'
+                    ? 'bg-amber-500/20'
+                    : 'bg-red-500/20'
+              }`}
+            >
               {verificationResult.status === 'verified' ? (
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               ) : verificationResult.status === 'pending' ? (
@@ -490,17 +574,23 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h4 className={`text-xl font-semibold ${
-                  verificationResult.status === 'verified' ? 'text-green-400' :
-                  verificationResult.status === 'pending' ? 'text-amber-400' :
-                  'text-red-400'
-                }`}>
-                  {verificationResult.status === 'verified' ? 'Document Verified' :
-                   verificationResult.status === 'pending' ? 'Verification Pending' :
-                   'Document Not Found'}
+                <h4
+                  className={`text-xl font-semibold ${
+                    verificationResult.status === 'verified'
+                      ? 'text-green-400'
+                      : verificationResult.status === 'pending'
+                        ? 'text-amber-400'
+                        : 'text-red-400'
+                  }`}
+                >
+                  {verificationResult.status === 'verified'
+                    ? 'Document Verified'
+                    : verificationResult.status === 'pending'
+                      ? 'Verification Pending'
+                      : 'Document Not Found'}
                 </h4>
               </div>
-              
+
               {verificationResult.status !== 'invalid' && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div>
@@ -527,7 +617,9 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-slate-500">Document Hash</p>
-                      <p className="text-white font-mono text-sm">{verificationResult.documentHash}</p>
+                      <p className="text-white font-mono text-sm">
+                        {verificationResult.documentHash}
+                      </p>
                     </div>
                     <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors">
                       <Copy className="w-4 h-4" />
@@ -536,8 +628,13 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                   <div className="flex items-center gap-4 mt-2 text-sm">
                     <span className="text-slate-400">Block #{verificationResult.blockNumber}</span>
                     <span className="text-slate-400">•</span>
-                    <span className="text-slate-400">{new Date(verificationResult.timestamp).toLocaleString()}</span>
-                    <a href="#" className="flex items-center gap-1 text-blue-400 hover:text-blue-300">
+                    <span className="text-slate-400">
+                      {new Date(verificationResult.timestamp).toLocaleString()}
+                    </span>
+                    <a
+                      href="#"
+                      className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
+                    >
                       View on Explorer <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -553,7 +650,10 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
         <h3 className="text-lg font-semibold text-white mb-4">Recent Verifications</h3>
         <div className="space-y-3">
           {MOCK_BLOCKCHAIN_RECORDS.map(record => (
-            <div key={record.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+            <div
+              key={record.id}
+              className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+            >
               <div className="flex items-center gap-3">
                 {record.status === 'verified' ? (
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -562,12 +662,16 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                 )}
                 <div>
                   <p className="text-white">{record.documentType}</p>
-                  <p className="text-xs text-slate-400 font-mono">{record.documentHash.slice(0, 20)}...</p>
+                  <p className="text-xs text-slate-400 font-mono">
+                    {record.documentHash.slice(0, 20)}...
+                  </p>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-sm text-slate-400">{record.issuer}</p>
-                <p className="text-xs text-slate-500">{new Date(record.timestamp).toLocaleDateString()}</p>
+                <p className="text-xs text-slate-500">
+                  {new Date(record.timestamp).toLocaleDateString()}
+                </p>
               </div>
             </div>
           ))}
@@ -586,7 +690,8 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
         </h3>
 
         <p className="text-slate-400 mb-4">
-          Check if your products qualify for preferential tariffs under the African Continental Free Trade Area agreement.
+          Check if your products qualify for preferential tariffs under the African Continental Free
+          Trade Area agreement.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -602,35 +707,53 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Product Description</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Product Description
+            </label>
             <input
               type="text"
               value={afcftaForm.productDescription}
-              onChange={e => setAfcftaForm(prev => ({ ...prev, productDescription: e.target.value }))}
+              onChange={e =>
+                setAfcftaForm(prev => ({ ...prev, productDescription: e.target.value }))
+              }
               placeholder="e.g., Coffee beans, not roasted"
               className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Origin Country *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Origin Country *
+            </label>
             <select
               value={afcftaForm.originCountry}
               onChange={e => setAfcftaForm(prev => ({ ...prev, originCountry: e.target.value }))}
               className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {AFRICAN_COUNTRIES.map(c => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Destination Country *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Destination Country *
+            </label>
             <select
               value={afcftaForm.destinationCountry}
-              onChange={e => setAfcftaForm(prev => ({ ...prev, destinationCountry: e.target.value }))}
+              onChange={e =>
+                setAfcftaForm(prev => ({ ...prev, destinationCountry: e.target.value }))
+              }
               className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {AFRICAN_COUNTRIES.map(c => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -656,11 +779,15 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
 
       {/* AfCFTA Result */}
       {afcftaResult && (
-        <div className={`bg-slate-900 rounded-xl border p-6 ${
-          afcftaResult.isEligible ? 'border-green-500/50' : 'border-red-500/50'
-        }`}>
+        <div
+          className={`bg-slate-900 rounded-xl border p-6 ${
+            afcftaResult.isEligible ? 'border-green-500/50' : 'border-red-500/50'
+          }`}
+        >
           <div className="flex items-start gap-4">
-            <div className={`p-3 rounded-lg ${afcftaResult.isEligible ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+            <div
+              className={`p-3 rounded-lg ${afcftaResult.isEligible ? 'bg-green-500/20' : 'bg-red-500/20'}`}
+            >
               {afcftaResult.isEligible ? (
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               ) : (
@@ -668,8 +795,12 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
               )}
             </div>
             <div className="flex-1">
-              <h4 className={`text-xl font-semibold ${afcftaResult.isEligible ? 'text-green-400' : 'text-red-400'}`}>
-                {afcftaResult.isEligible ? 'Eligible for AfCFTA Preferential Tariff' : 'Not Eligible'}
+              <h4
+                className={`text-xl font-semibold ${afcftaResult.isEligible ? 'text-green-400' : 'text-red-400'}`}
+              >
+                {afcftaResult.isEligible
+                  ? 'Eligible for AfCFTA Preferential Tariff'
+                  : 'Not Eligible'}
               </h4>
               <p className="text-slate-400 mt-1">{afcftaResult.productDescription}</p>
 
@@ -680,7 +811,9 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Trade Route</p>
-                  <p className="text-white">{afcftaResult.originCountry} → {afcftaResult.destinationCountry}</p>
+                  <p className="text-white">
+                    {afcftaResult.originCountry} → {afcftaResult.destinationCountry}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">AfCFTA Tariff</p>
@@ -698,7 +831,9 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                     <TrendingDown className="w-6 h-6 text-green-400" />
                     <div>
                       <p className="text-green-400 font-semibold">Potential Savings</p>
-                      <p className="text-2xl font-bold text-white">USD {afcftaResult.savings.toLocaleString()}</p>
+                      <p className="text-2xl font-bold text-white">
+                        USD {afcftaResult.savings.toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -713,7 +848,10 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                 <p className="text-sm font-medium text-slate-300 mb-2">Required Documents</p>
                 <div className="flex flex-wrap gap-2">
                   {afcftaResult.requiredDocuments.map((doc, idx) => (
-                    <span key={idx} className="flex items-center gap-1 px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded">
+                    <span
+                      key={idx}
+                      className="flex items-center gap-1 px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded"
+                    >
                       <FileText className="w-3 h-3" />
                       {doc}
                     </span>
@@ -761,7 +899,7 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
   const tools = [
     { id: 'insurance', label: 'Insurance Quoting', icon: Shield, color: 'blue' },
     { id: 'blockchain', label: 'Blockchain Verification', icon: Link2, color: 'purple' },
-    { id: 'afcfta', label: 'AfCFTA Checker', icon: Globe, color: 'green' }
+    { id: 'afcfta', label: 'AfCFTA Checker', icon: Globe, color: 'green' },
   ];
 
   return (
@@ -792,9 +930,14 @@ export const BankTradeTools: React.FC<BankTradeToolsProps> = () => {
                   : 'bg-slate-800 text-slate-400 hover:text-white'
               }`}
               style={{
-                backgroundColor: activeTool === tool.id ? 
-                  (tool.color === 'blue' ? '#2563eb' : tool.color === 'purple' ? '#9333ea' : '#16a34a') : 
-                  undefined
+                backgroundColor:
+                  activeTool === tool.id
+                    ? tool.color === 'blue'
+                      ? '#2563eb'
+                      : tool.color === 'purple'
+                        ? '#9333ea'
+                        : '#16a34a'
+                    : undefined,
               }}
             >
               <tool.icon className="w-4 h-4" />

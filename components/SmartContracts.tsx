@@ -31,11 +31,22 @@ import {
   History,
   Mail,
   Share2,
-  FileDown
+  FileDown,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { enterpriseExporterService, TradeContract } from '../services/enterpriseExporterService';
-import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, CartesianGrid } from 'recharts';
+import {
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  CartesianGrid,
+} from 'recharts';
 
 // Types
 interface Contract {
@@ -43,7 +54,15 @@ interface Contract {
   contract_number: string;
   title: string;
   description: string;
-  status: 'draft' | 'pending_approval' | 'active' | 'in_progress' | 'completed' | 'disputed' | 'cancelled' | 'expired';
+  status:
+    | 'draft'
+    | 'pending_approval'
+    | 'active'
+    | 'in_progress'
+    | 'completed'
+    | 'disputed'
+    | 'cancelled'
+    | 'expired';
   category: string;
   commodity: string;
   quantity: number;
@@ -121,19 +140,27 @@ export const SmartContracts: React.FC = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [selectedMilestones, setSelectedMilestones] = useState<Milestone[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'milestones' | 'documents' | 'activity' | 'versions' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'milestones' | 'documents' | 'activity' | 'versions' | 'analytics'
+  >('overview');
   const [createStep, setCreateStep] = useState(1);
   const [showSignModal, setShowSignModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [signatureData, setSignatureData] = useState({ name: '', title: '', agreed: false });
-  const [shareData, setShareData] = useState({ email: '', method: 'email' as 'email' | 'platform' });
+  const [shareData, setShareData] = useState({
+    email: '',
+    method: 'email' as 'email' | 'platform',
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingContractId, setEditingContractId] = useState<string | null>(null);
   const [showComplianceModal, setShowComplianceModal] = useState(false);
   const [showRiskyClausesModal, setShowRiskyClausesModal] = useState(false);
   const [complianceRunning, setComplianceRunning] = useState(false);
-  const [complianceResults, setComplianceResults] = useState<{status: string; issues: {type: string; severity: string; description: string}[]} | null>(null);
+  const [complianceResults, setComplianceResults] = useState<{
+    status: string;
+    issues: { type: string; severity: string; description: string }[];
+  } | null>(null);
 
   const defaultFormData: ContractFormData = {
     title: '',
@@ -154,16 +181,44 @@ export const SmartContracts: React.FC = () => {
     buyer_org_id: '',
     seller_org_id: '',
     buyer_org_name: '',
-    seller_org_name: ''
+    seller_org_name: '',
   };
   const [formData, setFormData] = useState<ContractFormData>(defaultFormData);
 
   // B8: Version history mock data
   const mockVersions = [
-    { id: 'v4', version: '4.0', date: '2024-03-15', author: 'System', changes: 'Payment milestone #3 completed', type: 'auto' as const },
-    { id: 'v3', version: '3.0', date: '2024-02-20', author: 'Jane Doe', changes: 'Updated delivery deadline from April 15 to April 30', type: 'amendment' as const },
-    { id: 'v2', version: '2.0', date: '2024-01-15', author: 'John Smith', changes: 'Added late delivery penalty clause (2%/day)', type: 'amendment' as const },
-    { id: 'v1', version: '1.0', date: '2024-01-03', author: 'System', changes: 'Contract created and signed by both parties', type: 'creation' as const },
+    {
+      id: 'v4',
+      version: '4.0',
+      date: '2024-03-15',
+      author: 'System',
+      changes: 'Payment milestone #3 completed',
+      type: 'auto' as const,
+    },
+    {
+      id: 'v3',
+      version: '3.0',
+      date: '2024-02-20',
+      author: 'Jane Doe',
+      changes: 'Updated delivery deadline from April 15 to April 30',
+      type: 'amendment' as const,
+    },
+    {
+      id: 'v2',
+      version: '2.0',
+      date: '2024-01-15',
+      author: 'John Smith',
+      changes: 'Added late delivery penalty clause (2%/day)',
+      type: 'amendment' as const,
+    },
+    {
+      id: 'v1',
+      version: '1.0',
+      date: '2024-01-03',
+      author: 'System',
+      changes: 'Contract created and signed by both parties',
+      type: 'creation' as const,
+    },
   ];
 
   // B9: Performance analytics data
@@ -201,7 +256,10 @@ export const SmartContracts: React.FC = () => {
           contract_number: c.contract_number,
           title: c.title,
           description: '',
-          status: c.status === 'pending_signature' ? 'pending_approval' : c.status as Contract['status'],
+          status:
+            c.status === 'pending_signature'
+              ? 'pending_approval'
+              : (c.status as Contract['status']),
           category: c.contract_type || 'General',
           commodity: '',
           quantity: 0,
@@ -226,11 +284,13 @@ export const SmartContracts: React.FC = () => {
         // Fallback to original contracts table
         let query = supabase
           .from('contracts')
-          .select(`
+          .select(
+            `
             *,
             buyer_org:buyer_org_id(name),
             seller_org:seller_org_id(name)
-          `)
+          `
+          )
           .order('created_at', { ascending: false });
 
         if (statusFilter !== 'all') {
@@ -241,11 +301,13 @@ export const SmartContracts: React.FC = () => {
 
         if (error) throw error;
 
-        setContracts((data || []).map((c: any) => ({
-          ...c,
-          buyer_org_name: c.buyer_org?.name || c.metadata?.buyer_org_name || '',
-          seller_org_name: c.seller_org?.name || c.metadata?.seller_org_name || ''
-        })));
+        setContracts(
+          (data || []).map((c: any) => ({
+            ...c,
+            buyer_org_name: c.buyer_org?.name || c.metadata?.buyer_org_name || '',
+            seller_org_name: c.seller_org?.name || c.metadata?.seller_org_name || '',
+          }))
+        );
       }
     } catch (e) {
       console.error('Failed to fetch contracts:', e);
@@ -268,11 +330,62 @@ export const SmartContracts: React.FC = () => {
         setTemplates(data);
       } else {
         setTemplates([
-          { id: '1', name: 'Standard Export Agreement', description: 'Basic export contract', category: 'export', terms_structure: [{ name: 'Advance', percentage: 30 }, { name: 'On Shipment', percentage: 50 }, { name: 'On Delivery', percentage: 20 }], usage_count: 156 },
-          { id: '2', name: 'Agricultural Commodities Contract', description: 'For agricultural exports', category: 'agriculture', terms_structure: [{ name: 'LC', percentage: 100 }], usage_count: 89 },
-          { id: '3', name: 'Manufacturing Supply Agreement', description: 'For manufactured goods', category: 'manufacturing', terms_structure: [{ name: 'Deposit', percentage: 20 }, { name: 'Production', percentage: 40 }, { name: 'Delivery', percentage: 40 }], usage_count: 67 },
-          { id: '4', name: 'Import Purchase Agreement', description: 'Standard import contract with AfCFTA preferential terms', category: 'import', terms_structure: [{ name: 'LC at Sight', percentage: 70 }, { name: 'On Delivery', percentage: 30 }], usage_count: 112 },
-          { id: '5', name: 'Supplier Framework Agreement', description: 'Long-term supplier contract with AfCFTA clause library', category: 'import', terms_structure: [{ name: 'Quarterly', percentage: 25 }, { name: 'Quarterly', percentage: 25 }, { name: 'Quarterly', percentage: 25 }, { name: 'Quarterly', percentage: 25 }], usage_count: 78 },
+          {
+            id: '1',
+            name: 'Standard Export Agreement',
+            description: 'Basic export contract',
+            category: 'export',
+            terms_structure: [
+              { name: 'Advance', percentage: 30 },
+              { name: 'On Shipment', percentage: 50 },
+              { name: 'On Delivery', percentage: 20 },
+            ],
+            usage_count: 156,
+          },
+          {
+            id: '2',
+            name: 'Agricultural Commodities Contract',
+            description: 'For agricultural exports',
+            category: 'agriculture',
+            terms_structure: [{ name: 'LC', percentage: 100 }],
+            usage_count: 89,
+          },
+          {
+            id: '3',
+            name: 'Manufacturing Supply Agreement',
+            description: 'For manufactured goods',
+            category: 'manufacturing',
+            terms_structure: [
+              { name: 'Deposit', percentage: 20 },
+              { name: 'Production', percentage: 40 },
+              { name: 'Delivery', percentage: 40 },
+            ],
+            usage_count: 67,
+          },
+          {
+            id: '4',
+            name: 'Import Purchase Agreement',
+            description: 'Standard import contract with AfCFTA preferential terms',
+            category: 'import',
+            terms_structure: [
+              { name: 'LC at Sight', percentage: 70 },
+              { name: 'On Delivery', percentage: 30 },
+            ],
+            usage_count: 112,
+          },
+          {
+            id: '5',
+            name: 'Supplier Framework Agreement',
+            description: 'Long-term supplier contract with AfCFTA clause library',
+            category: 'import',
+            terms_structure: [
+              { name: 'Quarterly', percentage: 25 },
+              { name: 'Quarterly', percentage: 25 },
+              { name: 'Quarterly', percentage: 25 },
+              { name: 'Quarterly', percentage: 25 },
+            ],
+            usage_count: 78,
+          },
         ]);
       }
     } catch (e) {
@@ -299,18 +412,52 @@ export const SmartContracts: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-      draft: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', icon: <Edit3 className="w-3 h-3" /> },
-      pending_approval: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400', icon: <Clock className="w-3 h-3" /> },
-      active: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', icon: <CheckCircle className="w-3 h-3" /> },
-      in_progress: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', icon: <Loader2 className="w-3 h-3" /> },
-      completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', icon: <Check className="w-3 h-3" /> },
-      disputed: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', icon: <AlertTriangle className="w-3 h-3" /> },
-      cancelled: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500', icon: <XCircle className="w-3 h-3" /> },
-      expired: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', icon: <AlertCircle className="w-3 h-3" /> }
+      draft: {
+        bg: 'bg-gray-100 dark:bg-gray-800',
+        text: 'text-gray-600 dark:text-gray-400',
+        icon: <Edit3 className="w-3 h-3" />,
+      },
+      pending_approval: {
+        bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+        text: 'text-yellow-700 dark:text-yellow-400',
+        icon: <Clock className="w-3 h-3" />,
+      },
+      active: {
+        bg: 'bg-green-100 dark:bg-green-900/30',
+        text: 'text-green-700 dark:text-green-400',
+        icon: <CheckCircle className="w-3 h-3" />,
+      },
+      in_progress: {
+        bg: 'bg-blue-100 dark:bg-blue-900/30',
+        text: 'text-blue-700 dark:text-blue-400',
+        icon: <Loader2 className="w-3 h-3" />,
+      },
+      completed: {
+        bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+        text: 'text-emerald-700 dark:text-emerald-400',
+        icon: <Check className="w-3 h-3" />,
+      },
+      disputed: {
+        bg: 'bg-red-100 dark:bg-red-900/30',
+        text: 'text-red-700 dark:text-red-400',
+        icon: <AlertTriangle className="w-3 h-3" />,
+      },
+      cancelled: {
+        bg: 'bg-gray-100 dark:bg-gray-800',
+        text: 'text-gray-500',
+        icon: <XCircle className="w-3 h-3" />,
+      },
+      expired: {
+        bg: 'bg-orange-100 dark:bg-orange-900/30',
+        text: 'text-orange-700 dark:text-orange-400',
+        icon: <AlertCircle className="w-3 h-3" />,
+      },
     };
     const style = styles[status] || styles.draft;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${style.bg} ${style.text}`}
+      >
         {style.icon}
         {status.replace('_', ' ')}
       </span>
@@ -319,25 +466,36 @@ export const SmartContracts: React.FC = () => {
 
   const getMilestoneIcon = (type: string) => {
     switch (type) {
-      case 'payment': return <CreditCard className="w-4 h-4" />;
-      case 'delivery': return <Truck className="w-4 h-4" />;
-      case 'inspection': return <ClipboardList className="w-4 h-4" />;
-      case 'documentation': return <FileText className="w-4 h-4" />;
-      case 'customs': return <Scale className="w-4 h-4" />;
-      default: return <Milestone className="w-4 h-4" />;
+      case 'payment':
+        return <CreditCard className="w-4 h-4" />;
+      case 'delivery':
+        return <Truck className="w-4 h-4" />;
+      case 'inspection':
+        return <ClipboardList className="w-4 h-4" />;
+      case 'documentation':
+        return <FileText className="w-4 h-4" />;
+      case 'customs':
+        return <Scale className="w-4 h-4" />;
+      default:
+        return <Milestone className="w-4 h-4" />;
     }
   };
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
-  const filteredContracts = contracts.filter(c =>
-    c.title.toLowerCase().includes(search.toLowerCase()) ||
-    c.contract_number.toLowerCase().includes(search.toLowerCase()) ||
-    c.commodity?.toLowerCase().includes(search.toLowerCase()) ||
-    c.buyer_org_name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.seller_org_name?.toLowerCase().includes(search.toLowerCase())
+  const filteredContracts = contracts.filter(
+    c =>
+      c.title.toLowerCase().includes(search.toLowerCase()) ||
+      c.contract_number.toLowerCase().includes(search.toLowerCase()) ||
+      c.commodity?.toLowerCase().includes(search.toLowerCase()) ||
+      c.buyer_org_name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.seller_org_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
@@ -346,7 +504,7 @@ export const SmartContracts: React.FC = () => {
     pending: contracts.filter(c => c.status === 'pending_approval').length,
     completed: contracts.filter(c => c.status === 'completed').length,
     disputed: contracts.filter(c => c.status === 'disputed').length,
-    totalValue: contracts.reduce((sum, c) => sum + (c.total_value || 0), 0)
+    totalValue: contracts.reduce((sum, c) => sum + (c.total_value || 0), 0),
   };
 
   const statusDistribution = [
@@ -366,7 +524,9 @@ export const SmartContracts: React.FC = () => {
   const handleCreateContract = async () => {
     setIsProcessing(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const totalValue = formData.quantity * formData.unit_price;
@@ -392,8 +552,8 @@ export const SmartContracts: React.FC = () => {
         seller_user_id: user.id,
         metadata: {
           buyer_org_name: formData.buyer_org_name,
-          seller_org_name: formData.seller_org_name
-        }
+          seller_org_name: formData.seller_org_name,
+        },
       };
 
       const { error } = await supabase.from('contracts').insert(payload);
@@ -435,7 +595,7 @@ export const SmartContracts: React.FC = () => {
       buyer_org_id: '',
       seller_org_id: '',
       buyer_org_name: contract.buyer_org_name || '',
-      seller_org_name: contract.seller_org_name || ''
+      seller_org_name: contract.seller_org_name || '',
     });
     setCreateStep(2);
     setShowDetailModal(false);
@@ -465,9 +625,9 @@ export const SmartContracts: React.FC = () => {
         late_delivery_penalty: formData.late_delivery_penalty || 0,
         metadata: {
           buyer_org_name: formData.buyer_org_name,
-          seller_org_name: formData.seller_org_name
+          seller_org_name: formData.seller_org_name,
         },
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
@@ -492,7 +652,8 @@ export const SmartContracts: React.FC = () => {
   };
 
   const handleTerminateContract = async (contractId: string) => {
-    if (!confirm('Are you sure you want to terminate this contract? This action cannot be undone.')) return;
+    if (!confirm('Are you sure you want to terminate this contract? This action cannot be undone.'))
+      return;
     setIsProcessing(true);
     try {
       const { error } = await supabase
@@ -549,7 +710,9 @@ export const SmartContracts: React.FC = () => {
     `;
 
     // Create and download file
-    const blob = new Blob([contractContent], { type: format === 'pdf' ? 'application/pdf' : 'application/msword' });
+    const blob = new Blob([contractContent], {
+      type: format === 'pdf' ? 'application/pdf' : 'application/msword',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -581,7 +744,7 @@ export const SmartContracts: React.FC = () => {
       // Update local state
       setSelectedContract({
         ...selectedContract,
-        [updateField]: signedAt
+        [updateField]: signedAt,
       });
 
       setShowSignModal(false);
@@ -618,7 +781,9 @@ Please log in to AfriTradeOS to view the full contract details.
         window.open(`mailto:${shareData.email}?subject=${subject}&body=${body}`);
       } else {
         // Platform sharing - would create a notification/invitation in the database
-        alert(`Contract shared with ${shareData.email} on the platform. They will receive a notification.`);
+        alert(
+          `Contract shared with ${shareData.email} on the platform. They will receive a notification.`
+        );
       }
 
       setShowShareModal(false);
@@ -645,7 +810,13 @@ Please log in to AfriTradeOS to view the full contract details.
           </p>
         </div>
         <button
-          onClick={() => { setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData); setCreateStep(1); setShowCreateModal(true); }}
+          onClick={() => {
+            setIsEditMode(false);
+            setEditingContractId(null);
+            setFormData(defaultFormData);
+            setCreateStep(1);
+            setShowCreateModal(true);
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
         >
           <Plus className="w-5 h-5" />
@@ -656,18 +827,58 @@ Please log in to AfriTradeOS to view the full contract details.
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
-          { label: 'Total Contracts', value: stats.total, icon: FileText, color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30' },
-          { label: 'Active', value: stats.active, icon: CheckCircle, color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
-          { label: 'Pending Approval', value: stats.pending, icon: Clock, color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30' },
-          { label: 'Completed', value: stats.completed, icon: Check, color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30' },
-          { label: 'Disputed', value: stats.disputed, icon: AlertTriangle, color: 'text-red-600 bg-red-100 dark:bg-red-900/30' },
-          { label: 'Total Value', value: formatCurrency(stats.totalValue, 'USD'), icon: DollarSign, color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30', isValue: true }
+          {
+            label: 'Total Contracts',
+            value: stats.total,
+            icon: FileText,
+            color: 'text-blue-600 bg-blue-100 dark:bg-blue-900/30',
+          },
+          {
+            label: 'Active',
+            value: stats.active,
+            icon: CheckCircle,
+            color: 'text-green-600 bg-green-100 dark:bg-green-900/30',
+          },
+          {
+            label: 'Pending Approval',
+            value: stats.pending,
+            icon: Clock,
+            color: 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30',
+          },
+          {
+            label: 'Completed',
+            value: stats.completed,
+            icon: Check,
+            color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30',
+          },
+          {
+            label: 'Disputed',
+            value: stats.disputed,
+            icon: AlertTriangle,
+            color: 'text-red-600 bg-red-100 dark:bg-red-900/30',
+          },
+          {
+            label: 'Total Value',
+            value: formatCurrency(stats.totalValue, 'USD'),
+            icon: DollarSign,
+            color: 'text-purple-600 bg-purple-100 dark:bg-purple-900/30',
+            isValue: true,
+          },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
-            <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-3`}>
+          <div
+            key={stat.label}
+            className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4"
+          >
+            <div
+              className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-3`}
+            >
               <stat.icon className="w-5 h-5" />
             </div>
-            <p className={`${stat.isValue ? 'text-lg' : 'text-2xl'} font-bold text-trade-primary dark:text-white`}>{stat.value}</p>
+            <p
+              className={`${stat.isValue ? 'text-lg' : 'text-2xl'} font-bold text-trade-primary dark:text-white`}
+            >
+              {stat.value}
+            </p>
             <p className="text-xs text-gray-500">{stat.label}</p>
           </div>
         ))}
@@ -681,22 +892,23 @@ Please log in to AfriTradeOS to view the full contract details.
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-2">
               <Scale className="w-4 h-4" />
-              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full">AI Contract Review</span>
+              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full">
+                AI Contract Review
+              </span>
             </div>
             <p className="text-sm font-medium opacity-95 mb-3">
-              {stats.active > 0 
+              {stats.active > 0
                 ? `${stats.active} active contract${stats.active > 1 ? 's' : ''} analyzed — 1 has potentially risky payment terms and 2 need AfCFTA clause verification.`
-                : 'Create contracts to get AI-powered compliance checks against AfCFTA rules, export regulations, and tax obligations.'
-              }
+                : 'Create contracts to get AI-powered compliance checks against AfCFTA rules, export regulations, and tax obligations.'}
             </p>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => setShowComplianceModal(true)}
                 className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold transition-colors backdrop-blur-sm border border-white/20"
               >
                 Run Compliance Check
               </button>
-              <button 
+              <button
                 onClick={() => setShowRiskyClausesModal(true)}
                 className="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-colors"
               >
@@ -710,22 +922,35 @@ Please log in to AfriTradeOS to view the full contract details.
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="w-4 h-4 text-amber-500" />
-            <span className="text-sm font-bold text-gray-900 dark:text-white">Upcoming Renewals & Deadlines</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-white">
+              Upcoming Renewals & Deadlines
+            </span>
           </div>
           <div className="space-y-2">
-            {contracts.filter(c => c.status === 'active' || c.status === 'in_progress').length > 0 ? (
-              contracts.filter(c => c.status === 'active' || c.status === 'in_progress').slice(0, 3).map(c => (
-                <div key={c.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <div>
-                      <p className="text-xs font-bold text-gray-800 dark:text-white">{c.title}</p>
-                      <p className="text-[10px] text-gray-500">Expires {new Date(c.expiry_date).toLocaleDateString()}</p>
+            {contracts.filter(c => c.status === 'active' || c.status === 'in_progress').length >
+            0 ? (
+              contracts
+                .filter(c => c.status === 'active' || c.status === 'in_progress')
+                .slice(0, 3)
+                .map(c => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-slate-700/50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      <div>
+                        <p className="text-xs font-bold text-gray-800 dark:text-white">{c.title}</p>
+                        <p className="text-[10px] text-gray-500">
+                          Expires {new Date(c.expiry_date).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
+                    <button className="text-[10px] font-bold text-trade-primary hover:underline">
+                      Renew
+                    </button>
                   </div>
-                  <button className="text-[10px] font-bold text-trade-primary hover:underline">Renew</button>
-                </div>
-              ))
+                ))
             ) : (
               <div className="text-center py-4 text-gray-400">
                 <Clock className="w-6 h-6 mx-auto mb-1 opacity-50" />
@@ -744,24 +969,26 @@ Please log in to AfriTradeOS to view the full contract details.
             type="text"
             placeholder="Search contracts by number, title, commodity, or party..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 focus:border-trade-primary outline-none"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {['all', 'active', 'pending_approval', 'in_progress', 'completed', 'disputed'].map(status => (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap capitalize ${
-                statusFilter === status
-                  ? 'bg-trade-primary text-white'
-                  : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
-              }`}
-            >
-              {status === 'all' ? 'All' : status.replace('_', ' ')}
-            </button>
-          ))}
+          {['all', 'active', 'pending_approval', 'in_progress', 'completed', 'disputed'].map(
+            status => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors whitespace-nowrap capitalize ${
+                  statusFilter === status
+                    ? 'bg-trade-primary text-white'
+                    : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                {status === 'all' ? 'All' : status.replace('_', ' ')}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -793,7 +1020,9 @@ Please log in to AfriTradeOS to view the full contract details.
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     {getStatusBadge(contract.status)}
-                    <span className="text-xs text-gray-500 font-mono">{contract.contract_number}</span>
+                    <span className="text-xs text-gray-500 font-mono">
+                      {contract.contract_number}
+                    </span>
                     {contract.buyer_signed_at && contract.seller_signed_at && (
                       <span className="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
                         <PenTool className="w-3 h-3" /> Fully Signed
@@ -838,7 +1067,9 @@ Please log in to AfriTradeOS to view the full contract details.
                         <div className="w-24 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-trade-primary rounded-full transition-all"
-                            style={{ width: `${(contract.completed_milestones || 0) / contract.milestones_count * 100}%` }}
+                            style={{
+                              width: `${((contract.completed_milestones || 0) / contract.milestones_count) * 100}%`,
+                            }}
                           />
                         </div>
                         <span className="text-xs text-gray-500">
@@ -868,7 +1099,9 @@ Please log in to AfriTradeOS to view the full contract details.
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     {getStatusBadge(selectedContract.status)}
-                    <span className="text-sm text-gray-500 font-mono">{selectedContract.contract_number}</span>
+                    <span className="text-sm text-gray-500 font-mono">
+                      {selectedContract.contract_number}
+                    </span>
                   </div>
                   <h2 className="text-xl font-bold text-trade-primary dark:text-white">
                     {selectedContract.title}
@@ -890,7 +1123,7 @@ Please log in to AfriTradeOS to view the full contract details.
                   { key: 'versions', label: 'Versions', icon: History },
                   { key: 'analytics', label: 'Analytics', icon: ClipboardList },
                   { key: 'documents', label: 'Documents', icon: FileText },
-                  { key: 'activity', label: 'Activity', icon: History }
+                  { key: 'activity', label: 'Activity', icon: History },
                 ].map(tab => (
                   <button
                     key={tab.key}
@@ -915,12 +1148,17 @@ Please log in to AfriTradeOS to view the full contract details.
                   {/* Parties */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                      <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase mb-2">Buyer</p>
-                      <p className="text-lg font-bold text-trade-primary dark:text-white">{selectedContract.buyer_org_name}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase mb-2">
+                        Buyer
+                      </p>
+                      <p className="text-lg font-bold text-trade-primary dark:text-white">
+                        {selectedContract.buyer_org_name}
+                      </p>
                       {selectedContract.buyer_signed_at ? (
                         <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                           <CheckCircle className="w-3 h-3" />
-                          Signed on {new Date(selectedContract.buyer_signed_at).toLocaleDateString()}
+                          Signed on{' '}
+                          {new Date(selectedContract.buyer_signed_at).toLocaleDateString()}
                         </p>
                       ) : (
                         <p className="text-xs text-yellow-600 flex items-center gap-1 mt-1">
@@ -930,12 +1168,17 @@ Please log in to AfriTradeOS to view the full contract details.
                       )}
                     </div>
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                      <p className="text-xs text-green-600 dark:text-green-400 font-semibold uppercase mb-2">Seller</p>
-                      <p className="text-lg font-bold text-trade-primary dark:text-white">{selectedContract.seller_org_name}</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 font-semibold uppercase mb-2">
+                        Seller
+                      </p>
+                      <p className="text-lg font-bold text-trade-primary dark:text-white">
+                        {selectedContract.seller_org_name}
+                      </p>
                       {selectedContract.seller_signed_at ? (
                         <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
                           <CheckCircle className="w-3 h-3" />
-                          Signed on {new Date(selectedContract.seller_signed_at).toLocaleDateString()}
+                          Signed on{' '}
+                          {new Date(selectedContract.seller_signed_at).toLocaleDateString()}
                         </p>
                       ) : (
                         <p className="text-xs text-yellow-600 flex items-center gap-1 mt-1">
@@ -950,19 +1193,27 @@ Please log in to AfriTradeOS to view the full contract details.
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Commodity</p>
-                      <p className="text-lg font-bold text-trade-primary dark:text-white">{selectedContract.commodity}</p>
+                      <p className="text-lg font-bold text-trade-primary dark:text-white">
+                        {selectedContract.commodity}
+                      </p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Quantity</p>
-                      <p className="text-lg font-bold text-trade-primary dark:text-white">{selectedContract.quantity} {selectedContract.unit}</p>
+                      <p className="text-lg font-bold text-trade-primary dark:text-white">
+                        {selectedContract.quantity} {selectedContract.unit}
+                      </p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Unit Price</p>
-                      <p className="text-lg font-bold text-trade-primary dark:text-white">{formatCurrency(selectedContract.unit_price, selectedContract.currency)}</p>
+                      <p className="text-lg font-bold text-trade-primary dark:text-white">
+                        {formatCurrency(selectedContract.unit_price, selectedContract.currency)}
+                      </p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Total Value</p>
-                      <p className="text-lg font-bold text-trade-success">{formatCurrency(selectedContract.total_value, selectedContract.currency)}</p>
+                      <p className="text-lg font-bold text-trade-success">
+                        {formatCurrency(selectedContract.total_value, selectedContract.currency)}
+                      </p>
                     </div>
                   </div>
 
@@ -970,31 +1221,42 @@ Please log in to AfriTradeOS to view the full contract details.
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Effective Date</p>
-                      <p className="text-sm font-bold text-trade-primary dark:text-white">{new Date(selectedContract.effective_date).toLocaleDateString()}</p>
+                      <p className="text-sm font-bold text-trade-primary dark:text-white">
+                        {new Date(selectedContract.effective_date).toLocaleDateString()}
+                      </p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Expiry Date</p>
-                      <p className="text-sm font-bold text-trade-primary dark:text-white">{new Date(selectedContract.expiry_date).toLocaleDateString()}</p>
+                      <p className="text-sm font-bold text-trade-primary dark:text-white">
+                        {new Date(selectedContract.expiry_date).toLocaleDateString()}
+                      </p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Delivery Deadline</p>
-                      <p className="text-sm font-bold text-trade-primary dark:text-white">{new Date(selectedContract.delivery_deadline).toLocaleDateString()}</p>
+                      <p className="text-sm font-bold text-trade-primary dark:text-white">
+                        {new Date(selectedContract.delivery_deadline).toLocaleDateString()}
+                      </p>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                       <p className="text-xs text-gray-500 uppercase">Incoterms</p>
-                      <p className="text-sm font-bold text-trade-primary dark:text-white">{selectedContract.incoterms}</p>
+                      <p className="text-sm font-bold text-trade-primary dark:text-white">
+                        {selectedContract.incoterms}
+                      </p>
                     </div>
                   </div>
 
                   {/* Description */}
                   <div>
                     <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Description</h3>
-                    <p className="text-gray-600 dark:text-gray-300">{selectedContract.description}</p>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      {selectedContract.description}
+                    </p>
                   </div>
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
-                    {(selectedContract.status === 'pending_approval' || selectedContract.status === 'active') && (
+                    {(selectedContract.status === 'pending_approval' ||
+                      selectedContract.status === 'active') && (
                       <button
                         onClick={() => setShowSignModal(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors"
@@ -1030,7 +1292,10 @@ Please log in to AfriTradeOS to view the full contract details.
                       <Share2 className="w-4 h-4" />
                       Share
                     </button>
-                    {(selectedContract.status === 'draft' || selectedContract.status === 'pending_approval' || selectedContract.status === 'active' || selectedContract.status === 'in_progress') && (
+                    {(selectedContract.status === 'draft' ||
+                      selectedContract.status === 'pending_approval' ||
+                      selectedContract.status === 'active' ||
+                      selectedContract.status === 'in_progress') && (
                       <button
                         onClick={() => handleEditContract(selectedContract)}
                         className="flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 text-amber-700 dark:text-amber-400 font-medium rounded-xl transition-colors"
@@ -1039,16 +1304,17 @@ Please log in to AfriTradeOS to view the full contract details.
                         Edit Contract
                       </button>
                     )}
-                    {selectedContract.status !== 'cancelled' && selectedContract.status !== 'completed' && (
-                      <button
-                        onClick={() => handleTerminateContract(selectedContract.id)}
-                        disabled={isProcessing}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-400 font-medium rounded-xl transition-colors disabled:opacity-50"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Terminate
-                      </button>
-                    )}
+                    {selectedContract.status !== 'cancelled' &&
+                      selectedContract.status !== 'completed' && (
+                        <button
+                          onClick={() => handleTerminateContract(selectedContract.id)}
+                          disabled={isProcessing}
+                          className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-400 font-medium rounded-xl transition-colors disabled:opacity-50"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Terminate
+                        </button>
+                      )}
                     {selectedContract.status === 'active' && (
                       <button className="flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 text-red-700 dark:text-red-400 font-medium rounded-xl transition-colors">
                         <AlertTriangle className="w-4 h-4" />
@@ -1062,7 +1328,9 @@ Please log in to AfriTradeOS to view the full contract details.
               {activeTab === 'milestones' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase">Contract Milestones</h3>
+                    <h3 className="text-sm font-bold text-gray-500 uppercase">
+                      Contract Milestones
+                    </h3>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <span className="font-medium text-trade-primary dark:text-white">
                         {selectedMilestones.filter(m => m.status === 'completed').length}
@@ -1078,27 +1346,43 @@ Please log in to AfriTradeOS to view the full contract details.
 
                     {selectedMilestones.map((milestone, idx) => (
                       <div key={milestone.id} className="relative flex gap-4 pb-6">
-                        <div className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center ${
-                          milestone.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                          milestone.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
-                          milestone.status === 'overdue' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                          'bg-gray-100 dark:bg-slate-700 text-gray-400'
-                        }`}>
-                          {milestone.status === 'completed' ? <Check className="w-5 h-5" /> : getMilestoneIcon(milestone.milestone_type)}
+                        <div
+                          className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center ${
+                            milestone.status === 'completed'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                              : milestone.status === 'in_progress'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+                                : milestone.status === 'overdue'
+                                  ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                                  : 'bg-gray-100 dark:bg-slate-700 text-gray-400'
+                          }`}
+                        >
+                          {milestone.status === 'completed' ? (
+                            <Check className="w-5 h-5" />
+                          ) : (
+                            getMilestoneIcon(milestone.milestone_type)
+                          )}
                         </div>
 
                         <div className="flex-1 bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <h4 className="font-bold text-trade-primary dark:text-white">{milestone.title}</h4>
+                              <h4 className="font-bold text-trade-primary dark:text-white">
+                                {milestone.title}
+                              </h4>
                               <p className="text-sm text-gray-500">{milestone.description}</p>
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              milestone.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                              milestone.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' :
-                              milestone.status === 'overdue' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                              'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                milestone.status === 'completed'
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                  : milestone.status === 'in_progress'
+                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                    : milestone.status === 'overdue'
+                                      ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                      : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
+                              }`}
+                            >
                               {milestone.status}
                             </span>
                           </div>
@@ -1111,7 +1395,8 @@ Please log in to AfriTradeOS to view the full contract details.
                             {milestone.payment_amount > 0 && (
                               <span className="flex items-center gap-1 text-trade-success font-medium">
                                 <DollarSign className="w-4 h-4" />
-                                {formatCurrency(milestone.payment_amount, 'USD')} ({milestone.payment_percentage}%)
+                                {formatCurrency(milestone.payment_amount, 'USD')} (
+                                {milestone.payment_percentage}%)
                               </span>
                             )}
                             {milestone.completed_at && (
@@ -1140,35 +1425,55 @@ Please log in to AfriTradeOS to view the full contract details.
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-bold text-gray-500 uppercase">Version History</h3>
-                    <span className="text-xs text-gray-400">Current: v{mockVersions[0].version}</span>
+                    <span className="text-xs text-gray-400">
+                      Current: v{mockVersions[0].version}
+                    </span>
                   </div>
                   <div className="relative">
                     <div className="absolute left-6 top-6 bottom-6 w-0.5 bg-gray-200 dark:bg-slate-700" />
-                    {mockVersions.map((ver) => (
+                    {mockVersions.map(ver => (
                       <div key={ver.id} className="relative flex gap-4 pb-5">
-                        <div className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold ${
-                          ver.type === 'creation' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                          ver.type === 'amendment' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
-                          'bg-gray-100 dark:bg-slate-700 text-gray-500'
-                        }`}>
+                        <div
+                          className={`relative z-10 w-12 h-12 rounded-full flex items-center justify-center text-xs font-bold ${
+                            ver.type === 'creation'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                              : ver.type === 'amendment'
+                                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+                                : 'bg-gray-100 dark:bg-slate-700 text-gray-500'
+                          }`}
+                        >
                           v{ver.version}
                         </div>
                         <div className="flex-1 bg-gray-50 dark:bg-slate-800 rounded-xl p-4">
                           <div className="flex items-start justify-between mb-1">
-                            <h4 className="font-bold text-trade-primary dark:text-white text-sm">{ver.changes}</h4>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                              ver.type === 'creation' ? 'bg-green-100 text-green-700' :
-                              ver.type === 'amendment' ? 'bg-blue-100 text-blue-700' :
-                              'bg-gray-100 text-gray-600'
-                            }`}>{ver.type}</span>
+                            <h4 className="font-bold text-trade-primary dark:text-white text-sm">
+                              {ver.changes}
+                            </h4>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                                ver.type === 'creation'
+                                  ? 'bg-green-100 text-green-700'
+                                  : ver.type === 'amendment'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {ver.type}
+                            </span>
                           </div>
                           <div className="flex gap-4 text-xs text-gray-500">
                             <span>By: {ver.author}</span>
                             <span>{new Date(ver.date).toLocaleDateString()}</span>
                           </div>
                           <div className="mt-2 flex gap-2">
-                            <button className="text-xs text-trade-primary hover:underline font-medium">View Diff</button>
-                            {ver.type === 'amendment' && <button className="text-xs text-gray-500 hover:underline">Revert</button>}
+                            <button className="text-xs text-trade-primary hover:underline font-medium">
+                              View Diff
+                            </button>
+                            {ver.type === 'amendment' && (
+                              <button className="text-xs text-gray-500 hover:underline">
+                                Revert
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1180,53 +1485,124 @@ Please log in to AfriTradeOS to view the full contract details.
               {/* B9: PERFORMANCE ANALYTICS */}
               {activeTab === 'analytics' && (
                 <div className="space-y-5">
-                  <h3 className="text-sm font-bold text-gray-500 uppercase">Contract Performance</h3>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase">
+                    Contract Performance
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {performanceData.map(p => (
-                      <div key={p.metric} className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 text-center">
+                      <div
+                        key={p.metric}
+                        className="bg-gray-50 dark:bg-slate-800 rounded-xl p-4 text-center"
+                      >
                         <div className="relative w-16 h-16 mx-auto mb-2">
                           <svg className="w-full h-full -rotate-90">
-                            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="6" fill="none" className="text-gray-200 dark:text-slate-700" />
-                            <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="6" fill="none"
-                              strokeDasharray={163} strokeDashoffset={163 - (163 * p.value) / 100}
-                              className={`transition-all duration-700 ${p.value >= 70 ? 'text-green-500' : p.value >= 40 ? 'text-amber-500' : 'text-red-500'}`} />
+                            <circle
+                              cx="32"
+                              cy="32"
+                              r="26"
+                              stroke="currentColor"
+                              strokeWidth="6"
+                              fill="none"
+                              className="text-gray-200 dark:text-slate-700"
+                            />
+                            <circle
+                              cx="32"
+                              cy="32"
+                              r="26"
+                              stroke="currentColor"
+                              strokeWidth="6"
+                              fill="none"
+                              strokeDasharray={163}
+                              strokeDashoffset={163 - (163 * p.value) / 100}
+                              className={`transition-all duration-700 ${p.value >= 70 ? 'text-green-500' : p.value >= 40 ? 'text-amber-500' : 'text-red-500'}`}
+                            />
                           </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-trade-primary dark:text-white">{p.value}%</span>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-trade-primary dark:text-white">
+                            {p.value}%
+                          </span>
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-400">{p.metric}</p>
                       </div>
                     ))}
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-5">
-                    <h4 className="text-sm font-bold text-trade-primary dark:text-white mb-3">Contract Value Trend</h4>
+                    <h4 className="text-sm font-bold text-trade-primary dark:text-white mb-3">
+                      Contract Value Trend
+                    </h4>
                     <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={contractValueTrend}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
                           <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                          <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
-                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
-                          <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="rgba(59,130,246,0.15)" strokeWidth={2} name="Value" />
+                          <YAxis
+                            tick={{ fontSize: 10 }}
+                            stroke="#94a3b8"
+                            tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#1e293b',
+                              borderRadius: '8px',
+                              border: 'none',
+                              color: 'white',
+                              fontSize: '12px',
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#3b82f6"
+                            fill="rgba(59,130,246,0.15)"
+                            strokeWidth={2}
+                            name="Value"
+                          />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   <div className="bg-gray-50 dark:bg-slate-800 rounded-xl p-5">
-                    <h4 className="text-sm font-bold text-trade-primary dark:text-white mb-3">Status Distribution</h4>
+                    <h4 className="text-sm font-bold text-trade-primary dark:text-white mb-3">
+                      Status Distribution
+                    </h4>
                     <div className="h-48">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" paddingAngle={3}>
-                            {statusDistribution.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                          <Pie
+                            data={statusDistribution}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={40}
+                            outerRadius={65}
+                            dataKey="value"
+                            paddingAngle={3}
+                          >
+                            {statusDistribution.map((entry, idx) => (
+                              <Cell key={idx} fill={entry.color} />
+                            ))}
                           </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px' }} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: '#1e293b',
+                              borderRadius: '8px',
+                              border: 'none',
+                              color: 'white',
+                              fontSize: '12px',
+                            }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
                     <div className="flex justify-center gap-4 mt-2">
                       {statusDistribution.map(s => (
-                        <span key={s.name} className="flex items-center gap-1 text-xs text-gray-500">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} /> {s.name} ({s.value})
+                        <span
+                          key={s.name}
+                          className="flex items-center gap-1 text-xs text-gray-500"
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: s.color }}
+                          />{' '}
+                          {s.name} ({s.value})
                         </span>
                       ))}
                     </div>
@@ -1263,11 +1639,21 @@ Please log in to AfriTradeOS to view the full contract details.
             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-trade-primary dark:text-white">{isEditMode ? 'Edit Contract' : 'Create New Contract'}</h2>
-                  <p className="text-sm text-gray-500">{isEditMode ? 'Update contract details' : `Step ${createStep} of 3`}</p>
+                  <h2 className="text-xl font-bold text-trade-primary dark:text-white">
+                    {isEditMode ? 'Edit Contract' : 'Create New Contract'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {isEditMode ? 'Update contract details' : `Step ${createStep} of 3`}
+                  </p>
                 </div>
                 <button
-                  onClick={() => { setShowCreateModal(false); setCreateStep(1); setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData); }}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setCreateStep(1);
+                    setIsEditMode(false);
+                    setEditingContractId(null);
+                    setFormData(defaultFormData);
+                  }}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -1278,13 +1664,19 @@ Please log in to AfriTradeOS to view the full contract details.
               <div className="flex items-center gap-2 mt-4">
                 {[1, 2, 3].map(step => (
                   <React.Fragment key={step}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      createStep >= step ? 'bg-trade-primary text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        createStep >= step
+                          ? 'bg-trade-primary text-white'
+                          : 'bg-gray-200 dark:bg-slate-700 text-gray-500'
+                      }`}
+                    >
                       {createStep > step ? <Check className="w-4 h-4" /> : step}
                     </div>
                     {step < 3 && (
-                      <div className={`flex-1 h-1 rounded ${createStep > step ? 'bg-trade-primary' : 'bg-gray-200 dark:bg-slate-700'}`} />
+                      <div
+                        className={`flex-1 h-1 rounded ${createStep > step ? 'bg-trade-primary' : 'bg-gray-200 dark:bg-slate-700'}`}
+                      />
                     )}
                   </React.Fragment>
                 ))}
@@ -1295,12 +1687,20 @@ Please log in to AfriTradeOS to view the full contract details.
             <div className="flex-1 overflow-y-auto p-6">
               {createStep === 1 && (
                 <div className="space-y-6">
-                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Select Template</h3>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">
+                    Select Template
+                  </h3>
                   <div className="grid gap-4">
                     {templates.map(template => (
                       <div
                         key={template.id}
-                        onClick={() => setFormData({ ...formData, template_id: template.id, category: template.category })}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            template_id: template.id,
+                            category: template.category,
+                          })
+                        }
                         className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
                           formData.template_id === template.id
                             ? 'border-trade-primary bg-trade-primary/5'
@@ -1309,7 +1709,9 @@ Please log in to AfriTradeOS to view the full contract details.
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-bold text-trade-primary dark:text-white">{template.name}</h4>
+                            <h4 className="font-bold text-trade-primary dark:text-white">
+                              {template.name}
+                            </h4>
                             <p className="text-sm text-gray-500">{template.description}</p>
                             <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
                               <span>Category: {template.category}</span>
@@ -1328,24 +1730,30 @@ Please log in to AfriTradeOS to view the full contract details.
 
               {createStep === 2 && (
                 <div className="space-y-6">
-                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Contract Details</h3>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">
+                    Contract Details
+                  </h3>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Contract Title</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Contract Title
+                    </label>
                     <input
                       type="text"
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={e => setFormData({ ...formData, title: e.target.value })}
                       className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       placeholder="e.g., Cocoa Beans Export Agreement"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Description
+                    </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={e => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
                       className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       placeholder="Describe the contract terms and conditions..."
@@ -1354,21 +1762,27 @@ Please log in to AfriTradeOS to view the full contract details.
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Buyer (Company / Organization)</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Buyer (Company / Organization)
+                      </label>
                       <input
                         type="text"
                         value={formData.buyer_org_name}
-                        onChange={(e) => setFormData({ ...formData, buyer_org_name: e.target.value })}
+                        onChange={e => setFormData({ ...formData, buyer_org_name: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                         placeholder="e.g., European Chocolate Co."
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Seller (Company / Organization)</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Seller (Company / Organization)
+                      </label>
                       <input
                         type="text"
                         value={formData.seller_org_name}
-                        onChange={(e) => setFormData({ ...formData, seller_org_name: e.target.value })}
+                        onChange={e =>
+                          setFormData({ ...formData, seller_org_name: e.target.value })
+                        }
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                         placeholder="e.g., Ghana Cocoa Board"
                       />
@@ -1377,21 +1791,25 @@ Please log in to AfriTradeOS to view the full contract details.
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Commodity</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Commodity
+                      </label>
                       <input
                         type="text"
                         value={formData.commodity}
-                        onChange={(e) => setFormData({ ...formData, commodity: e.target.value })}
+                        onChange={e => setFormData({ ...formData, commodity: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                         placeholder="e.g., Cocoa Beans"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">HS Code</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        HS Code
+                      </label>
                       <input
                         type="text"
                         value={formData.hs_code}
-                        onChange={(e) => setFormData({ ...formData, hs_code: e.target.value })}
+                        onChange={e => setFormData({ ...formData, hs_code: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                         placeholder="e.g., 1801.00"
                       />
@@ -1400,33 +1818,49 @@ Please log in to AfriTradeOS to view the full contract details.
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Quantity</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Quantity
+                      </label>
                       <input
                         type="number"
                         value={formData.quantity || ''}
-                        onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                        onChange={e =>
+                          setFormData({ ...formData, quantity: Number(e.target.value) })
+                        }
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                         placeholder="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Unit
+                      </label>
                       <select
                         value={formData.unit}
-                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                        onChange={e => setFormData({ ...formData, unit: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       >
-                        {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                        {UNITS.map(u => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Incoterms</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Incoterms
+                      </label>
                       <select
                         value={formData.incoterms}
-                        onChange={(e) => setFormData({ ...formData, incoterms: e.target.value })}
+                        onChange={e => setFormData({ ...formData, incoterms: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       >
-                        {INCOTERMS.map(i => <option key={i} value={i}>{i}</option>)}
+                        {INCOTERMS.map(i => (
+                          <option key={i} value={i}>
+                            {i}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -1435,31 +1869,45 @@ Please log in to AfriTradeOS to view the full contract details.
 
               {createStep === 3 && (
                 <div className="space-y-6">
-                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Pricing & Terms</h3>
+                  <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">
+                    Pricing & Terms
+                  </h3>
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit Price</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Unit Price
+                      </label>
                       <input
                         type="number"
                         value={formData.unit_price || ''}
-                        onChange={(e) => setFormData({ ...formData, unit_price: Number(e.target.value) })}
+                        onChange={e =>
+                          setFormData({ ...formData, unit_price: Number(e.target.value) })
+                        }
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                         placeholder="0"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Currency</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Currency
+                      </label>
                       <select
                         value={formData.currency}
-                        onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                        onChange={e => setFormData({ ...formData, currency: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       >
-                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        {CURRENCIES.map(c => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Total Value</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Total Value
+                      </label>
                       <p className="p-3 bg-gray-100 dark:bg-slate-800 rounded-lg text-lg font-bold text-trade-success">
                         {formatCurrency(formData.quantity * formData.unit_price, formData.currency)}
                       </p>
@@ -1468,44 +1916,58 @@ Please log in to AfriTradeOS to view the full contract details.
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Effective Date</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Effective Date
+                      </label>
                       <input
                         type="date"
                         value={formData.effective_date}
-                        onChange={(e) => setFormData({ ...formData, effective_date: e.target.value })}
+                        onChange={e => setFormData({ ...formData, effective_date: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Expiry Date</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Expiry Date
+                      </label>
                       <input
                         type="date"
                         value={formData.expiry_date}
-                        onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                        onChange={e => setFormData({ ...formData, expiry_date: e.target.value })}
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Delivery Deadline</label>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Delivery Deadline
+                      </label>
                       <input
                         type="date"
                         value={formData.delivery_deadline}
-                        onChange={(e) => setFormData({ ...formData, delivery_deadline: e.target.value })}
+                        onChange={e =>
+                          setFormData({ ...formData, delivery_deadline: e.target.value })
+                        }
                         className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Late Delivery Penalty (%)</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                      Late Delivery Penalty (%)
+                    </label>
                     <input
                       type="number"
                       value={formData.late_delivery_penalty || ''}
-                      onChange={(e) => setFormData({ ...formData, late_delivery_penalty: Number(e.target.value) })}
+                      onChange={e =>
+                        setFormData({ ...formData, late_delivery_penalty: Number(e.target.value) })
+                      }
                       className="w-full p-3 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-trade-primary dark:text-white focus:ring-2 focus:ring-trade-primary/20 outline-none"
                       placeholder="e.g., 2"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Percentage of contract value per day of delay</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Percentage of contract value per day of delay
+                    </p>
                   </div>
                 </div>
               )}
@@ -1516,11 +1978,17 @@ Please log in to AfriTradeOS to view the full contract details.
               <button
                 onClick={() => {
                   if (isEditMode && createStep === 2) {
-                    setShowCreateModal(false); setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData);
+                    setShowCreateModal(false);
+                    setIsEditMode(false);
+                    setEditingContractId(null);
+                    setFormData(defaultFormData);
                   } else if (createStep > 1) {
                     setCreateStep(createStep - 1);
                   } else {
-                    setShowCreateModal(false); setIsEditMode(false); setEditingContractId(null); setFormData(defaultFormData);
+                    setShowCreateModal(false);
+                    setIsEditMode(false);
+                    setEditingContractId(null);
+                    setFormData(defaultFormData);
                   }
                 }}
                 className="px-4 py-2 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -1537,17 +2005,27 @@ Please log in to AfriTradeOS to view the full contract details.
                     else handleCreateContract();
                   }
                 }}
-                disabled={(createStep === 1 && !isEditMode && !formData.template_id) || isProcessing}
+                disabled={
+                  (createStep === 1 && !isEditMode && !formData.template_id) || isProcessing
+                }
                 className="px-6 py-2 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isProcessing ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                  </>
                 ) : createStep < 3 ? (
-                  <>Next <ChevronRight className="w-4 h-4" /></>
+                  <>
+                    Next <ChevronRight className="w-4 h-4" />
+                  </>
                 ) : isEditMode ? (
-                  <>Update Contract <Check className="w-4 h-4" /></>
+                  <>
+                    Update Contract <Check className="w-4 h-4" />
+                  </>
                 ) : (
-                  <>Create Contract <Check className="w-4 h-4" /></>
+                  <>
+                    Create Contract <Check className="w-4 h-4" />
+                  </>
                 )}
               </button>
             </div>
@@ -1561,7 +2039,9 @@ Please log in to AfriTradeOS to view the full contract details.
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-trade-primary dark:text-white">Digital Signature</h2>
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white">
+                  Digital Signature
+                </h2>
                 <button
                   onClick={() => setShowSignModal(false)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -1588,7 +2068,7 @@ Please log in to AfriTradeOS to view the full contract details.
                 <input
                   type="text"
                   value={signatureData.name}
-                  onChange={(e) => setSignatureData({ ...signatureData, name: e.target.value })}
+                  onChange={e => setSignatureData({ ...signatureData, name: e.target.value })}
                   placeholder="Enter your full name"
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-trade-primary focus:border-trade-primary outline-none"
                 />
@@ -1601,7 +2081,7 @@ Please log in to AfriTradeOS to view the full contract details.
                 <input
                   type="text"
                   value={signatureData.title}
-                  onChange={(e) => setSignatureData({ ...signatureData, title: e.target.value })}
+                  onChange={e => setSignatureData({ ...signatureData, title: e.target.value })}
                   placeholder="e.g., Chief Executive Officer"
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-trade-primary focus:border-trade-primary outline-none"
                 />
@@ -1611,12 +2091,13 @@ Please log in to AfriTradeOS to view the full contract details.
                 <input
                   type="checkbox"
                   checked={signatureData.agreed}
-                  onChange={(e) => setSignatureData({ ...signatureData, agreed: e.target.checked })}
+                  onChange={e => setSignatureData({ ...signatureData, agreed: e.target.checked })}
                   className="w-5 h-5 rounded border-gray-300 text-trade-primary focus:ring-trade-primary mt-0.5"
                 />
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  I confirm that I have read and agree to all terms and conditions outlined in this contract.
-                  This digital signature is legally binding and equivalent to a handwritten signature.
+                  I confirm that I have read and agree to all terms and conditions outlined in this
+                  contract. This digital signature is legally binding and equivalent to a
+                  handwritten signature.
                 </p>
               </div>
 
@@ -1626,9 +2107,13 @@ Please log in to AfriTradeOS to view the full contract details.
                 className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
               >
                 {isProcessing ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Signing...</>
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Signing...
+                  </>
                 ) : (
-                  <><PenTool className="w-5 h-5" /> Sign Contract</>
+                  <>
+                    <PenTool className="w-5 h-5" /> Sign Contract
+                  </>
                 )}
               </button>
             </div>
@@ -1642,7 +2127,9 @@ Please log in to AfriTradeOS to view the full contract details.
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full">
             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-trade-primary dark:text-white">Share Contract</h2>
+                <h2 className="text-xl font-bold text-trade-primary dark:text-white">
+                  Share Contract
+                </h2>
                 <button
                   onClick={() => setShowShareModal(false)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -1657,9 +2144,7 @@ Please log in to AfriTradeOS to view the full contract details.
                 <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {selectedContract.title}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {selectedContract.contract_number}
-                </p>
+                <p className="text-xs text-gray-500 mt-1">{selectedContract.contract_number}</p>
               </div>
 
               <div>
@@ -1697,8 +2182,10 @@ Please log in to AfriTradeOS to view the full contract details.
                 <input
                   type="email"
                   value={shareData.email}
-                  onChange={(e) => setShareData({ ...shareData, email: e.target.value })}
-                  placeholder={shareData.method === 'email' ? 'recipient@company.com' : 'Search user...'}
+                  onChange={e => setShareData({ ...shareData, email: e.target.value })}
+                  placeholder={
+                    shareData.method === 'email' ? 'recipient@company.com' : 'Search user...'
+                  }
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-trade-primary focus:border-trade-primary outline-none"
                 />
               </div>
@@ -1709,9 +2196,14 @@ Please log in to AfriTradeOS to view the full contract details.
                 className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
               >
                 {isProcessing ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</>
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Sending...
+                  </>
                 ) : (
-                  <><Send className="w-5 h-5" /> {shareData.method === 'email' ? 'Send Email' : 'Share on Platform'}</>
+                  <>
+                    <Send className="w-5 h-5" />{' '}
+                    {shareData.method === 'email' ? 'Send Email' : 'Share on Platform'}
+                  </>
                 )}
               </button>
             </div>
@@ -1728,7 +2220,13 @@ Please log in to AfriTradeOS to view the full contract details.
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <Scale className="w-5 h-5 text-trade-primary" /> AI Compliance Check
                 </h3>
-                <button onClick={() => { setShowComplianceModal(false); setComplianceResults(null); }} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <button
+                  onClick={() => {
+                    setShowComplianceModal(false);
+                    setComplianceResults(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
@@ -1737,7 +2235,10 @@ Please log in to AfriTradeOS to view the full contract details.
               {!complianceResults && !complianceRunning && (
                 <div className="text-center py-6">
                   <Scale className="w-12 h-12 text-trade-primary mx-auto mb-4" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Run AI-powered compliance analysis on your contracts against AfCFTA rules, export regulations, and tax obligations.</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Run AI-powered compliance analysis on your contracts against AfCFTA rules,
+                    export regulations, and tax obligations.
+                  </p>
                   <button
                     onClick={async () => {
                       setComplianceRunning(true);
@@ -1745,10 +2246,24 @@ Please log in to AfriTradeOS to view the full contract details.
                       setComplianceResults({
                         status: 'completed',
                         issues: [
-                          { type: 'AfCFTA', severity: 'warning', description: 'Certificate of Origin clause needs verification for preferential tariff eligibility' },
-                          { type: 'Payment Terms', severity: 'info', description: 'Consider adding LC confirmation for transactions over $50,000' },
-                          { type: 'Incoterms', severity: 'success', description: 'Incoterms 2020 correctly applied for CIF shipments' },
-                        ]
+                          {
+                            type: 'AfCFTA',
+                            severity: 'warning',
+                            description:
+                              'Certificate of Origin clause needs verification for preferential tariff eligibility',
+                          },
+                          {
+                            type: 'Payment Terms',
+                            severity: 'info',
+                            description:
+                              'Consider adding LC confirmation for transactions over $50,000',
+                          },
+                          {
+                            type: 'Incoterms',
+                            severity: 'success',
+                            description: 'Incoterms 2020 correctly applied for CIF shipments',
+                          },
+                        ],
                       });
                       setComplianceRunning(false);
                     }}
@@ -1761,28 +2276,43 @@ Please log in to AfriTradeOS to view the full contract details.
               {complianceRunning && (
                 <div className="text-center py-10">
                   <Loader2 className="w-10 h-10 text-trade-primary mx-auto mb-4 animate-spin" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Analyzing contracts against compliance rules...</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Analyzing contracts against compliance rules...
+                  </p>
                 </div>
               )}
               {complianceResults && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                     <CheckCircle className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-700 dark:text-green-400">Compliance check completed</span>
+                    <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                      Compliance check completed
+                    </span>
                   </div>
                   {complianceResults.issues.map((issue, idx) => (
-                    <div key={idx} className={`p-4 rounded-xl border ${
-                      issue.severity === 'warning' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
-                      issue.severity === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
-                      'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                    }`}>
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-xl border ${
+                        issue.severity === 'warning'
+                          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                          : issue.severity === 'success'
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                            : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                      }`}
+                    >
                       <div className="flex items-start gap-3">
-                        {issue.severity === 'warning' ? <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" /> :
-                         issue.severity === 'success' ? <CheckCircle className="w-5 h-5 text-green-500 shrink-0" /> :
-                         <AlertCircle className="w-5 h-5 text-blue-500 shrink-0" />}
+                        {issue.severity === 'warning' ? (
+                          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+                        ) : issue.severity === 'success' ? (
+                          <CheckCircle className="w-5 h-5 text-green-500 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                        )}
                         <div>
                           <p className="text-xs font-bold text-gray-500 uppercase">{issue.type}</p>
-                          <p className="text-sm text-gray-700 dark:text-gray-300">{issue.description}</p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {issue.description}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -1803,41 +2333,61 @@ Please log in to AfriTradeOS to view the full contract details.
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-500" /> Risky Clauses Review
                 </h3>
-                <button onClick={() => setShowRiskyClausesModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <button
+                  onClick={() => setShowRiskyClausesModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
             <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">AI has identified the following potentially risky clauses in your contracts:</p>
-              
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                AI has identified the following potentially risky clauses in your contracts:
+              </p>
+
               <div className="space-y-3">
                 <div className="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold text-red-700 dark:text-red-400">High Risk: Payment Terms</p>
-                      <p className="text-xs text-red-600 dark:text-red-300 mt-1">Contract #CTR-2024-001 has 100% advance payment clause which exposes buyer to significant risk. Consider milestone-based payments.</p>
+                      <p className="text-sm font-bold text-red-700 dark:text-red-400">
+                        High Risk: Payment Terms
+                      </p>
+                      <p className="text-xs text-red-600 dark:text-red-300 mt-1">
+                        Contract #CTR-2024-001 has 100% advance payment clause which exposes buyer
+                        to significant risk. Consider milestone-based payments.
+                      </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Medium Risk: Force Majeure</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">2 contracts lack comprehensive force majeure clauses. Recommend adding pandemic and supply chain disruption provisions.</p>
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                        Medium Risk: Force Majeure
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                        2 contracts lack comprehensive force majeure clauses. Recommend adding
+                        pandemic and supply chain disruption provisions.
+                      </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">Medium Risk: Dispute Resolution</p>
-                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">Contract #CTR-2024-003 specifies foreign jurisdiction for disputes. Consider neutral arbitration (e.g., OHADA, ICC).</p>
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
+                        Medium Risk: Dispute Resolution
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                        Contract #CTR-2024-003 specifies foreign jurisdiction for disputes. Consider
+                        neutral arbitration (e.g., OHADA, ICC).
+                      </p>
                     </div>
                   </div>
                 </div>

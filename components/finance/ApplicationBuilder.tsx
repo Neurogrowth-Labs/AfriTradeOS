@@ -20,7 +20,7 @@ import {
   Send,
   AlertCircle,
   CheckCircle2,
-  Info
+  Info,
 } from 'lucide-react';
 import { ApplicationFormData } from './FinanceApplicationTypes';
 
@@ -31,11 +31,23 @@ interface ApplicationBuilderProps {
 }
 
 const APPLICATION_TYPES = [
-  { value: 'letter_of_credit', label: 'Letter of Credit', description: 'Documentary credit for international trade' },
+  {
+    value: 'letter_of_credit',
+    label: 'Letter of Credit',
+    description: 'Documentary credit for international trade',
+  },
   { value: 'trade_finance', label: 'Trade Finance', description: 'Pre/post shipment financing' },
   { value: 'export_credit', label: 'Export Credit', description: 'Credit facility for exporters' },
-  { value: 'working_capital', label: 'Working Capital', description: 'Short-term business financing' },
-  { value: 'invoice_financing', label: 'Invoice Financing', description: 'Advance against receivables' }
+  {
+    value: 'working_capital',
+    label: 'Working Capital',
+    description: 'Short-term business financing',
+  },
+  {
+    value: 'invoice_financing',
+    label: 'Invoice Financing',
+    description: 'Advance against receivables',
+  },
 ];
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'ZAR', 'NGN', 'KES', 'EGP', 'MAD', 'GHS', 'XOF', 'XAF'];
@@ -43,13 +55,59 @@ const CURRENCIES = ['USD', 'EUR', 'GBP', 'ZAR', 'NGN', 'KES', 'EGP', 'MAD', 'GHS
 const INCOTERMS = ['EXW', 'FCA', 'FAS', 'FOB', 'CFR', 'CIF', 'CPT', 'CIP', 'DAP', 'DPU', 'DDP'];
 
 const AFRICAN_COUNTRIES = [
-  'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi', 'Cameroon', 'Cape Verde',
-  'Central African Republic', 'Chad', 'Comoros', 'Congo', 'Côte d\'Ivoire', 'Djibouti', 'Egypt',
-  'Equatorial Guinea', 'Eritrea', 'Eswatini', 'Ethiopia', 'Gabon', 'Gambia', 'Ghana', 'Guinea',
-  'Guinea-Bissau', 'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali',
-  'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger', 'Nigeria', 'Rwanda',
-  'São Tomé and Príncipe', 'Senegal', 'Seychelles', 'Sierra Leone', 'Somalia', 'South Africa',
-  'South Sudan', 'Sudan', 'Tanzania', 'Togo', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe'
+  'Algeria',
+  'Angola',
+  'Benin',
+  'Botswana',
+  'Burkina Faso',
+  'Burundi',
+  'Cameroon',
+  'Cape Verde',
+  'Central African Republic',
+  'Chad',
+  'Comoros',
+  'Congo',
+  "Côte d'Ivoire",
+  'Djibouti',
+  'Egypt',
+  'Equatorial Guinea',
+  'Eritrea',
+  'Eswatini',
+  'Ethiopia',
+  'Gabon',
+  'Gambia',
+  'Ghana',
+  'Guinea',
+  'Guinea-Bissau',
+  'Kenya',
+  'Lesotho',
+  'Liberia',
+  'Libya',
+  'Madagascar',
+  'Malawi',
+  'Mali',
+  'Mauritania',
+  'Mauritius',
+  'Morocco',
+  'Mozambique',
+  'Namibia',
+  'Niger',
+  'Nigeria',
+  'Rwanda',
+  'São Tomé and Príncipe',
+  'Senegal',
+  'Seychelles',
+  'Sierra Leone',
+  'Somalia',
+  'South Africa',
+  'South Sudan',
+  'Sudan',
+  'Tanzania',
+  'Togo',
+  'Tunisia',
+  'Uganda',
+  'Zambia',
+  'Zimbabwe',
 ];
 
 const STEPS = [
@@ -58,13 +116,13 @@ const STEPS = [
   { id: 3, title: 'Contact Info', description: 'Contact details' },
   { id: 4, title: 'Financing Details', description: 'Amount and terms' },
   { id: 5, title: 'Trade Information', description: 'Trade specifics' },
-  { id: 6, title: 'Review & Submit', description: 'Final review' }
+  { id: 6, title: 'Review & Submit', description: 'Final review' },
 ];
 
 export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
   onSubmit,
   onSaveDraft,
-  initialData
+  initialData,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ApplicationFormData>({
@@ -89,12 +147,12 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
       hsCode: '',
       incoterms: 'FOB',
       shippingMethod: 'sea',
-      estimatedShipmentDate: ''
+      estimatedShipmentDate: '',
     },
     annualRevenue: initialData?.annualRevenue,
     yearsInBusiness: initialData?.yearsInBusiness,
     existingRelationship: initialData?.existingRelationship || false,
-    previousFinancing: initialData?.previousFinancing || false
+    previousFinancing: initialData?.previousFinancing || false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -113,7 +171,7 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
   const updateTradeDetails = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      tradeDetails: { ...prev.tradeDetails, [field]: value }
+      tradeDetails: { ...prev.tradeDetails, [field]: value },
     }));
   };
 
@@ -122,11 +180,13 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
 
     switch (step) {
       case 1:
-        if (!formData.applicationType) newErrors.applicationType = 'Please select an application type';
+        if (!formData.applicationType)
+          newErrors.applicationType = 'Please select an application type';
         break;
       case 2:
         if (!formData.companyName) newErrors.companyName = 'Company name is required';
-        if (!formData.registrationNumber) newErrors.registrationNumber = 'Registration number is required';
+        if (!formData.registrationNumber)
+          newErrors.registrationNumber = 'Registration number is required';
         if (!formData.country) newErrors.country = 'Country is required';
         break;
       case 3:
@@ -143,9 +203,12 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
         break;
       case 5:
         if (formData.applicationType !== 'working_capital') {
-          if (!formData.tradeDetails?.goodsDescription) newErrors.goodsDescription = 'Goods description is required';
-          if (!formData.tradeDetails?.exporterCountry) newErrors.exporterCountry = 'Exporter country is required';
-          if (!formData.tradeDetails?.importerCountry) newErrors.importerCountry = 'Importer country is required';
+          if (!formData.tradeDetails?.goodsDescription)
+            newErrors.goodsDescription = 'Goods description is required';
+          if (!formData.tradeDetails?.exporterCountry)
+            newErrors.exporterCountry = 'Exporter country is required';
+          if (!formData.tradeDetails?.importerCountry)
+            newErrors.importerCountry = 'Importer country is required';
         }
         break;
     }
@@ -180,18 +243,22 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
                 currentStep > step.id
                   ? 'bg-green-500 text-white'
                   : currentStep === step.id
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-700 text-slate-400'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-700 text-slate-400'
               }`}
             >
               {currentStep > step.id ? <CheckCircle2 className="w-5 h-5" /> : step.id}
             </div>
-            <span className={`text-xs mt-2 ${currentStep >= step.id ? 'text-white' : 'text-slate-500'}`}>
+            <span
+              className={`text-xs mt-2 ${currentStep >= step.id ? 'text-white' : 'text-slate-500'}`}
+            >
               {step.title}
             </span>
           </div>
           {index < STEPS.length - 1 && (
-            <div className={`flex-1 h-0.5 mx-2 ${currentStep > step.id ? 'bg-green-500' : 'bg-slate-700'}`} />
+            <div
+              className={`flex-1 h-0.5 mx-2 ${currentStep > step.id ? 'bg-green-500' : 'bg-slate-700'}`}
+            />
           )}
         </React.Fragment>
       ))}
@@ -213,9 +280,13 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             }`}
           >
             <div className="flex items-center gap-3">
-              <FileText className={`w-6 h-6 ${formData.applicationType === type.value ? 'text-blue-400' : 'text-slate-400'}`} />
+              <FileText
+                className={`w-6 h-6 ${formData.applicationType === type.value ? 'text-blue-400' : 'text-slate-400'}`}
+              />
               <div>
-                <p className={`font-medium ${formData.applicationType === type.value ? 'text-blue-400' : 'text-white'}`}>
+                <p
+                  className={`font-medium ${formData.applicationType === type.value ? 'text-blue-400' : 'text-white'}`}
+                >
                   {type.label}
                 </p>
                 <p className="text-sm text-slate-400">{type.description}</p>
@@ -254,7 +325,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1">Registration Number *</label>
+          <label className="block text-sm font-medium text-slate-300 mb-1">
+            Registration Number *
+          </label>
           <input
             type="text"
             value={formData.registrationNumber}
@@ -264,7 +337,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             }`}
             placeholder="Company registration number"
           />
-          {errors.registrationNumber && <p className="text-red-400 text-xs mt-1">{errors.registrationNumber}</p>}
+          {errors.registrationNumber && (
+            <p className="text-red-400 text-xs mt-1">{errors.registrationNumber}</p>
+          )}
         </div>
 
         <div>
@@ -291,7 +366,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             >
               <option value="">Select country</option>
               {AFRICAN_COUNTRIES.map(country => (
-                <option key={country} value={country}>{country}</option>
+                <option key={country} value={country}>
+                  {country}
+                </option>
               ))}
             </select>
           </div>
@@ -357,7 +434,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
               placeholder="Full name"
             />
           </div>
-          {errors.contactPerson && <p className="text-red-400 text-xs mt-1">{errors.contactPerson}</p>}
+          {errors.contactPerson && (
+            <p className="text-red-400 text-xs mt-1">{errors.contactPerson}</p>
+          )}
         </div>
 
         <div>
@@ -463,7 +542,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {CURRENCIES.map(currency => (
-              <option key={currency} value={currency}>{currency}</option>
+              <option key={currency} value={currency}>
+                {currency}
+              </option>
             ))}
           </select>
         </div>
@@ -504,8 +585,8 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
           <div>
             <p className="text-sm text-blue-300 font-medium">Indicative Terms</p>
             <p className="text-xs text-slate-400 mt-1">
-              Based on your application type and amount, typical interest rates range from 6-12% p.a. 
-              Final terms will be determined after credit assessment.
+              Based on your application type and amount, typical interest rates range from 6-12%
+              p.a. Final terms will be determined after credit assessment.
             </p>
           </div>
         </div>
@@ -519,7 +600,7 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
       { value: 'air', label: 'Air Freight', icon: Plane },
       { value: 'road', label: 'Road Transport', icon: Truck },
       { value: 'rail', label: 'Rail Transport', icon: Train },
-      { value: 'multimodal', label: 'Multimodal', icon: Package }
+      { value: 'multimodal', label: 'Multimodal', icon: Package },
     ];
 
     if (formData.applicationType === 'working_capital') {
@@ -528,8 +609,8 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
           <h3 className="text-lg font-semibold text-white mb-4">Additional Information</h3>
           <div className="p-4 bg-slate-800/50 border border-slate-600 rounded-lg">
             <p className="text-slate-300">
-              Working capital financing does not require specific trade details. 
-              Please proceed to review your application.
+              Working capital financing does not require specific trade details. Please proceed to
+              review your application.
             </p>
           </div>
         </div>
@@ -541,7 +622,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
         <h3 className="text-lg font-semibold text-white mb-4">Trade Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Exporter Country *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Exporter Country *
+            </label>
             <select
               value={formData.tradeDetails?.exporterCountry || ''}
               onChange={e => updateTradeDetails('exporterCountry', e.target.value)}
@@ -551,14 +634,20 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             >
               <option value="">Select country</option>
               {AFRICAN_COUNTRIES.map(country => (
-                <option key={country} value={country}>{country}</option>
+                <option key={country} value={country}>
+                  {country}
+                </option>
               ))}
             </select>
-            {errors.exporterCountry && <p className="text-red-400 text-xs mt-1">{errors.exporterCountry}</p>}
+            {errors.exporterCountry && (
+              <p className="text-red-400 text-xs mt-1">{errors.exporterCountry}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Importer Country *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Importer Country *
+            </label>
             <select
               value={formData.tradeDetails?.importerCountry || ''}
               onChange={e => updateTradeDetails('importerCountry', e.target.value)}
@@ -568,14 +657,20 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             >
               <option value="">Select country</option>
               {AFRICAN_COUNTRIES.map(country => (
-                <option key={country} value={country}>{country}</option>
+                <option key={country} value={country}>
+                  {country}
+                </option>
               ))}
             </select>
-            {errors.importerCountry && <p className="text-red-400 text-xs mt-1">{errors.importerCountry}</p>}
+            {errors.importerCountry && (
+              <p className="text-red-400 text-xs mt-1">{errors.importerCountry}</p>
+            )}
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-300 mb-1">Goods Description *</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Goods Description *
+            </label>
             <textarea
               value={formData.tradeDetails?.goodsDescription || ''}
               onChange={e => updateTradeDetails('goodsDescription', e.target.value)}
@@ -585,7 +680,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
               }`}
               placeholder="Describe the goods being traded..."
             />
-            {errors.goodsDescription && <p className="text-red-400 text-xs mt-1">{errors.goodsDescription}</p>}
+            {errors.goodsDescription && (
+              <p className="text-red-400 text-xs mt-1">{errors.goodsDescription}</p>
+            )}
           </div>
 
           <div>
@@ -607,13 +704,17 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
               className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {INCOTERMS.map(term => (
-                <option key={term} value={term}>{term}</option>
+                <option key={term} value={term}>
+                  {term}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">Estimated Shipment Date</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              Estimated Shipment Date
+            </label>
             <input
               type="date"
               value={formData.tradeDetails?.estimatedShipmentDate || ''}
@@ -692,7 +793,10 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <p className="text-xs text-slate-500">Route</p>
-                  <p className="text-sm text-white">{formData.tradeDetails.exporterCountry} → {formData.tradeDetails.importerCountry}</p>
+                  <p className="text-sm text-white">
+                    {formData.tradeDetails.exporterCountry} →{' '}
+                    {formData.tradeDetails.importerCountry}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Goods</p>
@@ -704,7 +808,9 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Shipping</p>
-                  <p className="text-sm text-white capitalize">{formData.tradeDetails.shippingMethod}</p>
+                  <p className="text-sm text-white capitalize">
+                    {formData.tradeDetails.shippingMethod}
+                  </p>
                 </div>
               </div>
             </div>
@@ -722,7 +828,7 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
             <div>
               <p className="text-sm text-amber-300 font-medium">Before Submitting</p>
               <p className="text-xs text-slate-400 mt-1">
-                Please review all information carefully. After submission, you will need to upload 
+                Please review all information carefully. After submission, you will need to upload
                 supporting documents and the application will proceed to credit assessment.
               </p>
             </div>
@@ -734,23 +840,28 @@ export const ApplicationBuilder: React.FC<ApplicationBuilderProps> = ({
 
   const renderCurrentStep = () => {
     switch (currentStep) {
-      case 1: return renderApplicationTypeStep();
-      case 2: return renderCompanyDetailsStep();
-      case 3: return renderContactInfoStep();
-      case 4: return renderFinancingDetailsStep();
-      case 5: return renderTradeInfoStep();
-      case 6: return renderReviewStep();
-      default: return null;
+      case 1:
+        return renderApplicationTypeStep();
+      case 2:
+        return renderCompanyDetailsStep();
+      case 3:
+        return renderContactInfoStep();
+      case 4:
+        return renderFinancingDetailsStep();
+      case 5:
+        return renderTradeInfoStep();
+      case 6:
+        return renderReviewStep();
+      default:
+        return null;
     }
   };
 
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-700 p-6">
       {renderStepIndicator()}
-      
-      <div className="min-h-[400px]">
-        {renderCurrentStep()}
-      </div>
+
+      <div className="min-h-[400px]">{renderCurrentStep()}</div>
 
       <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-700">
         <button

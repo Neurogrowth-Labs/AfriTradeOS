@@ -1,9 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Package, TrendingUp, Clock, CheckCircle, AlertTriangle,
-  Ship, Plane, Truck, FileText, Scale, DollarSign, BarChart3, Settings,
-  Search, Filter, Download, Upload, Eye, Edit, MapPin, Award, Activity, Bell, ChevronRight, ExternalLink,
-  Building2, Shield, Percent, FileCheck, AlertCircle, XCircle
+  Package,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Ship,
+  Plane,
+  Truck,
+  FileText,
+  Scale,
+  DollarSign,
+  BarChart3,
+  Settings,
+  Search,
+  Filter,
+  Download,
+  Upload,
+  Eye,
+  Edit,
+  MapPin,
+  Award,
+  Activity,
+  Bell,
+  ChevronRight,
+  ExternalLink,
+  Building2,
+  Shield,
+  Percent,
+  FileCheck,
+  AlertCircle,
+  XCircle,
 } from 'lucide-react';
 import { UserPersona, AppView } from '../types';
 import { useCurrency } from '../contexts/CurrencyContext';
@@ -30,11 +57,33 @@ import {
   JourneyStatus,
   TransportMode,
   ComplianceStatus,
-  ImporterKPIs
+  ImporterKPIs,
 } from '../services/importerService';
-import { AreaChart, Area, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
-type ImporterTab = 'dashboard' | 'orders' | 'shipments' | 'documents' | 'compliance' | 'finance' | 'analytics' | 'settings';
+type ImporterTab =
+  | 'dashboard'
+  | 'orders'
+  | 'shipments'
+  | 'documents'
+  | 'compliance'
+  | 'finance'
+  | 'analytics'
+  | 'settings';
 
 interface ImporterPanelProps {
   userRole?: UserPersona;
@@ -66,7 +115,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
   }>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<ImportOrder | null>(null);
-  const [selectedOrderTracking, setSelectedOrderTracking] = useState<ImportShipmentTracking | null>(null);
+  const [selectedOrderTracking, setSelectedOrderTracking] = useState<ImportShipmentTracking | null>(
+    null
+  );
   const [selectedOrderCosts, setSelectedOrderCosts] = useState<CostBreakdown | null>(null);
 
   // UI states
@@ -96,7 +147,7 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
         notificationsData,
         supplierMetricsData,
         carrierMetricsData,
-        customsMetricsData
+        customsMetricsData,
       ] = await Promise.all([
         getDashboardKPIs(),
         getImportOrders(),
@@ -105,7 +156,7 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
         getNotifications(),
         getSupplierPerformanceMetrics(),
         getCarrierPerformanceMetrics(),
-        getCustomsClearanceMetrics()
+        getCustomsClearanceMetrics(),
       ]);
 
       setKpis(kpisData);
@@ -137,7 +188,7 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
     try {
       const [trackingData, costsData] = await Promise.all([
         getShipmentTracking(order.id),
-        getCostBreakdown(order.id)
+        getCostBreakdown(order.id),
       ]);
       setSelectedOrderTracking(trackingData);
       setSelectedOrderCosts(costsData);
@@ -154,47 +205,65 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
     { id: 'compliance' as ImporterTab, label: 'Compliance', icon: Shield },
     { id: 'finance' as ImporterTab, label: 'Finance', icon: DollarSign },
     { id: 'analytics' as ImporterTab, label: 'Analytics', icon: TrendingUp },
-    { id: 'settings' as ImporterTab, label: 'Settings', icon: Settings }
+    { id: 'settings' as ImporterTab, label: 'Settings', icon: Settings },
   ];
 
   // Helper functions
   const getStatusColor = (status: JourneyStatus) => {
     switch (status) {
-      case 'DELIVERED': return 'text-green-600 bg-green-100 dark:bg-green-900/30';
-      case 'IN_TRANSIT': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
-      case 'AT_PORT': return 'text-purple-600 bg-purple-100 dark:bg-purple-900/30';
-      case 'CUSTOMS_CLEARANCE': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
-      case 'RECEIVED': return 'text-gray-600 bg-gray-100 dark:bg-gray-700/30';
-      case 'EXCEPTION': return 'text-red-600 bg-red-100 dark:bg-red-900/30';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'DELIVERED':
+        return 'text-green-600 bg-green-100 dark:bg-green-900/30';
+      case 'IN_TRANSIT':
+        return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
+      case 'AT_PORT':
+        return 'text-purple-600 bg-purple-100 dark:bg-purple-900/30';
+      case 'CUSTOMS_CLEARANCE':
+        return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
+      case 'RECEIVED':
+        return 'text-gray-600 bg-gray-100 dark:bg-gray-700/30';
+      case 'EXCEPTION':
+        return 'text-red-600 bg-red-100 dark:bg-red-900/30';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
   const getComplianceStatusColor = (status: ComplianceStatus) => {
     switch (status) {
-      case 'COMPLIANT': return 'text-green-600 bg-green-100 dark:bg-green-900/30';
-      case 'PENDING': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
-      case 'NON_COMPLIANT': return 'text-red-600 bg-red-100 dark:bg-red-900/30';
-      case 'NEEDS_REVIEW': return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'COMPLIANT':
+        return 'text-green-600 bg-green-100 dark:bg-green-900/30';
+      case 'PENDING':
+        return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
+      case 'NON_COMPLIANT':
+        return 'text-red-600 bg-red-100 dark:bg-red-900/30';
+      case 'NEEDS_REVIEW':
+        return 'text-orange-600 bg-orange-100 dark:bg-orange-900/30';
+      default:
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
   const getTransportIcon = (mode: TransportMode) => {
     switch (mode) {
-      case 'SEA': return Ship;
-      case 'AIR': return Plane;
-      case 'LAND': return Truck;
-      case 'MULTI_MODAL': return Package;
-      default: return Package;
+      case 'SEA':
+        return Ship;
+      case 'AIR':
+        return Plane;
+      case 'LAND':
+        return Truck;
+      case 'MULTI_MODAL':
+        return Package;
+      default:
+        return Package;
     }
   };
 
-  const filteredOrders = orders.filter(order =>
-    !searchQuery ||
-    order.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.sourceCountry.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredOrders = orders.filter(
+    order =>
+      !searchQuery ||
+      order.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.sourceCountry.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // ============================================================================
@@ -207,7 +276,7 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
     const orderStatusData = [
       { name: 'In Transit', value: kpis.ordersInTransit, color: '#3B82F6' },
       { name: 'Clearance', value: kpis.ordersPendingClearance, color: '#EAB308' },
-      { name: 'Delivered', value: kpis.ordersDelivered, color: '#10B981' }
+      { name: 'Delivered', value: kpis.ordersDelivered, color: '#10B981' },
     ];
 
     const recentOrders = orders.slice(0, 5);
@@ -230,16 +299,22 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               <Ship className="w-5 h-5 text-purple-500" />
               <TrendingUp className="w-4 h-4 text-purple-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.ordersInTransit}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {kpis.ordersInTransit}
+            </p>
             <p className="text-xs text-gray-500">In Transit</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <div className="flex items-center justify-between mb-2">
               <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              <span className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold">Pending</span>
+              <span className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold">
+                Pending
+              </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.ordersPendingClearance}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {kpis.ordersPendingClearance}
+            </p>
             <p className="text-xs text-gray-500">Pending Clearance</p>
           </div>
 
@@ -248,25 +323,35 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               <DollarSign className="w-5 h-5 text-green-500" />
               <TrendingUp className="w-4 h-4 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(kpis.totalImportSpend)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(kpis.totalImportSpend)}
+            </p>
             <p className="text-xs text-gray-500">Total Spend (YTD)</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <div className="flex items-center justify-between mb-2">
               <Percent className="w-5 h-5 text-indigo-500" />
-              <span className="text-xs text-green-600 dark:text-green-400 font-semibold">Savings</span>
+              <span className="text-xs text-green-600 dark:text-green-400 font-semibold">
+                Savings
+              </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(kpis.dutySavings)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(kpis.dutySavings)}
+            </p>
             <p className="text-xs text-gray-500">Duty Savings (AfCFTA)</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
             <div className="flex items-center justify-between mb-2">
               <Award className="w-5 h-5 text-amber-500" />
-              <span className="text-xs text-green-600 dark:text-green-400">{kpis.complianceScore}%</span>
+              <span className="text-xs text-green-600 dark:text-green-400">
+                {kpis.complianceScore}%
+              </span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{kpis.complianceScore}%</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {kpis.complianceScore}%
+            </p>
             <p className="text-xs text-gray-500">Compliance Score</p>
           </div>
         </div>
@@ -299,7 +384,10 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               {orderStatusData.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    ></div>
                     <span className="text-gray-600 dark:text-gray-400">{item.name}</span>
                   </div>
                   <span className="font-semibold text-gray-900 dark:text-white">{item.value}</span>
@@ -310,45 +398,71 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
           {/* Performance Metrics */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Performance Metrics</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Performance Metrics
+            </h3>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">On-Time Delivery</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{kpis.onTimeDeliveryRate}%</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {kpis.onTimeDeliveryRate}%
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: `${kpis.onTimeDeliveryRate}%` }}></div>
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{ width: `${kpis.onTimeDeliveryRate}%` }}
+                  ></div>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Avg Lead Time</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{kpis.averageLeadTime} days</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {kpis.averageLeadTime} days
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${(kpis.averageLeadTime / 60) * 100}%` }}></div>
+                  <div
+                    className="bg-blue-500 h-2 rounded-full"
+                    style={{ width: `${(kpis.averageLeadTime / 60) * 100}%` }}
+                  ></div>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Customs Clearance</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{kpis.customsClearanceTime}h</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Customs Clearance
+                  </span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {kpis.customsClearanceTime}h
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                  <div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${(kpis.customsClearanceTime / 96) * 100}%` }}></div>
+                  <div
+                    className="bg-yellow-500 h-2 rounded-full"
+                    style={{ width: `${(kpis.customsClearanceTime / 96) * 100}%` }}
+                  ></div>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Supplier Performance</span>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{kpis.supplierPerformance}/5.0</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Supplier Performance
+                  </span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {kpis.supplierPerformance}/5.0
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(kpis.supplierPerformance / 5) * 100}%` }}></div>
+                  <div
+                    className="bg-amber-500 h-2 rounded-full"
+                    style={{ width: `${(kpis.supplierPerformance / 5) * 100}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -373,14 +487,25 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                   }`}
                 >
                   <div className="flex items-start gap-2">
-                    <Bell className={`w-4 h-4 mt-0.5 ${
-                      notif.priority === 'HIGH' ? 'text-red-500' :
-                      notif.priority === 'MEDIUM' ? 'text-yellow-500' : 'text-gray-500'
-                    }`} />
+                    <Bell
+                      className={`w-4 h-4 mt-0.5 ${
+                        notif.priority === 'HIGH'
+                          ? 'text-red-500'
+                          : notif.priority === 'MEDIUM'
+                            ? 'text-yellow-500'
+                            : 'text-gray-500'
+                      }`}
+                    />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 dark:text-white">{notif.title}</p>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{notif.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(notif.createdAt).toLocaleDateString()}</p>
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {notif.title}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        {notif.message}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(notif.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -398,7 +523,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
         {/* Recent Orders */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Recent Import Orders</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Recent Import Orders
+            </h3>
             <button
               onClick={() => setActiveTab('orders')}
               className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1"
@@ -410,12 +537,24 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-slate-700">
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Order No.</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Supplier</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Country</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Value</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">ETA</th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Order No.
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Supplier
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Country
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Value
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Status
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    ETA
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -433,16 +572,24 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <TransportIcon className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{order.orderNo}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {order.orderNo}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{order.supplier}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{order.sourceCountry}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        {order.supplier}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        {order.sourceCountry}
+                      </td>
                       <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(order.totalValue)}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${getStatusColor(order.journeyStatus)}`}>
+                        <span
+                          className={`text-xs font-bold px-2 py-1 rounded-full ${getStatusColor(order.journeyStatus)}`}
+                        >
                           {order.journeyStatus.replace('_', ' ')}
                         </span>
                       </td>
@@ -472,7 +619,7 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 type="text"
                 placeholder="Search orders, suppliers, countries..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
               />
             </div>
@@ -481,7 +628,8 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               className="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 flex items-center gap-2 text-sm font-semibold"
             >
               <Filter className="w-4 h-4" />
-              Filters {Object.keys(orderFilter).length > 0 && `(${Object.keys(orderFilter).length})`}
+              Filters{' '}
+              {Object.keys(orderFilter).length > 0 && `(${Object.keys(orderFilter).length})`}
             </button>
             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-semibold">
               <Download className="w-4 h-4" />
@@ -493,10 +641,17 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Status</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Status
+                </label>
                 <select
                   value={orderFilter.status || ''}
-                  onChange={(e) => setOrderFilter({ ...orderFilter, status: e.target.value as JourneyStatus || undefined })}
+                  onChange={e =>
+                    setOrderFilter({
+                      ...orderFilter,
+                      status: (e.target.value as JourneyStatus) || undefined,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                 >
                   <option value="">All Statuses</option>
@@ -510,10 +665,17 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Transport Mode</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Transport Mode
+                </label>
                 <select
                   value={orderFilter.transportMode || ''}
-                  onChange={(e) => setOrderFilter({ ...orderFilter, transportMode: e.target.value as TransportMode || undefined })}
+                  onChange={e =>
+                    setOrderFilter({
+                      ...orderFilter,
+                      transportMode: (e.target.value as TransportMode) || undefined,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                 >
                   <option value="">All Modes</option>
@@ -525,10 +687,17 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Compliance</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Compliance
+                </label>
                 <select
                   value={orderFilter.complianceStatus || ''}
-                  onChange={(e) => setOrderFilter({ ...orderFilter, complianceStatus: e.target.value as ComplianceStatus || undefined })}
+                  onChange={e =>
+                    setOrderFilter({
+                      ...orderFilter,
+                      complianceStatus: (e.target.value as ComplianceStatus) || undefined,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                 >
                   <option value="">All</option>
@@ -557,18 +726,42 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-slate-700/50">
                 <tr>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Order No.</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Supplier</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Source</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Incoterm</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">PO Date</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Transport</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Value</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">ETA</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Customs</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Compliance</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Actions</th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Order No.
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Supplier
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Source
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Incoterm
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    PO Date
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Transport
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Status
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Value
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    ETA
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Customs
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Compliance
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -582,11 +775,17 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <TransportIcon className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{order.orderNo}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {order.orderNo}
+                          </span>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{order.supplier}</td>
-                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{order.sourceCountry}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        {order.supplier}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        {order.sourceCountry}
+                      </td>
                       <td className="py-3 px-4">
                         <span className="text-xs font-bold px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded">
                           {order.incoterm}
@@ -601,7 +800,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${getStatusColor(order.journeyStatus)}`}>
+                        <span
+                          className={`text-xs font-bold px-2 py-1 rounded-full ${getStatusColor(order.journeyStatus)}`}
+                        >
                           {order.journeyStatus.replace('_', ' ')}
                         </span>
                       </td>
@@ -612,17 +813,24 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                         {order.eta ? new Date(order.eta).toLocaleDateString() : '-'}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded ${
-                          order.customsDeclarationStatus === 'CLEARED' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                          order.customsDeclarationStatus === 'UNDER_REVIEW' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' :
-                          order.customsDeclarationStatus === 'HELD' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                          'bg-gray-100 dark:bg-slate-700 text-gray-600'
-                        }`}>
+                        <span
+                          className={`text-xs font-bold px-2 py-1 rounded ${
+                            order.customsDeclarationStatus === 'CLEARED'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                              : order.customsDeclarationStatus === 'UNDER_REVIEW'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                                : order.customsDeclarationStatus === 'HELD'
+                                  ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                                  : 'bg-gray-100 dark:bg-slate-700 text-gray-600'
+                          }`}
+                        >
                           {order.customsDeclarationStatus.replace('_', ' ')}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${getComplianceStatusColor(order.complianceStatus)}`}>
+                        <span
+                          className={`text-xs font-bold px-2 py-1 rounded-full ${getComplianceStatusColor(order.complianceStatus)}`}
+                        >
                           {order.complianceStatus.replace('_', ' ')}
                         </span>
                       </td>
@@ -669,7 +877,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between sticky top-0 bg-white dark:bg-slate-800">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Order Details: {selectedOrder.orderNo}</h2>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Order Details: {selectedOrder.orderNo}
+                </h2>
                 <button
                   onClick={() => setSelectedOrder(null)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
@@ -682,55 +892,80 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Supplier</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.supplier}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.supplier}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Source Country</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.sourceCountry}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.sourceCountry}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Incoterm</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.incoterm}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.incoterm}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Transport Mode</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.transportMode}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.transportMode}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">HS Code</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.hsCode || '-'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.hsCode || '-'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Total Value</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(selectedOrder.totalValue)}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(selectedOrder.totalValue)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Quantity</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.quantity || '-'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.quantity || '-'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Weight (kg)</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.weight || '-'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.weight || '-'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Volume (m³)</p>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedOrder.volume || '-'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {selectedOrder.volume || '-'}
+                    </p>
                   </div>
                 </div>
 
                 {/* Shipment Timeline */}
                 {selectedOrderTracking && (
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Shipment Timeline</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                      Shipment Timeline
+                    </h3>
                     <div className="space-y-3">
                       {selectedOrderTracking.milestones.map((milestone, idx) => (
                         <div key={idx} className="flex items-start gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            milestone.status === 'COMPLETED' ? 'bg-green-100 dark:bg-green-900/30' :
-                            milestone.status === 'IN_PROGRESS' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                            milestone.status === 'DELAYED' ? 'bg-red-100 dark:bg-red-900/30' :
-                            'bg-gray-100 dark:bg-slate-700'
-                          }`}>
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              milestone.status === 'COMPLETED'
+                                ? 'bg-green-100 dark:bg-green-900/30'
+                                : milestone.status === 'IN_PROGRESS'
+                                  ? 'bg-blue-100 dark:bg-blue-900/30'
+                                  : milestone.status === 'DELAYED'
+                                    ? 'bg-red-100 dark:bg-red-900/30'
+                                    : 'bg-gray-100 dark:bg-slate-700'
+                            }`}
+                          >
                             {milestone.status === 'COMPLETED' ? (
                               <CheckCircle className="w-4 h-4 text-green-600" />
                             ) : milestone.status === 'IN_PROGRESS' ? (
@@ -742,9 +977,13 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{milestone.stage}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {milestone.stage}
+                            </p>
                             {milestone.timestamp && (
-                              <p className="text-xs text-gray-500">{new Date(milestone.timestamp).toLocaleString()}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(milestone.timestamp).toLocaleString()}
+                              </p>
                             )}
                             {milestone.location && (
                               <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1 mt-1">
@@ -752,7 +991,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                               </p>
                             )}
                             {milestone.notes && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{milestone.notes}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {milestone.notes}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -764,28 +1005,38 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 {/* Cost Breakdown */}
                 {selectedOrderCosts && (
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Cost Breakdown</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                      Cost Breakdown
+                    </h3>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Purchase Value</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Purchase Value
+                        </span>
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           {formatCurrency(selectedOrderCosts.purchaseValue)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Duties & Taxes</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Duties & Taxes
+                        </span>
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           {formatCurrency(selectedOrderCosts.dutiesAndTaxes)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Port Charges</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Port Charges
+                        </span>
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           {formatCurrency(selectedOrderCosts.portCharges)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-slate-700">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Inland Transport</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Inland Transport
+                        </span>
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           {formatCurrency(selectedOrderCosts.inlandTransport)}
                         </span>
@@ -803,7 +1054,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-3 bg-blue-50 dark:bg-blue-900/20 px-4 rounded-lg mt-2">
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">Total Landed Cost</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          Total Landed Cost
+                        </span>
                         <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                           {formatCurrency(selectedOrderCosts.totalLandedCost)}
                         </span>
@@ -820,10 +1073,11 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
   };
 
   const renderShipments = () => {
-    const activeShipments = orders.filter(o =>
-      o.journeyStatus === 'IN_TRANSIT' ||
-      o.journeyStatus === 'AT_PORT' ||
-      o.journeyStatus === 'CUSTOMS_CLEARANCE'
+    const activeShipments = orders.filter(
+      o =>
+        o.journeyStatus === 'IN_TRANSIT' ||
+        o.journeyStatus === 'AT_PORT' ||
+        o.journeyStatus === 'CUSTOMS_CLEARANCE'
     );
 
     return (
@@ -835,7 +1089,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 <Ship className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{activeShipments.length}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {activeShipments.length}
+                </p>
                 <p className="text-xs text-gray-500">Active Shipments</p>
               </div>
             </div>
@@ -861,7 +1117,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 <Clock className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{kpis?.averageLeadTime || 0}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {kpis?.averageLeadTime || 0}
+                </p>
                 <p className="text-xs text-gray-500">Avg Lead Time (days)</p>
               </div>
             </div>
@@ -870,36 +1128,55 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
         {/* Active Shipments */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Active Shipment Tracking</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Active Shipment Tracking
+          </h3>
           <div className="space-y-4">
             {activeShipments.map(order => {
               const TransportIcon = getTransportIcon(order.transportMode);
               const progress =
-                order.journeyStatus === 'IN_TRANSIT' ? 40 :
-                order.journeyStatus === 'AT_PORT' ? 70 :
-                order.journeyStatus === 'CUSTOMS_CLEARANCE' ? 85 : 0;
+                order.journeyStatus === 'IN_TRANSIT'
+                  ? 40
+                  : order.journeyStatus === 'AT_PORT'
+                    ? 70
+                    : order.journeyStatus === 'CUSTOMS_CLEARANCE'
+                      ? 85
+                      : 0;
 
               return (
-                <div key={order.id} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                <div
+                  key={order.id}
+                  className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+                >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                         <TransportIcon className="w-5 h-5 text-blue-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{order.orderNo}</p>
-                        <p className="text-xs text-gray-500">{order.supplier} • {order.sourceCountry}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                          {order.orderNo}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {order.supplier} • {order.sourceCountry}
+                        </p>
                       </div>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${getStatusColor(order.journeyStatus)}`}>
+                    <span
+                      className={`text-xs font-bold px-2 py-1 rounded-full ${getStatusColor(order.journeyStatus)}`}
+                    >
                       {order.journeyStatus.replace('_', ' ')}
                     </span>
                   </div>
 
                   <div className="mb-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Shipment Progress</span>
-                      <span className="text-xs font-semibold text-gray-900 dark:text-white">{progress}%</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        Shipment Progress
+                      </span>
+                      <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                        {progress}%
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                       <div
@@ -912,7 +1189,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                   <div className="grid grid-cols-3 gap-4 text-xs">
                     <div>
                       <p className="text-gray-500 mb-1">Carrier</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">{order.assignedLogisticsPartner || '-'}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {order.assignedLogisticsPartner || '-'}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1">ETA</p>
@@ -949,18 +1228,23 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
   };
 
   const renderDocuments = () => {
-    const orderDocs = documents.reduce((acc, doc) => {
-      if (!acc[doc.orderId]) acc[doc.orderId] = [];
-      acc[doc.orderId].push(doc);
-      return acc;
-    }, {} as Record<string, DocumentRecord[]>);
+    const orderDocs = documents.reduce(
+      (acc, doc) => {
+        if (!acc[doc.orderId]) acc[doc.orderId] = [];
+        acc[doc.orderId].push(doc);
+        return acc;
+      },
+      {} as Record<string, DocumentRecord[]>
+    );
 
     return (
       <div className="space-y-6">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Document Library</h3>
-            <p className="text-xs text-gray-500 mt-1">Manage all trade documentation and compliance records</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Manage all trade documentation and compliance records
+            </p>
           </div>
           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-semibold">
             <Upload className="w-4 h-4" />
@@ -973,40 +1257,63 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
           if (!order) return null;
 
           return (
-            <div key={orderId} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
+            <div
+              key={orderId}
+              className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h4 className="text-md font-bold text-gray-900 dark:text-white">{order.orderNo}</h4>
-                  <p className="text-xs text-gray-500">{order.supplier} • {order.sourceCountry}</p>
+                  <h4 className="text-md font-bold text-gray-900 dark:text-white">
+                    {order.orderNo}
+                  </h4>
+                  <p className="text-xs text-gray-500">
+                    {order.supplier} • {order.sourceCountry}
+                  </p>
                 </div>
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${getComplianceStatusColor(order.complianceStatus)}`}>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded-full ${getComplianceStatusColor(order.complianceStatus)}`}
+                >
                   {order.complianceStatus.replace('_', ' ')}
                 </span>
               </div>
 
               <div className="space-y-2">
                 {docs.map(doc => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/30"
+                  >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{doc.fileName}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                          {doc.fileName}
+                        </p>
                         <p className="text-xs text-gray-500">{doc.documentType}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="text-xs text-gray-500">Uploaded {new Date(doc.uploadDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-500">
+                          Uploaded {new Date(doc.uploadDate).toLocaleDateString()}
+                        </p>
                         {doc.expiryDate && (
-                          <p className="text-xs text-gray-500">Expires {new Date(doc.expiryDate).toLocaleDateString()}</p>
+                          <p className="text-xs text-gray-500">
+                            Expires {new Date(doc.expiryDate).toLocaleDateString()}
+                          </p>
                         )}
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${
-                        doc.status === 'VERIFIED' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                        doc.status === 'EXPIRED' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                        doc.status === 'REJECTED' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                        'bg-gray-100 dark:bg-slate-700 text-gray-600'
-                      }`}>
+                      <span
+                        className={`text-xs font-bold px-2 py-1 rounded ${
+                          doc.status === 'VERIFIED'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                            : doc.status === 'EXPIRED'
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                              : doc.status === 'REJECTED'
+                                ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                                : 'bg-gray-100 dark:bg-slate-700 text-gray-600'
+                        }`}
+                      >
                         {doc.status}
                       </span>
                       <button className="p-2 hover:bg-gray-100 dark:hover:bg-slate-600 rounded">
@@ -1047,8 +1354,12 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 />
               </div>
               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">Example: 8517.12.00</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300">Telephones for cellular networks</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-2">
+                  Example: 8517.12.00
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Telephones for cellular networks
+                </p>
                 <div className="mt-3 space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">Duty Rate:</span>
@@ -1065,10 +1376,14 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
           {/* Duty Calculator */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Duty & Tax Calculator</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Duty & Tax Calculator
+            </h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">HS Code</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  HS Code
+                </label>
                 <input
                   type="text"
                   placeholder="e.g., 8517.12.00"
@@ -1076,7 +1391,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">CIF Value (USD)</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  CIF Value (USD)
+                </label>
                 <input
                   type="number"
                   placeholder="Enter value"
@@ -1092,7 +1409,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
         {/* Compliance Checklist */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Compliance Status by Order</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Compliance Status by Order
+          </h3>
           <div className="space-y-3">
             {orders.slice(0, 5).map(order => {
               const completedChecks = Math.floor(Math.random() * 5) + 3;
@@ -1100,19 +1419,28 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               const percentage = (completedChecks / totalChecks) * 100;
 
               return (
-                <div key={order.id} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                <div
+                  key={order.id}
+                  className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{order.orderNo}</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">
+                        {order.orderNo}
+                      </p>
                       <p className="text-xs text-gray-500">{order.supplier}</p>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${getComplianceStatusColor(order.complianceStatus)}`}>
+                    <span
+                      className={`text-xs font-bold px-2 py-1 rounded-full ${getComplianceStatusColor(order.complianceStatus)}`}
+                    >
                       {order.complianceStatus.replace('_', ' ')}
                     </span>
                   </div>
                   <div className="mb-2">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">Compliance Checks</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
+                        Compliance Checks
+                      </span>
                       <span className="text-xs font-semibold text-gray-900 dark:text-white">
                         {completedChecks}/{totalChecks}
                       </span>
@@ -1120,9 +1448,13 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                     <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full ${
-                          percentage === 100 ? 'bg-green-500' :
-                          percentage >= 70 ? 'bg-blue-500' :
-                          percentage >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                          percentage === 100
+                            ? 'bg-green-500'
+                            : percentage >= 70
+                              ? 'bg-blue-500'
+                              : percentage >= 40
+                                ? 'bg-yellow-500'
+                                : 'bg-red-500'
                         }`}
                         style={{ width: `${percentage}%` }}
                       ></div>
@@ -1135,7 +1467,8 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                       </span>
                     ) : (
                       <span className="text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {totalChecks - completedChecks} checks pending
+                        <AlertCircle className="w-3 h-3" /> {totalChecks - completedChecks} checks
+                        pending
                       </span>
                     )}
                   </div>
@@ -1152,9 +1485,15 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               <Award className="w-6 h-6 text-amber-600" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">AfCFTA Preferential Trade</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                AfCFTA Preferential Trade
+              </h3>
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                You&apos;ve saved <span className="font-bold text-green-600">{formatCurrency(kpis?.dutySavings || 0)}</span> in duties this year through AfCFTA preferential rates.
+                You&apos;ve saved{' '}
+                <span className="font-bold text-green-600">
+                  {formatCurrency(kpis?.dutySavings || 0)}
+                </span>{' '}
+                in duties this year through AfCFTA preferential rates.
               </p>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="p-3 bg-white dark:bg-slate-800 rounded-lg">
@@ -1184,7 +1523,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               <DollarSign className="w-5 h-5 text-green-500" />
               <TrendingUp className="w-4 h-4 text-green-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(kpis?.totalImportSpend || 0)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(kpis?.totalImportSpend || 0)}
+            </p>
             <p className="text-xs text-gray-500">Total Import Spend (YTD)</p>
           </div>
 
@@ -1193,7 +1534,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               <Percent className="w-5 h-5 text-blue-500" />
               <span className="text-xs text-green-600 font-semibold">Savings</span>
             </div>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(kpis?.dutySavings || 0)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+              {formatCurrency(kpis?.dutySavings || 0)}
+            </p>
             <p className="text-xs text-gray-500">Duty Savings</p>
           </div>
 
@@ -1203,7 +1546,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               <span className="text-xs text-gray-600">Avg</span>
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">
-              {formatCurrency(orders.reduce((sum, o) => sum + o.totalValue, 0) / Math.max(orders.length, 1))}
+              {formatCurrency(
+                orders.reduce((sum, o) => sum + o.totalValue, 0) / Math.max(orders.length, 1)
+              )}
             </p>
             <p className="text-xs text-gray-500">Avg Order Value</p>
           </div>
@@ -1222,18 +1567,26 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
         {/* Cost Breakdown by Order */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Recent Order Cost Breakdown</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Recent Order Cost Breakdown
+          </h3>
           <div className="space-y-4">
             {orders.slice(0, 3).map(order => {
               const purchaseValue = order.totalValue;
               const dutiesAndTaxes = purchaseValue * 0.26;
-              const totalLandedCost = purchaseValue + dutiesAndTaxes + 1200 + 800 + (purchaseValue * 0.015) + 450;
+              const totalLandedCost =
+                purchaseValue + dutiesAndTaxes + 1200 + 800 + purchaseValue * 0.015 + 450;
 
               return (
-                <div key={order.id} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                <div
+                  key={order.id}
+                  className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white">{order.orderNo}</p>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">
+                        {order.orderNo}
+                      </p>
                       <p className="text-xs text-gray-500">{order.supplier}</p>
                     </div>
                     <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
@@ -1243,23 +1596,33 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
                     <div>
                       <p className="text-gray-500 mb-1">Purchase</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(purchaseValue)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(purchaseValue)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1">Duties & Tax</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(dutiesAndTaxes)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(dutiesAndTaxes)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1">Port Charges</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(1200)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(1200)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1">Transport</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(800)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(800)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 mb-1">Insurance</p>
-                      <p className="font-semibold text-gray-900 dark:text-white">{formatCurrency(purchaseValue * 0.015)}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(purchaseValue * 0.015)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1270,20 +1633,38 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
         {/* Spend Trend */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Import Spend Trend</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Import Spend Trend
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={customsMetrics.map(m => ({
-              month: m.month,
-              spend: m.dutiesPaid * 3.5,
-              duties: m.dutiesPaid
-            }))}>
+            <AreaChart
+              data={customsMetrics.map(m => ({
+                month: m.month,
+                spend: m.dutiesPaid * 3.5,
+                duties: m.dutiesPaid,
+              }))}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Tooltip formatter={value => formatCurrency(Number(value))} />
               <Legend />
-              <Area type="monotone" dataKey="spend" stackId="1" stroke="#3B82F6" fill="#3B82F6" name="Total Spend" />
-              <Area type="monotone" dataKey="duties" stackId="2" stroke="#EAB308" fill="#EAB308" name="Duties Paid" />
+              <Area
+                type="monotone"
+                dataKey="spend"
+                stackId="1"
+                stroke="#3B82F6"
+                fill="#3B82F6"
+                name="Total Spend"
+              />
+              <Area
+                type="monotone"
+                dataKey="duties"
+                stackId="2"
+                stroke="#EAB308"
+                fill="#EAB308"
+                name="Duties Paid"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -1296,48 +1677,82 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
       <div className="space-y-6">
         {/* Supplier Performance */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Supplier Performance Scorecard</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Supplier Performance Scorecard
+          </h3>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-slate-700/50">
                 <tr>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Supplier</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Country</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Orders</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">On-Time %</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Lead Time</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Total Value</th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Rating</th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Supplier
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Country
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Orders
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    On-Time %
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Lead Time
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Total Value
+                  </th>
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                    Rating
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {supplierMetrics.map(supplier => (
-                  <tr key={supplier.supplierId} className="border-b border-gray-100 dark:border-slate-700">
-                    <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">{supplier.supplierName}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{supplier.country}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{supplier.totalOrders}</td>
+                  <tr
+                    key={supplier.supplierId}
+                    className="border-b border-gray-100 dark:border-slate-700"
+                  >
+                    <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
+                      {supplier.supplierName}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                      {supplier.country}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                      {supplier.totalOrders}
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <div className="w-16 bg-gray-200 dark:bg-slate-700 rounded-full h-1.5">
                           <div
                             className={`h-1.5 rounded-full ${
-                              supplier.onTimeDeliveryRate >= 90 ? 'bg-green-500' :
-                              supplier.onTimeDeliveryRate >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                              supplier.onTimeDeliveryRate >= 90
+                                ? 'bg-green-500'
+                                : supplier.onTimeDeliveryRate >= 70
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500'
                             }`}
                             style={{ width: `${supplier.onTimeDeliveryRate}%` }}
                           ></div>
                         </div>
-                        <span className="text-xs font-semibold text-gray-900 dark:text-white">{supplier.onTimeDeliveryRate}%</span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                          {supplier.onTimeDeliveryRate}%
+                        </span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{supplier.averageLeadTime}d</td>
+                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                      {supplier.averageLeadTime}d
+                    </td>
                     <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(supplier.totalValue)}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1">
                         <Award className="w-4 h-4 text-amber-500" />
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{supplier.rating}</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                          {supplier.rating}
+                        </span>
                       </div>
                     </td>
                   </tr>
@@ -1349,31 +1764,49 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
         {/* Carrier Performance */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Carrier Performance Metrics</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Carrier Performance Metrics
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {carrierMetrics.map(carrier => {
               const CarrierIcon = getTransportIcon(carrier.transportMode);
               return (
-                <div key={carrier.carrierId} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+                <div
+                  key={carrier.carrierId}
+                  className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+                >
                   <div className="flex items-center gap-2 mb-3">
                     <CarrierIcon className="w-5 h-5 text-blue-500" />
-                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{carrier.carrierName}</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                      {carrier.carrierName}
+                    </p>
                   </div>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span className="text-gray-500">Shipments:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{carrier.totalShipments}</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {carrier.totalShipments}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">On-Time:</span>
-                      <span className={`font-semibold ${
-                        carrier.onTimeRate >= 90 ? 'text-green-600' :
-                        carrier.onTimeRate >= 70 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>{carrier.onTimeRate}%</span>
+                      <span
+                        className={`font-semibold ${
+                          carrier.onTimeRate >= 90
+                            ? 'text-green-600'
+                            : carrier.onTimeRate >= 70
+                              ? 'text-yellow-600'
+                              : 'text-red-600'
+                        }`}
+                      >
+                        {carrier.onTimeRate}%
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-500">Avg Delay:</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">{carrier.averageDelay}h</span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {carrier.averageDelay}h
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1384,7 +1817,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
 
         {/* Customs Clearance Efficiency */}
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Customs Clearance Efficiency</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Customs Clearance Efficiency
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={customsMetrics}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -1431,7 +1866,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Company Profile</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Company Name</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                Company Name
+              </label>
               <input
                 type="text"
                 placeholder="Enter company name"
@@ -1439,7 +1876,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Registration Number</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                Registration Number
+              </label>
               <input
                 type="text"
                 placeholder="Enter registration number"
@@ -1447,7 +1886,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Country</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                Country
+              </label>
               <select className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm">
                 <option>Kenya</option>
                 <option>Nigeria</option>
@@ -1456,7 +1897,9 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Tax ID</label>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                Tax ID
+              </label>
               <input
                 type="text"
                 placeholder="Enter tax ID"
@@ -1467,14 +1910,16 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Notification Preferences</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Notification Preferences
+          </h3>
           <div className="space-y-3">
             {[
               'Shipment status updates',
               'Customs clearance alerts',
               'Document expiry warnings',
               'Payment due reminders',
-              'Compliance updates'
+              'Compliance updates',
             ].map((pref, idx) => (
               <label key={idx} className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-gray-300" />
@@ -1485,20 +1930,29 @@ const ImporterPanel: React.FC<ImporterPanelProps> = ({ userRole, navigateTo }) =
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Preferred Suppliers</h3>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Preferred Suppliers
+          </h3>
           <div className="space-y-2">
             {suppliers.slice(0, 3).map(supplier => (
-              <div key={supplier.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg">
+              <div
+                key={supplier.id}
+                className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg"
+              >
                 <div className="flex items-center gap-3">
                   <Building2 className="w-5 h-5 text-blue-500" />
                   <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{supplier.name}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {supplier.name}
+                    </p>
                     <p className="text-xs text-gray-500">{supplier.country}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Award className="w-4 h-4 text-amber-500" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">{supplier.rating}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {supplier.rating}
+                  </span>
                 </div>
               </div>
             ))}

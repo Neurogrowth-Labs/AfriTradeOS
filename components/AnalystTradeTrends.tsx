@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
@@ -16,7 +15,7 @@ import {
   X,
   Download,
   Ship,
-  AlertOctagon
+  AlertOctagon,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -32,7 +31,7 @@ import {
   LineChart,
   Line,
   Legend,
-  ComposedChart
+  ComposedChart,
 } from 'recharts';
 import { fastChatResponse } from '../services/geminiService';
 
@@ -70,7 +69,7 @@ const COMMODITY_PRICES = [
   { month: 'Jul', cocoa: 3200, coffee: 4100, gold: 1950, oil: 82, cotton: 0.85 },
   { month: 'Aug', cocoa: 3350, coffee: 4050, gold: 1980, oil: 85, cotton: 0.88 },
   { month: 'Sep', cocoa: 3100, coffee: 4200, gold: 2010, oil: 88, cotton: 0.82 },
-  { month: 'Oct', cocoa: 3500, coffee: 4300, gold: 2050, oil: 84, cotton: 0.90 },
+  { month: 'Oct', cocoa: 3500, coffee: 4300, gold: 2050, oil: 84, cotton: 0.9 },
   { month: 'Nov', cocoa: 3700, coffee: 4150, gold: 2100, oil: 78, cotton: 0.92 },
   { month: 'Dec', cocoa: 3900, coffee: 4400, gold: 2080, oil: 75, cotton: 0.95 },
   { month: 'Jan', cocoa: 4100, coffee: 4500, gold: 2120, oil: 80, cotton: 0.88 },
@@ -78,10 +77,25 @@ const COMMODITY_PRICES = [
 ];
 
 const FX_RATES = [
-  { pair: 'NGN/USD', rate: 1650, change: -2.5, history: [1580, 1600, 1620, 1640, 1650, 1670, 1650] },
+  {
+    pair: 'NGN/USD',
+    rate: 1650,
+    change: -2.5,
+    history: [1580, 1600, 1620, 1640, 1650, 1670, 1650],
+  },
   { pair: 'KES/USD', rate: 152.8, change: 1.2, history: [155, 154, 153, 152, 151, 152, 152.8] },
-  { pair: 'ZAR/USD', rate: 18.45, change: -0.8, history: [18.1, 18.2, 18.3, 18.5, 18.6, 18.5, 18.45] },
-  { pair: 'GHS/USD', rate: 14.92, change: -1.1, history: [14.5, 14.6, 14.7, 14.8, 14.9, 14.95, 14.92] },
+  {
+    pair: 'ZAR/USD',
+    rate: 18.45,
+    change: -0.8,
+    history: [18.1, 18.2, 18.3, 18.5, 18.6, 18.5, 18.45],
+  },
+  {
+    pair: 'GHS/USD',
+    rate: 14.92,
+    change: -1.1,
+    history: [14.5, 14.6, 14.7, 14.8, 14.9, 14.95, 14.92],
+  },
   { pair: 'EGP/USD', rate: 48.5, change: -3.2, history: [46, 46.5, 47, 47.5, 48, 48.3, 48.5] },
   { pair: 'ETB/USD', rate: 56.8, change: -1.8, history: [55, 55.5, 55.8, 56, 56.3, 56.5, 56.8] },
 ];
@@ -106,15 +120,62 @@ interface DisruptionAlert {
 }
 
 const DISRUPTIONS: DisruptionAlert[] = [
-  { id: 'd1', title: 'Port Strike Warning — Durban', type: 'port_strike', severity: 'high', location: 'South Africa', impact: 'SADC corridor delays expected 48-72h', date: '2h ago', active: true },
-  { id: 'd2', title: 'Border Closure — Sudan/Ethiopia', type: 'border_closure', severity: 'high', location: 'East Africa', impact: 'Land route disrupted, sea rerouting advised', date: '5h ago', active: true },
-  { id: 'd3', title: 'New ECOWAS Tariff Revision', type: 'policy', severity: 'medium', location: 'West Africa', impact: 'CET adjustments for 45 HS codes effective Mar 1', date: '1d ago', active: true },
-  { id: 'd4', title: 'Flooding — Mozambique Corridor', type: 'weather', severity: 'medium', location: 'Southern Africa', impact: 'Road transport delays on N1 highway', date: '2d ago', active: false },
-  { id: 'd5', title: 'Ghana Cocoa Export Surge', type: 'policy', severity: 'low', location: 'West Africa', impact: 'Cocoa exports up 23% — demand spike in EU markets', date: '3d ago', active: true },
+  {
+    id: 'd1',
+    title: 'Port Strike Warning — Durban',
+    type: 'port_strike',
+    severity: 'high',
+    location: 'South Africa',
+    impact: 'SADC corridor delays expected 48-72h',
+    date: '2h ago',
+    active: true,
+  },
+  {
+    id: 'd2',
+    title: 'Border Closure — Sudan/Ethiopia',
+    type: 'border_closure',
+    severity: 'high',
+    location: 'East Africa',
+    impact: 'Land route disrupted, sea rerouting advised',
+    date: '5h ago',
+    active: true,
+  },
+  {
+    id: 'd3',
+    title: 'New ECOWAS Tariff Revision',
+    type: 'policy',
+    severity: 'medium',
+    location: 'West Africa',
+    impact: 'CET adjustments for 45 HS codes effective Mar 1',
+    date: '1d ago',
+    active: true,
+  },
+  {
+    id: 'd4',
+    title: 'Flooding — Mozambique Corridor',
+    type: 'weather',
+    severity: 'medium',
+    location: 'Southern Africa',
+    impact: 'Road transport delays on N1 highway',
+    date: '2d ago',
+    active: false,
+  },
+  {
+    id: 'd5',
+    title: 'Ghana Cocoa Export Surge',
+    type: 'policy',
+    severity: 'low',
+    location: 'West Africa',
+    impact: 'Cocoa exports up 23% — demand spike in EU markets',
+    date: '3d ago',
+    active: true,
+  },
 ];
 
 export const AnalystTradeTrends: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'historical' | 'seasonal' | 'commodities' | 'fx' | 'disruptions'>('historical');
+  const [activeTab, setActiveTab] = useState<
+    'historical' | 'seasonal' | 'commodities' | 'fx' | 'disruptions'
+  >('historical');
   const [selectedCommodity, setSelectedCommodity] = useState('cocoa');
   const [aiInsight, setAiInsight] = useState<string | null>(null);
 
@@ -127,20 +188,30 @@ export const AnalystTradeTrends: React.FC = () => {
         );
         if (mounted && text) setAiInsight(text);
       } catch {
-        if (mounted) setAiInsight('Ghana cocoa exports up 23% driven by EU demand spike. NGN volatility creating hedging opportunities for West Africa corridor traders.');
+        if (mounted)
+          setAiInsight(
+            'Ghana cocoa exports up 23% driven by EU demand spike. NGN volatility creating hedging opportunities for West Africa corridor traders.'
+          );
       }
     };
     fetchInsight();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const getDisruptionIcon = (type: DisruptionAlert['type']) => {
     switch (type) {
-      case 'port_strike': return Ship;
-      case 'conflict': return AlertOctagon;
-      case 'border_closure': return AlertTriangle;
-      case 'weather': return Globe;
-      case 'policy': return BarChart3;
+      case 'port_strike':
+        return Ship;
+      case 'conflict':
+        return AlertOctagon;
+      case 'border_closure':
+        return AlertTriangle;
+      case 'weather':
+        return Globe;
+      case 'policy':
+        return BarChart3;
     }
   };
 
@@ -155,7 +226,10 @@ export const AnalystTradeTrends: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-trade-primary dark:text-white">Trade Trends</h2>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Historical flows • Seasonal patterns • Commodity tracking • FX overlay • Disruption alerts</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                Historical flows • Seasonal patterns • Commodity tracking • FX overlay • Disruption
+                alerts
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -172,10 +246,15 @@ export const AnalystTradeTrends: React.FC = () => {
             { id: 'fx' as const, label: 'FX Overlay', icon: Activity },
             { id: 'disruptions' as const, label: 'Disruptions', icon: AlertTriangle },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.id ? 'bg-violet-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
-              }`}>
+                activeTab === tab.id
+                  ? 'bg-violet-600 text-white'
+                  : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+              }`}
+            >
               <tab.icon className="w-3.5 h-3.5" /> {tab.label}
             </button>
           ))}
@@ -187,7 +266,9 @@ export const AnalystTradeTrends: React.FC = () => {
         <div className="bg-gradient-to-r from-violet-600 to-purple-700 rounded-xl p-3 flex items-center gap-3">
           <Zap className="w-4 h-4 text-amber-300 shrink-0" />
           <p className="text-[11px] text-white/90 leading-relaxed flex-1">{aiInsight}</p>
-          <button onClick={() => setAiInsight(null)}><X className="w-3.5 h-3.5 text-white/50" /></button>
+          <button onClick={() => setAiInsight(null)}>
+            <X className="w-3.5 h-3.5 text-white/50" />
+          </button>
         </div>
       )}
 
@@ -202,11 +283,23 @@ export const AnalystTradeTrends: React.FC = () => {
               { label: 'Intra-Africa Share', value: '29.8%', change: '+2.8pp', up: true },
               { label: '10Y CAGR', value: '+5.2%', change: 'Accelerating', up: true },
             ].map(s => (
-              <div key={s.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
+              <div
+                key={s.label}
+                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4"
+              >
                 <p className="text-[10px] text-gray-500 uppercase">{s.label}</p>
-                <p className="text-xl font-black text-trade-primary dark:text-white mt-1">{s.value}</p>
-                <p className={`text-[10px] font-bold flex items-center gap-0.5 mt-1 ${s.up ? 'text-green-600' : 'text-red-600'}`}>
-                  {s.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />} {s.change}
+                <p className="text-xl font-black text-trade-primary dark:text-white mt-1">
+                  {s.value}
+                </p>
+                <p
+                  className={`text-[10px] font-bold flex items-center gap-0.5 mt-1 ${s.up ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {s.up ? (
+                    <ArrowUpRight className="w-3 h-3" />
+                  ) : (
+                    <ArrowDownRight className="w-3 h-3" />
+                  )}{' '}
+                  {s.change}
                 </p>
               </div>
             ))}
@@ -215,7 +308,8 @@ export const AnalystTradeTrends: React.FC = () => {
           {/* Historical Chart */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 flex-1">
             <h3 className="text-sm font-bold text-trade-primary dark:text-white mb-4 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-violet-500" /> African Trade Flows (2015–2025, USD Billions)
+              <TrendingUp className="w-4 h-4 text-violet-500" /> African Trade Flows (2015–2025, USD
+              Billions)
             </h3>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -226,14 +320,47 @@ export const AnalystTradeTrends: React.FC = () => {
                       <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#e2e8f0"
+                    opacity={0.3}
+                  />
                   <XAxis dataKey="year" tick={{ fontSize: 10 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" tickFormatter={v => `$${v}B`} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '11px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      borderRadius: '8px',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '11px',
+                    }}
+                  />
                   <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Area type="monotone" dataKey="intraAfrica" stroke="#8b5cf6" fill="url(#ttIntra)" strokeWidth={2} name="Intra-Africa" />
-                  <Bar dataKey="extraAfrica" fill="#3b82f640" name="Extra-Africa" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Line type="monotone" dataKey="total" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} name="Total" />
+                  <Area
+                    type="monotone"
+                    dataKey="intraAfrica"
+                    stroke="#8b5cf6"
+                    fill="url(#ttIntra)"
+                    strokeWidth={2}
+                    name="Intra-Africa"
+                  />
+                  <Bar
+                    dataKey="extraAfrica"
+                    fill="#3b82f640"
+                    name="Extra-Africa"
+                    radius={[4, 4, 0, 0]}
+                    barSize={20}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="Total"
+                  />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -246,9 +373,14 @@ export const AnalystTradeTrends: React.FC = () => {
             </h3>
             <div className="flex gap-4 overflow-x-auto pb-2">
               {AFCFTA_IMPACT.map((p, i) => (
-                <div key={p.period} className={`flex-shrink-0 w-44 p-4 rounded-xl border transition-all ${
-                  i === 3 ? 'bg-violet-50 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700' : 'border-gray-100 dark:border-slate-700'
-                }`}>
+                <div
+                  key={p.period}
+                  className={`flex-shrink-0 w-44 p-4 rounded-xl border transition-all ${
+                    i === 3
+                      ? 'bg-violet-50 dark:bg-violet-900/20 border-violet-300 dark:border-violet-700'
+                      : 'border-gray-100 dark:border-slate-700'
+                  }`}
+                >
                   <p className="text-[10px] font-bold text-gray-500 uppercase">{p.period}</p>
                   <div className="mt-2 space-y-1.5">
                     <div className="flex justify-between text-[11px]">
@@ -261,10 +393,16 @@ export const AnalystTradeTrends: React.FC = () => {
                     </div>
                     <div className="flex justify-between text-[11px]">
                       <span className="text-gray-500">Volume</span>
-                      <span className="font-black text-trade-primary dark:text-white">${p.tradeVolume}B</span>
+                      <span className="font-black text-trade-primary dark:text-white">
+                        ${p.tradeVolume}B
+                      </span>
                     </div>
                   </div>
-                  {i === 4 && <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mt-2 inline-block font-bold">Projected</span>}
+                  {i === 4 && (
+                    <span className="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mt-2 inline-block font-bold">
+                      Projected
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -278,14 +416,20 @@ export const AnalystTradeTrends: React.FC = () => {
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-5 flex-1">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-bold text-trade-primary dark:text-white flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-orange-500" /> Seasonal Export Volume Index (0–100)
+                <Calendar className="w-4 h-4 text-orange-500" /> Seasonal Export Volume Index
+                (0–100)
               </h3>
               <div className="flex gap-1">
                 {['cocoa', 'coffee', 'flowers', 'mining', 'textiles'].map(c => (
-                  <button key={c} onClick={() => setSelectedCommodity(c)}
+                  <button
+                    key={c}
+                    onClick={() => setSelectedCommodity(c)}
                     className={`px-2 py-1 rounded text-[10px] font-bold capitalize transition-all ${
-                      selectedCommodity === c ? 'bg-violet-600 text-white' : 'bg-gray-100 dark:bg-slate-700 text-gray-500'
-                    }`}>
+                      selectedCommodity === c
+                        ? 'bg-violet-600 text-white'
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-500'
+                    }`}
+                  >
                     {c}
                   </button>
                 ))}
@@ -300,11 +444,31 @@ export const AnalystTradeTrends: React.FC = () => {
                       <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#e2e8f0"
+                    opacity={0.3}
+                  />
                   <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={[0, 100]} />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '11px' }} />
-                  <Area type="monotone" dataKey={selectedCommodity} stroke="#f59e0b" fill="url(#ttSeason)" strokeWidth={2.5} name={selectedCommodity} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      borderRadius: '8px',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '11px',
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey={selectedCommodity}
+                    stroke="#f59e0b"
+                    fill="url(#ttSeason)"
+                    strokeWidth={2.5}
+                    name={selectedCommodity}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -314,16 +478,23 @@ export const AnalystTradeTrends: React.FC = () => {
               const peaks = ['Oct–Dec', 'Apr–Jun', 'Feb–Mar', 'Sep–Nov', 'Nov–Jan'];
               const lows = ['Jun–Aug', 'Sep–Nov', 'Jun–Aug', 'Apr–Jun', 'Jan–Mar'];
               return (
-                <div key={name} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3">
+                <div
+                  key={name}
+                  className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3"
+                >
                   <p className="text-xs font-bold text-gray-900 dark:text-white">{name}</p>
                   <div className="mt-2 space-y-1">
                     <div className="flex items-center gap-1">
                       <ArrowUpRight className="w-3 h-3 text-green-500" />
-                      <span className="text-[10px] text-gray-500">Peak: <span className="font-bold text-green-600">{peaks[i]}</span></span>
+                      <span className="text-[10px] text-gray-500">
+                        Peak: <span className="font-bold text-green-600">{peaks[i]}</span>
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <ArrowDownRight className="w-3 h-3 text-red-400" />
-                      <span className="text-[10px] text-gray-500">Low: <span className="font-bold text-red-500">{lows[i]}</span></span>
+                      <span className="text-[10px] text-gray-500">
+                        Low: <span className="font-bold text-red-500">{lows[i]}</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -344,11 +515,17 @@ export const AnalystTradeTrends: React.FC = () => {
               { name: 'Crude Oil', price: '$82/bbl', change: '-2.1%', up: false },
               { name: 'Cotton', price: '$0.91/lb', change: '+7.1%', up: true },
             ].map(c => (
-              <div key={c.name} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3">
+              <div
+                key={c.name}
+                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3"
+              >
                 <p className="text-[10px] text-gray-500 uppercase">{c.name}</p>
                 <p className="text-lg font-black text-trade-primary dark:text-white">{c.price}</p>
-                <p className={`text-[10px] font-bold flex items-center gap-0.5 ${c.up ? 'text-green-600' : 'text-red-500'}`}>
-                  {c.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />} {c.change}
+                <p
+                  className={`text-[10px] font-bold flex items-center gap-0.5 ${c.up ? 'text-green-600' : 'text-red-500'}`}
+                >
+                  {c.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}{' '}
+                  {c.change}
                 </p>
               </div>
             ))}
@@ -360,14 +537,48 @@ export const AnalystTradeTrends: React.FC = () => {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={COMMODITY_PRICES}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.3} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#e2e8f0"
+                    opacity={0.3}
+                  />
                   <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '11px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      borderRadius: '8px',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '11px',
+                    }}
+                  />
                   <Legend wrapperStyle={{ fontSize: '10px' }} />
-                  <Line type="monotone" dataKey="cocoa" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} name="Cocoa ($/MT)" />
-                  <Line type="monotone" dataKey="coffee" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Coffee ($/MT)" />
-                  <Line type="monotone" dataKey="gold" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} name="Gold ($/oz)" />
+                  <Line
+                    type="monotone"
+                    dataKey="cocoa"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="Cocoa ($/MT)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="coffee"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="Coffee ($/MT)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="gold"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    name="Gold ($/oz)"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -380,12 +591,24 @@ export const AnalystTradeTrends: React.FC = () => {
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {FX_RATES.map(fx => (
-              <div key={fx.pair} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3">
+              <div
+                key={fx.pair}
+                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-3"
+              >
                 <p className="text-[10px] font-bold text-gray-500">{fx.pair}</p>
-                <p className="text-lg font-black text-trade-primary dark:text-white">{fx.rate.toLocaleString()}</p>
-                <p className={`text-[10px] font-bold flex items-center gap-0.5 ${fx.change > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                  {fx.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {fx.change > 0 ? '+' : ''}{fx.change}%
+                <p className="text-lg font-black text-trade-primary dark:text-white">
+                  {fx.rate.toLocaleString()}
+                </p>
+                <p
+                  className={`text-[10px] font-bold flex items-center gap-0.5 ${fx.change > 0 ? 'text-green-600' : 'text-red-500'}`}
+                >
+                  {fx.change > 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3" />
+                  )}
+                  {fx.change > 0 ? '+' : ''}
+                  {fx.change}%
                 </p>
                 {/* Mini sparkline */}
                 <div className="flex items-end gap-0.5 mt-2 h-6">
@@ -395,8 +618,14 @@ export const AnalystTradeTrends: React.FC = () => {
                     const range = max - min || 1;
                     const height = ((v - min) / range) * 100;
                     return (
-                      <div key={i} className={`flex-1 rounded-sm ${fx.change > 0 ? 'bg-green-400' : 'bg-red-400'}`}
-                        style={{ height: `${Math.max(15, height)}%`, opacity: 0.4 + (i / fx.history.length) * 0.6 }} />
+                      <div
+                        key={i}
+                        className={`flex-1 rounded-sm ${fx.change > 0 ? 'bg-green-400' : 'bg-red-400'}`}
+                        style={{
+                          height: `${Math.max(15, height)}%`,
+                          opacity: 0.4 + (i / fx.history.length) * 0.6,
+                        }}
+                      />
                     );
                   })}
                 </div>
@@ -412,7 +641,15 @@ export const AnalystTradeTrends: React.FC = () => {
                 <BarChart data={FX_RATES}>
                   <XAxis dataKey="pair" tick={{ fontSize: 10 }} stroke="#94a3b8" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '11px' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      borderRadius: '8px',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '11px',
+                    }}
+                  />
                   <Bar dataKey="change" name="% Change" radius={[4, 4, 0, 0]} barSize={24}>
                     {FX_RATES.map((fx, i) => (
                       <Cell key={i} fill={fx.change > 0 ? '#10b981' : '#ef4444'} />
@@ -447,29 +684,53 @@ export const AnalystTradeTrends: React.FC = () => {
             {DISRUPTIONS.map(d => {
               const Icon = getDisruptionIcon(d.type);
               return (
-                <div key={d.id} className={`bg-white dark:bg-slate-800 rounded-xl border p-4 transition-all ${
-                  d.severity === 'high' ? 'border-red-200 dark:border-red-800' :
-                  d.severity === 'medium' ? 'border-amber-200 dark:border-amber-800' : 'border-gray-100 dark:border-slate-700'
-                }`}>
+                <div
+                  key={d.id}
+                  className={`bg-white dark:bg-slate-800 rounded-xl border p-4 transition-all ${
+                    d.severity === 'high'
+                      ? 'border-red-200 dark:border-red-800'
+                      : d.severity === 'medium'
+                        ? 'border-amber-200 dark:border-amber-800'
+                        : 'border-gray-100 dark:border-slate-700'
+                  }`}
+                >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg shrink-0 ${
-                      d.severity === 'high' ? 'bg-red-100 text-red-600' :
-                      d.severity === 'medium' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'
-                    }`}>
+                    <div
+                      className={`p-2 rounded-lg shrink-0 ${
+                        d.severity === 'high'
+                          ? 'bg-red-100 text-red-600'
+                          : d.severity === 'medium'
+                            ? 'bg-amber-100 text-amber-600'
+                            : 'bg-green-100 text-green-600'
+                      }`}
+                    >
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">{d.title}</h4>
-                          <p className="text-[10px] text-gray-500">{d.location} • {d.date}</p>
+                          <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                            {d.title}
+                          </h4>
+                          <p className="text-[10px] text-gray-500">
+                            {d.location} • {d.date}
+                          </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {d.active && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />}
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            d.severity === 'high' ? 'bg-red-100 text-red-700' :
-                            d.severity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
-                          }`}>{d.severity.toUpperCase()}</span>
+                          {d.active && (
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                          )}
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              d.severity === 'high'
+                                ? 'bg-red-100 text-red-700'
+                                : d.severity === 'medium'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {d.severity.toUpperCase()}
+                          </span>
                         </div>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{d.impact}</p>

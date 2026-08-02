@@ -30,7 +30,9 @@ export function getMaskedWhopPaymentKey(): string {
 
 export async function createWhopPayment(request: WhopPaymentRequest): Promise<WhopPaymentResponse> {
   if (!WHOP_PAYMENT_API_KEY) {
-    throw new Error('Whop payment API key is not configured. Set VITE_WHOP_PAYMENT_API_KEY in the deployment environment.');
+    throw new Error(
+      'Whop payment API key is not configured. Set VITE_WHOP_PAYMENT_API_KEY in the deployment environment.'
+    );
   }
 
   const response = await fetch(WHOP_PAYMENT_API_URL, {

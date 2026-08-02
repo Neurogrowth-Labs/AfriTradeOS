@@ -10,14 +10,14 @@ import { supabase } from './supabase';
  */
 function sanitizeSearchInput(input: string): string {
   return input
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/%/g, '\\%')    // Escape % wildcard
-    .replace(/_/g, '\\_')    // Escape _ wildcard
-    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
-    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/%/g, '\\%') // Escape % wildcard
+    .replace(/_/g, '\\_') // Escape _ wildcard
+    .replace(/,/g, '') // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '') // Remove parentheses
     .replace(/\)/g, '')
     .trim()
-    .slice(0, 100);          // Limit length to prevent DoS
+    .slice(0, 100); // Limit length to prevent DoS
 }
 
 // =============================================================================
@@ -31,7 +31,20 @@ export interface ExportProject {
   title: string;
   description: string | null;
   template_type: string | null;
-  status: 'planning' | 'documentation' | 'compliance_review' | 'finance_pending' | 'production' | 'quality_check' | 'ready_to_ship' | 'in_transit' | 'customs_clearance' | 'delivered' | 'completed' | 'on_hold' | 'cancelled';
+  status:
+    | 'planning'
+    | 'documentation'
+    | 'compliance_review'
+    | 'finance_pending'
+    | 'production'
+    | 'quality_check'
+    | 'ready_to_ship'
+    | 'in_transit'
+    | 'customs_clearance'
+    | 'delivered'
+    | 'completed'
+    | 'on_hold'
+    | 'cancelled';
   priority: 'critical' | 'high' | 'medium' | 'low';
   product: string;
   hs_code: string | null;
@@ -110,7 +123,15 @@ export interface TradePartner {
   id: string;
   organization_id: string | null;
   company_name: string;
-  partner_type: 'supplier' | 'buyer' | 'distributor' | 'freight_forwarder' | 'customs_broker' | 'bank' | 'insurer' | 'agent';
+  partner_type:
+    | 'supplier'
+    | 'buyer'
+    | 'distributor'
+    | 'freight_forwarder'
+    | 'customs_broker'
+    | 'bank'
+    | 'insurer'
+    | 'agent';
   country: string;
   city: string | null;
   address: string | null;
@@ -192,11 +213,26 @@ export interface TradeFinanceApplication {
   application_number: string;
   organization_id: string;
   project_id: string | null;
-  product_type: 'letter_of_credit' | 'bank_guarantee' | 'export_factoring' | 'invoice_discounting' | 'trade_insurance' | 'working_capital';
+  product_type:
+    | 'letter_of_credit'
+    | 'bank_guarantee'
+    | 'export_factoring'
+    | 'invoice_discounting'
+    | 'trade_insurance'
+    | 'working_capital';
   amount_requested: number;
   currency: string;
   term_days: number | null;
-  status: 'draft' | 'submitted' | 'under_review' | 'additional_docs_required' | 'approved' | 'rejected' | 'disbursed' | 'repaid' | 'defaulted';
+  status:
+    | 'draft'
+    | 'submitted'
+    | 'under_review'
+    | 'additional_docs_required'
+    | 'approved'
+    | 'rejected'
+    | 'disbursed'
+    | 'repaid'
+    | 'defaulted';
   provider_id: string | null;
   provider_name: string | null;
   approved_amount: number | null;
@@ -233,7 +269,17 @@ export interface ShipmentTracking {
   current_country: string | null;
   latitude: number | null;
   longitude: number | null;
-  status: 'booked' | 'picked_up' | 'at_origin_port' | 'departed' | 'in_transit' | 'at_destination_port' | 'customs_hold' | 'cleared' | 'out_for_delivery' | 'delivered';
+  status:
+    | 'booked'
+    | 'picked_up'
+    | 'at_origin_port'
+    | 'departed'
+    | 'in_transit'
+    | 'at_destination_port'
+    | 'customs_hold'
+    | 'cleared'
+    | 'out_for_delivery'
+    | 'delivered';
   status_detail: string | null;
   booking_date: string | null;
   pickup_date: string | null;
@@ -304,7 +350,15 @@ export interface TradeContract {
   effective_date: string | null;
   expiry_date: string | null;
   renewal_date: string | null;
-  status: 'draft' | 'pending_signature' | 'active' | 'expiring_soon' | 'expired' | 'terminated' | 'breached' | 'completed';
+  status:
+    | 'draft'
+    | 'pending_signature'
+    | 'active'
+    | 'expiring_soon'
+    | 'expired'
+    | 'terminated'
+    | 'breached'
+    | 'completed';
   our_signature_date: string | null;
   counterparty_signature_date: string | null;
   digital_signature_hash: string | null;
@@ -346,14 +400,17 @@ export interface ExporterDashboardKPIs {
 // =============================================================================
 
 export const enterpriseExporterService = {
-
   // ---- DASHBOARD KPIs ----
   getDashboardKPIs: async (): Promise<ExporterDashboardKPIs> => {
     try {
       const [projectsRes, shipmentsRes, kpisRes] = await Promise.all([
         supabase.from('export_projects').select('*'),
         supabase.from('shipment_tracking').select('*'),
-        supabase.from('exporter_dashboard_kpis').select('*').order('period_date', { ascending: false }).limit(1),
+        supabase
+          .from('exporter_dashboard_kpis')
+          .select('*')
+          .order('period_date', { ascending: false })
+          .limit(1),
       ]);
 
       const projects = projectsRes.data || [];
@@ -361,29 +418,35 @@ export const enterpriseExporterService = {
       const latestKpis = kpisRes.data?.[0];
 
       // Calculate from projects
-      const activeProjects = projects.filter((p: ExportProject) => 
-        !['completed', 'cancelled', 'delivered'].includes(p.status)
+      const activeProjects = projects.filter(
+        (p: ExportProject) => !['completed', 'cancelled', 'delivered'].includes(p.status)
       ).length;
-      const completedProjects = projects.filter((p: ExportProject) => 
+      const completedProjects = projects.filter((p: ExportProject) =>
         ['completed', 'delivered'].includes(p.status)
       ).length;
-      const totalExportValue = projects.reduce((sum: number, p: ExportProject) => sum + (p.value || 0), 0);
+      const totalExportValue = projects.reduce(
+        (sum: number, p: ExportProject) => sum + (p.value || 0),
+        0
+      );
 
       // Exports by country
       const exportsByCountry: Record<string, number> = {};
       projects.forEach((p: ExportProject) => {
-        exportsByCountry[p.destination_country] = (exportsByCountry[p.destination_country] || 0) + (p.value || 0);
+        exportsByCountry[p.destination_country] =
+          (exportsByCountry[p.destination_country] || 0) + (p.value || 0);
       });
 
       // Shipments in transit
-      const shipmentsInTransit = shipments.filter((s: ShipmentTracking) => 
+      const shipmentsInTransit = shipments.filter((s: ShipmentTracking) =>
         ['in_transit', 'at_origin_port', 'departed'].includes(s.status)
       ).length;
 
       // Compliance score average
-      const complianceScore = projects.length > 0 
-        ? projects.reduce((sum: number, p: ExportProject) => sum + (p.compliance_score || 0), 0) / projects.length 
-        : 0;
+      const complianceScore =
+        projects.length > 0
+          ? projects.reduce((sum: number, p: ExportProject) => sum + (p.compliance_score || 0), 0) /
+            projects.length
+          : 0;
 
       return {
         totalExports: projects.length,
@@ -408,19 +471,39 @@ export const enterpriseExporterService = {
     } catch (e) {
       console.error('getDashboardKPIs error:', e);
       return {
-        totalExports: 0, totalExportValue: 0, activeProjects: 0, completedProjects: 0,
-        exportsByCountry: {}, exportsBySector: {}, pendingPayments: 0, receivedPayments: 0,
-        outstandingCredit: 0, complianceScore: 0, pendingComplianceChecks: 0, afcftaSavings: 0,
-        shipmentsInTransit: 0, onTimeDeliveryRate: 0, avgTransitDays: 0,
-        aiMarketOpportunities: [], aiRiskAlerts: [], aiRecommendations: [],
+        totalExports: 0,
+        totalExportValue: 0,
+        activeProjects: 0,
+        completedProjects: 0,
+        exportsByCountry: {},
+        exportsBySector: {},
+        pendingPayments: 0,
+        receivedPayments: 0,
+        outstandingCredit: 0,
+        complianceScore: 0,
+        pendingComplianceChecks: 0,
+        afcftaSavings: 0,
+        shipmentsInTransit: 0,
+        onTimeDeliveryRate: 0,
+        avgTransitDays: 0,
+        aiMarketOpportunities: [],
+        aiRiskAlerts: [],
+        aiRecommendations: [],
       };
     }
   },
 
   // ---- EXPORT PROJECTS ----
-  getProjects: async (filters?: { status?: string; priority?: string; search?: string }): Promise<ExportProject[]> => {
+  getProjects: async (filters?: {
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<ExportProject[]> => {
     try {
-      let query = supabase.from('export_projects').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('export_projects')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
@@ -430,7 +513,9 @@ export const enterpriseExporterService = {
       }
       if (filters?.search) {
         const search = sanitizeSearchInput(filters.search);
-        query = query.or(`title.ilike.%${search}%,product.ilike.%${search}%,project_number.ilike.%${search}%`);
+        query = query.or(
+          `title.ilike.%${search}%,product.ilike.%${search}%,project_number.ilike.%${search}%`
+        );
       }
 
       const { data, error } = await query.limit(100);
@@ -444,7 +529,11 @@ export const enterpriseExporterService = {
 
   getProjectById: async (id: string): Promise<ExportProject | null> => {
     try {
-      const { data, error } = await supabase.from('export_projects').select('*').eq('id', id).single();
+      const { data, error } = await supabase
+        .from('export_projects')
+        .select('*')
+        .eq('id', id)
+        .single();
       if (error) throw error;
       return data as ExportProject;
     } catch (e) {
@@ -456,10 +545,14 @@ export const enterpriseExporterService = {
   createProject: async (project: Partial<ExportProject>): Promise<ExportProject | null> => {
     try {
       const projectNumber = `EXP-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-      const { data, error } = await supabase.from('export_projects').insert({
-        ...project,
-        project_number: projectNumber,
-      }).select().single();
+      const { data, error } = await supabase
+        .from('export_projects')
+        .insert({
+          ...project,
+          project_number: projectNumber,
+        })
+        .select()
+        .single();
       if (error) throw error;
       return data as ExportProject;
     } catch (e) {
@@ -470,10 +563,13 @@ export const enterpriseExporterService = {
 
   updateProject: async (id: string, updates: Partial<ExportProject>): Promise<boolean> => {
     try {
-      const { error } = await supabase.from('export_projects').update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      }).eq('id', id);
+      const { error } = await supabase
+        .from('export_projects')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
       if (error) throw error;
       return true;
     } catch (e) {
@@ -484,10 +580,13 @@ export const enterpriseExporterService = {
 
   updateProjectStatus: async (id: string, status: ExportProject['status']): Promise<boolean> => {
     try {
-      const { error } = await supabase.from('export_projects').update({
-        status,
-        updated_at: new Date().toISOString(),
-      }).eq('id', id);
+      const { error } = await supabase
+        .from('export_projects')
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
       if (error) throw error;
 
       // Log activity
@@ -521,12 +620,19 @@ export const enterpriseExporterService = {
     }
   },
 
-  uploadDocument: async (projectId: string, document: Partial<ProjectDocument>): Promise<ProjectDocument | null> => {
+  uploadDocument: async (
+    projectId: string,
+    document: Partial<ProjectDocument>
+  ): Promise<ProjectDocument | null> => {
     try {
-      const { data, error } = await supabase.from('project_documents').insert({
-        ...document,
-        project_id: projectId,
-      }).select().single();
+      const { data, error } = await supabase
+        .from('project_documents')
+        .insert({
+          ...document,
+          project_id: projectId,
+        })
+        .select()
+        .single();
       if (error) throw error;
 
       // Log activity
@@ -563,9 +669,18 @@ export const enterpriseExporterService = {
   },
 
   // ---- TRADE PARTNERS ----
-  getPartners: async (filters?: { type?: string; country?: string; verified?: boolean; search?: string }): Promise<TradePartner[]> => {
+  getPartners: async (filters?: {
+    type?: string;
+    country?: string;
+    verified?: boolean;
+    search?: string;
+  }): Promise<TradePartner[]> => {
     try {
-      let query = supabase.from('trade_partners').select('*').eq('is_active', true).order('rating', { ascending: false });
+      let query = supabase
+        .from('trade_partners')
+        .select('*')
+        .eq('is_active', true)
+        .order('rating', { ascending: false });
 
       if (filters?.type && filters.type !== 'all') {
         query = query.eq('partner_type', filters.type);
@@ -592,7 +707,11 @@ export const enterpriseExporterService = {
 
   getPartnerById: async (id: string): Promise<TradePartner | null> => {
     try {
-      const { data, error } = await supabase.from('trade_partners').select('*').eq('id', id).single();
+      const { data, error } = await supabase
+        .from('trade_partners')
+        .select('*')
+        .eq('id', id)
+        .single();
       if (error) throw error;
       return data as TradePartner;
     } catch (e) {
@@ -602,9 +721,15 @@ export const enterpriseExporterService = {
   },
 
   // ---- MARKET INTELLIGENCE ----
-  getMarketIntelligence: async (filters?: { country?: string; sector?: string }): Promise<MarketIntelligence[]> => {
+  getMarketIntelligence: async (filters?: {
+    country?: string;
+    sector?: string;
+  }): Promise<MarketIntelligence[]> => {
     try {
-      let query = supabase.from('market_intelligence').select('*').order('ai_opportunity_score', { ascending: false });
+      let query = supabase
+        .from('market_intelligence')
+        .select('*')
+        .order('ai_opportunity_score', { ascending: false });
 
       if (filters?.country && filters.country !== 'all') {
         query = query.eq('country', filters.country);
@@ -641,9 +766,15 @@ export const enterpriseExporterService = {
   },
 
   // ---- TRADE FINANCE ----
-  getFinanceApplications: async (filters?: { status?: string; type?: string }): Promise<TradeFinanceApplication[]> => {
+  getFinanceApplications: async (filters?: {
+    status?: string;
+    type?: string;
+  }): Promise<TradeFinanceApplication[]> => {
     try {
-      let query = supabase.from('trade_finance_applications').select('*').order('created_at', { ascending: false });
+      let query = supabase
+        .from('trade_finance_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
@@ -661,13 +792,19 @@ export const enterpriseExporterService = {
     }
   },
 
-  createFinanceApplication: async (application: Partial<TradeFinanceApplication>): Promise<TradeFinanceApplication | null> => {
+  createFinanceApplication: async (
+    application: Partial<TradeFinanceApplication>
+  ): Promise<TradeFinanceApplication | null> => {
     try {
       const appNumber = `TFA-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-      const { data, error } = await supabase.from('trade_finance_applications').insert({
-        ...application,
-        application_number: appNumber,
-      }).select().single();
+      const { data, error } = await supabase
+        .from('trade_finance_applications')
+        .insert({
+          ...application,
+          application_number: appNumber,
+        })
+        .select()
+        .single();
       if (error) throw error;
       return data as TradeFinanceApplication;
     } catch (e) {
@@ -677,7 +814,10 @@ export const enterpriseExporterService = {
   },
 
   // ---- SHIPMENT TRACKING ----
-  getShipments: async (filters?: { status?: string; mode?: string }): Promise<ShipmentTracking[]> => {
+  getShipments: async (filters?: {
+    status?: string;
+    mode?: string;
+  }): Promise<ShipmentTracking[]> => {
     try {
       let query = supabase.from('shipment_tracking').select('*').order('eta', { ascending: true });
 
@@ -699,7 +839,11 @@ export const enterpriseExporterService = {
 
   getShipmentByTracking: async (trackingNumber: string): Promise<ShipmentTracking | null> => {
     try {
-      const { data, error } = await supabase.from('shipment_tracking').select('*').eq('tracking_number', trackingNumber).single();
+      const { data, error } = await supabase
+        .from('shipment_tracking')
+        .select('*')
+        .eq('tracking_number', trackingNumber)
+        .single();
       if (error) throw error;
       return data as ShipmentTracking;
     } catch (e) {
@@ -709,7 +853,12 @@ export const enterpriseExporterService = {
   },
 
   // ---- TENDERS ----
-  getTenders: async (filters?: { status?: string; country?: string; category?: string; search?: string }): Promise<TradeTender[]> => {
+  getTenders: async (filters?: {
+    status?: string;
+    country?: string;
+    category?: string;
+    search?: string;
+  }): Promise<TradeTender[]> => {
     try {
       let query = supabase.from('trade_tenders').select('*').order('deadline', { ascending: true });
 
@@ -738,7 +887,11 @@ export const enterpriseExporterService = {
 
   getTenderById: async (id: string): Promise<TradeTender | null> => {
     try {
-      const { data, error } = await supabase.from('trade_tenders').select('*').eq('id', id).single();
+      const { data, error } = await supabase
+        .from('trade_tenders')
+        .select('*')
+        .eq('id', id)
+        .single();
       if (error) throw error;
       return data as TradeTender;
     } catch (e) {
@@ -748,9 +901,16 @@ export const enterpriseExporterService = {
   },
 
   // ---- CONTRACTS ----
-  getContracts: async (filters?: { status?: string; type?: string; search?: string }): Promise<TradeContract[]> => {
+  getContracts: async (filters?: {
+    status?: string;
+    type?: string;
+    search?: string;
+  }): Promise<TradeContract[]> => {
     try {
-      let query = supabase.from('trade_contracts').select('*').order('expiry_date', { ascending: true });
+      let query = supabase
+        .from('trade_contracts')
+        .select('*')
+        .order('expiry_date', { ascending: true });
 
       if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
@@ -760,7 +920,9 @@ export const enterpriseExporterService = {
       }
       if (filters?.search) {
         const search = sanitizeSearchInput(filters.search);
-        query = query.or(`title.ilike.%${search}%,counterparty_name.ilike.%${search}%,contract_number.ilike.%${search}%`);
+        query = query.or(
+          `title.ilike.%${search}%,counterparty_name.ilike.%${search}%,contract_number.ilike.%${search}%`
+        );
       }
 
       const { data, error } = await query.limit(50);
@@ -774,7 +936,11 @@ export const enterpriseExporterService = {
 
   getContractById: async (id: string): Promise<TradeContract | null> => {
     try {
-      const { data, error } = await supabase.from('trade_contracts').select('*').eq('id', id).single();
+      const { data, error } = await supabase
+        .from('trade_contracts')
+        .select('*')
+        .eq('id', id)
+        .single();
       if (error) throw error;
       return data as TradeContract;
     } catch (e) {
@@ -784,29 +950,49 @@ export const enterpriseExporterService = {
   },
 
   // ---- REAL-TIME SUBSCRIPTIONS ----
-  subscribeToProjects: (callback: (payload: { new: ExportProject; old: ExportProject | null; eventType: string }) => void) => {
+  subscribeToProjects: (
+    callback: (payload: {
+      new: ExportProject;
+      old: ExportProject | null;
+      eventType: string;
+    }) => void
+  ) => {
     return supabase
       .channel('export_projects_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'export_projects' }, (payload) => {
-        callback({
-          new: payload.new as ExportProject,
-          old: payload.old as ExportProject | null,
-          eventType: payload.eventType,
-        });
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'export_projects' },
+        payload => {
+          callback({
+            new: payload.new as ExportProject,
+            old: payload.old as ExportProject | null,
+            eventType: payload.eventType,
+          });
+        }
+      )
       .subscribe();
   },
 
-  subscribeToShipments: (callback: (payload: { new: ShipmentTracking; old: ShipmentTracking | null; eventType: string }) => void) => {
+  subscribeToShipments: (
+    callback: (payload: {
+      new: ShipmentTracking;
+      old: ShipmentTracking | null;
+      eventType: string;
+    }) => void
+  ) => {
     return supabase
       .channel('shipment_tracking_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'shipment_tracking' }, (payload) => {
-        callback({
-          new: payload.new as ShipmentTracking,
-          old: payload.old as ShipmentTracking | null,
-          eventType: payload.eventType,
-        });
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shipment_tracking' },
+        payload => {
+          callback({
+            new: payload.new as ShipmentTracking,
+            old: payload.old as ShipmentTracking | null,
+            eventType: payload.eventType,
+          });
+        }
+      )
       .subscribe();
   },
 

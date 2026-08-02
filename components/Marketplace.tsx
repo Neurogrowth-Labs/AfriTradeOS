@@ -21,7 +21,7 @@ import {
   Award,
   Clock,
   Zap,
-  Calendar
+  Calendar,
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -48,18 +48,18 @@ const getCoordinatesFromLocation = (location: string): [number, number] => {
   const cityCoordinates: Record<string, [number, number]> = {
     'Lagos, Nigeria': [6.5244, 3.3792],
     'Nairobi, Kenya': [-1.2921, 36.8219],
-    'Accra, Ghana': [5.6037, -0.1870],
+    'Accra, Ghana': [5.6037, -0.187],
     'Cairo, Egypt': [30.0444, 31.2357],
     'Johannesburg, South Africa': [-26.2041, 28.0473],
     'Kinshasa, DRC': [-4.4419, 15.2663],
     'Dar es Salaam, Tanzania': [-6.7924, 39.2083],
-    'Addis Ababa, Ethiopia': [9.0320, 38.7469],
+    'Addis Ababa, Ethiopia': [9.032, 38.7469],
     'Casablanca, Morocco': [33.5731, -7.5898],
     'Kigali, Rwanda': [-1.9536, 30.0606],
     'Kampala, Uganda': [0.3476, 32.5825],
     'Abidjan, Ivory Coast': [5.3599, -4.0083],
     'Dakar, Senegal': [14.7167, -17.4677],
-    'Luanda, Angola': [-8.8390, 13.2894],
+    'Luanda, Angola': [-8.839, 13.2894],
     'Maputo, Mozambique': [-25.9692, 32.5732],
     'Lusaka, Zambia': [-15.3875, 28.3228],
     'Harare, Zimbabwe': [-17.8252, 31.0335],
@@ -143,7 +143,9 @@ export const Marketplace: React.FC = () => {
   const [selectedProfile, setSelectedProfile] = useState<DbOrganization | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showMeetingScheduler, setShowMeetingScheduler] = useState(false);
-  const [selectedPartnerForMeeting, setSelectedPartnerForMeeting] = useState<DbOrganization | null>(null);
+  const [selectedPartnerForMeeting, setSelectedPartnerForMeeting] = useState<DbOrganization | null>(
+    null
+  );
   const [showMatchesView, setShowMatchesView] = useState(false);
 
   // Filter state
@@ -151,7 +153,7 @@ export const Marketplace: React.FC = () => {
     companySize: '',
     tradeHistory: '',
     certifications: '',
-    minRating: ''
+    minRating: '',
   });
 
   useEffect(() => {
@@ -172,9 +174,11 @@ export const Marketplace: React.FC = () => {
         const { data, error, count } = await query;
 
         if (error) {
-          console.error("Supabase error:", error);
+          console.error('Supabase error:', error);
           // Fallback to mockDatabase
-          const fallbackData = await mockDatabase.getOrganizations(category === 'all' ? undefined : category);
+          const fallbackData = await mockDatabase.getOrganizations(
+            category === 'all' ? undefined : category
+          );
           setPartners(fallbackData);
           setTotalCount(fallbackData.length);
         } else {
@@ -185,15 +189,17 @@ export const Marketplace: React.FC = () => {
             tags: org.tags || [],
             rating: org.rating || 4.5,
             reviews_count: org.reviews_count || 0,
-            verification_status: org.verification_status ?? org.is_verified ?? false
+            verification_status: org.verification_status ?? org.is_verified ?? false,
           }));
           setPartners(mappedPartners);
           setTotalCount(count || mappedPartners.length);
         }
       } catch (error) {
-        console.error("Failed to fetch partners:", error);
+        console.error('Failed to fetch partners:', error);
         // Fallback to mockDatabase
-        const fallbackData = await mockDatabase.getOrganizations(category === 'all' ? undefined : category);
+        const fallbackData = await mockDatabase.getOrganizations(
+          category === 'all' ? undefined : category
+        );
         setPartners(fallbackData);
         setTotalCount(fallbackData.length);
       } finally {
@@ -204,17 +210,18 @@ export const Marketplace: React.FC = () => {
     fetchPartners();
   }, [category]);
 
-  const filteredPartners = partners.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
-    (p.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
+  const filteredPartners = partners.filter(
+    p =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.tags || []).some(t => t.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handleConnect = (partner: string) => {
-      alert(`Connection request sent to ${partner}.`);
+    alert(`Connection request sent to ${partner}.`);
   };
 
   const handleMessage = (partner: string) => {
-      alert(`Opening secure chat with ${partner}...`);
+    alert(`Opening secure chat with ${partner}...`);
   };
 
   const handleFindPartners = () => {
@@ -245,64 +252,76 @@ export const Marketplace: React.FC = () => {
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 text-white shadow-lg">
-         <div className="flex items-center justify-between mb-2">
-           <h2 className="text-3xl font-bold">Find Suppliers & Partners</h2>
-           <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
-             <Users className="w-4 h-4" />
-             <span className="text-sm font-bold">{totalCount} Partners</span>
-           </div>
-         </div>
-         <p className="text-blue-100 mb-6 max-w-2xl">Verified supplier database with AfCFTA eligibility, performance ratings, and AI-powered matching. Connect, message, or send RFQs directly.</p>
-         
-         <div className="flex gap-2 mb-4">
-           <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'grid' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-             <Users className="w-3.5 h-3.5" /> Partner Grid
-           </button>
-           <button onClick={() => setViewMode('network')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'network' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-             <Network className="w-3.5 h-3.5" /> Network Graph
-           </button>
-           <button onClick={() => setViewMode('world_map')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'world_map' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}>
-             <Globe className="w-3.5 h-3.5" /> World Map
-           </button>
-         </div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-3xl font-bold">Find Suppliers & Partners</h2>
+          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+            <Users className="w-4 h-4" />
+            <span className="text-sm font-bold">{totalCount} Partners</span>
+          </div>
+        </div>
+        <p className="text-blue-100 mb-6 max-w-2xl">
+          Verified supplier database with AfCFTA eligibility, performance ratings, and AI-powered
+          matching. Connect, message, or send RFQs directly.
+        </p>
 
-         <div className="bg-white rounded-xl p-2 flex items-center shadow-md max-w-3xl">
-            <Search className="w-5 h-5 text-gray-400 ml-3" />
-            <input
-               type="text"
-               placeholder="Search by company name, commodity, or service..."
-               className="flex-1 p-3 text-gray-800 outline-none placeholder-gray-400 bg-transparent"
-               value={search}
-               onChange={(e) => setSearch(e.target.value)}
-               onKeyDown={(e) => e.key === 'Enter' && handleFindPartners()}
-            />
-            <button
-              onClick={handleFindPartners}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors"
-            >
-               Find Partners
-            </button>
-         </div>
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'grid' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}
+          >
+            <Users className="w-3.5 h-3.5" /> Partner Grid
+          </button>
+          <button
+            onClick={() => setViewMode('network')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'network' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}
+          >
+            <Network className="w-3.5 h-3.5" /> Network Graph
+          </button>
+          <button
+            onClick={() => setViewMode('world_map')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'world_map' ? 'bg-white text-blue-700' : 'bg-white/20 text-white hover:bg-white/30'}`}
+          >
+            <Globe className="w-3.5 h-3.5" /> World Map
+          </button>
+        </div>
+
+        <div className="bg-white rounded-xl p-2 flex items-center shadow-md max-w-3xl">
+          <Search className="w-5 h-5 text-gray-400 ml-3" />
+          <input
+            type="text"
+            placeholder="Search by company name, commodity, or service..."
+            className="flex-1 p-3 text-gray-800 outline-none placeholder-gray-400 bg-transparent"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleFindPartners()}
+          />
+          <button
+            onClick={handleFindPartners}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors"
+          >
+            Find Partners
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
-         {CATEGORIES.map(cat => {
-            const Icon = cat.icon;
-            return (
-              <button 
-                key={cat.id}
-                onClick={() => setCategory(cat.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border ${
-                    category === cat.id 
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                    : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:border-blue-300'
-                }`}
-              >
-                {Icon && <Icon className="w-4 h-4" />}
-                {cat.label}
-              </button>
-            )
-         })}
+        {CATEGORIES.map(cat => {
+          const Icon = cat.icon;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setCategory(cat.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border ${
+                category === cat.id
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:border-blue-300'
+              }`}
+            >
+              {Icon && <Icon className="w-4 h-4" />}
+              {cat.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* AI Matchmaking & Enhanced Filters */}
@@ -311,8 +330,14 @@ export const Marketplace: React.FC = () => {
           <Zap className="w-5 h-5" />
         </div>
         <div className="flex-1">
-          <p className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full w-fit mb-1">AI Partner Match</p>
-          <p className="text-sm opacity-95">Based on your product portfolio and trade history, we found <span className="font-bold">3 high-compatibility partners</span> in West Africa with verified KYC and strong reliability scores.</p>
+          <p className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full w-fit mb-1">
+            AI Partner Match
+          </p>
+          <p className="text-sm opacity-95">
+            Based on your product portfolio and trade history, we found{' '}
+            <span className="font-bold">3 high-compatibility partners</span> in West Africa with
+            verified KYC and strong reliability scores.
+          </p>
         </div>
         <button
           onClick={handleViewMatches}
@@ -327,7 +352,7 @@ export const Marketplace: React.FC = () => {
         <span className="text-xs font-bold text-gray-500 dark:text-gray-400 mr-1">Filters:</span>
         <select
           value={filters.companySize}
-          onChange={(e) => setFilters({ ...filters, companySize: e.target.value })}
+          onChange={e => setFilters({ ...filters, companySize: e.target.value })}
           className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none"
         >
           <option value="">Company Size</option>
@@ -337,7 +362,7 @@ export const Marketplace: React.FC = () => {
         </select>
         <select
           value={filters.tradeHistory}
-          onChange={(e) => setFilters({ ...filters, tradeHistory: e.target.value })}
+          onChange={e => setFilters({ ...filters, tradeHistory: e.target.value })}
           className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none"
         >
           <option value="">Trade History</option>
@@ -347,7 +372,7 @@ export const Marketplace: React.FC = () => {
         </select>
         <select
           value={filters.certifications}
-          onChange={(e) => setFilters({ ...filters, certifications: e.target.value })}
+          onChange={e => setFilters({ ...filters, certifications: e.target.value })}
           className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none"
         >
           <option value="">Certifications</option>
@@ -357,7 +382,7 @@ export const Marketplace: React.FC = () => {
         </select>
         <select
           value={filters.minRating}
-          onChange={(e) => setFilters({ ...filters, minRating: e.target.value })}
+          onChange={e => setFilters({ ...filters, minRating: e.target.value })}
           className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-xs text-gray-700 dark:text-gray-300 outline-none"
         >
           <option value="">Min Rating</option>
@@ -380,10 +405,18 @@ export const Marketplace: React.FC = () => {
           <div className="absolute top-3 right-3 z-[1000] bg-white/95 dark:bg-slate-800/95 backdrop-blur p-3 rounded-lg border border-gray-200 dark:border-slate-700 shadow-lg">
             <div className="flex flex-col gap-2 text-[10px]">
               <span className="font-bold text-gray-900 dark:text-white mb-1">Partner Types</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Supplier</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Buyer</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Logistics</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-500" /> Finance</span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500" /> Supplier
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-purple-500" /> Buyer
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> Logistics
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-teal-500" /> Finance
+              </span>
             </div>
           </div>
 
@@ -398,14 +431,14 @@ export const Marketplace: React.FC = () => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {filteredPartners.map((partner) => {
+            {filteredPartners.map(partner => {
               const coordinates = getCoordinatesFromLocation(partner.location);
               const colors: Record<string, string> = {
                 seller: '#10b981',
                 buyer: '#a855f7',
                 logistics: '#f59e0b',
                 finance: '#14b8a6',
-                legal: '#6366f1'
+                legal: '#6366f1',
               };
               const color = colors[partner.type] || '#3b82f6';
               const icon = createColoredIcon(color);
@@ -437,10 +470,12 @@ export const Marketplace: React.FC = () => {
                         <span className="font-bold">{partner.rating.toFixed(1)}</span>
                         <span className="text-gray-400">({partner.reviews_count})</span>
                       </div>
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{partner.description}</p>
+                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                        {partner.description}
+                      </p>
                       <div className="flex gap-2">
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             handleScheduleMeeting(partner);
                           }}
@@ -449,7 +484,7 @@ export const Marketplace: React.FC = () => {
                           Schedule
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             handleMessage(partner.name);
                           }}
@@ -469,11 +504,21 @@ export const Marketplace: React.FC = () => {
         <div className="flex-1 bg-slate-900 rounded-xl border border-slate-700 relative overflow-hidden min-h-[500px]">
           <div className="absolute top-3 left-3 z-10 bg-slate-800/90 backdrop-blur p-2 rounded-lg border border-slate-700">
             <div className="flex gap-3 text-[10px]">
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> Self</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Supplier</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /> Buyer</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Logistics</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-500" /> Finance</span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-500" /> Self
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-green-500" /> Supplier
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-purple-500" /> Buyer
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500" /> Logistics
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-teal-500" /> Finance
+              </span>
             </div>
           </div>
           <svg viewBox="0 0 800 600" className="w-full h-full">
@@ -482,20 +527,74 @@ export const Marketplace: React.FC = () => {
               const fromNode = NETWORK_NODES.find(n => n.id === edge.from)!;
               const toNode = NETWORK_NODES.find(n => n.id === edge.to)!;
               return (
-                <line key={idx} x1={fromNode.x} y1={fromNode.y} x2={toNode.x} y2={toNode.y}
-                  stroke="#334155" strokeWidth={edge.strength * 3} opacity={0.5} strokeDasharray={edge.strength < 0.5 ? '4 4' : 'none'} />
+                <line
+                  key={idx}
+                  x1={fromNode.x}
+                  y1={fromNode.y}
+                  x2={toNode.x}
+                  y2={toNode.y}
+                  stroke="#334155"
+                  strokeWidth={edge.strength * 3}
+                  opacity={0.5}
+                  strokeDasharray={edge.strength < 0.5 ? '4 4' : 'none'}
+                />
               );
             })}
             {NETWORK_NODES.map(node => {
-              const colors: Record<string, string> = { self: '#3b82f6', seller: '#10b981', buyer: '#a855f7', logistics: '#f59e0b', finance: '#14b8a6', legal: '#6366f1' };
+              const colors: Record<string, string> = {
+                self: '#3b82f6',
+                seller: '#10b981',
+                buyer: '#a855f7',
+                logistics: '#f59e0b',
+                finance: '#14b8a6',
+                legal: '#6366f1',
+              };
               return (
                 <g key={node.id} className="cursor-pointer">
-                  <circle cx={node.x} cy={node.y} r={node.size + 6} fill={colors[node.type]} opacity={0.15}>
-                    <animate attributeName="r" values={`${node.size+4};${node.size+10};${node.size+4}`} dur="4s" repeatCount="indefinite" />
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.size + 6}
+                    fill={colors[node.type]}
+                    opacity={0.15}
+                  >
+                    <animate
+                      attributeName="r"
+                      values={`${node.size + 4};${node.size + 10};${node.size + 4}`}
+                      dur="4s"
+                      repeatCount="indefinite"
+                    />
                   </circle>
-                  <circle cx={node.x} cy={node.y} r={node.size} fill={colors[node.type]} stroke="#0f172a" strokeWidth="3" />
-                  <text x={node.x} y={node.y + node.size + 14} fill="#94a3b8" fontSize="9" textAnchor="middle" fontWeight="bold">{node.name}</text>
-                  {node.type === 'self' && <text x={node.x} y={node.y + 4} fill="white" fontSize="10" textAnchor="middle" fontWeight="bold">YOU</text>}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.size}
+                    fill={colors[node.type]}
+                    stroke="#0f172a"
+                    strokeWidth="3"
+                  />
+                  <text
+                    x={node.x}
+                    y={node.y + node.size + 14}
+                    fill="#94a3b8"
+                    fontSize="9"
+                    textAnchor="middle"
+                    fontWeight="bold"
+                  >
+                    {node.name}
+                  </text>
+                  {node.type === 'self' && (
+                    <text
+                      x={node.x}
+                      y={node.y + 4}
+                      fill="white"
+                      fontSize="10"
+                      textAnchor="middle"
+                      fontWeight="bold"
+                    >
+                      YOU
+                    </text>
+                  )}
                 </g>
               );
             })}
@@ -507,82 +606,93 @@ export const Marketplace: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-0 overflow-y-auto pr-2 pb-6">
-           {filteredPartners.map(partner => (
-              <div key={partner.id} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col group cursor-pointer"
-                onClick={() => setSelectedProfile(partner)}>
-                 <div className="p-6 flex-1">
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-slate-700/60 flex items-center justify-center border border-blue-100 dark:border-slate-600 text-blue-700 dark:text-blue-200 font-bold shrink-0">
-                          {partner.logo_initial}
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="font-bold text-gray-900 dark:text-white truncate">{partner.name}</h3>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            <MapPin className="w-3.5 h-3.5" />
-                            <span className="truncate">{partner.location}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {partner.verification_status && (
-                        <div className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-900/40 shrink-0">
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                          Verified
-                        </div>
-                      )}
+          {filteredPartners.map(partner => (
+            <div
+              key={partner.id}
+              className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col group cursor-pointer"
+              onClick={() => setSelectedProfile(partner)}
+            >
+              <div className="p-6 flex-1">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-slate-700/60 flex items-center justify-center border border-blue-100 dark:border-slate-600 text-blue-700 dark:text-blue-200 font-bold shrink-0">
+                      {partner.logo_initial}
                     </div>
-
-                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3 mb-4">
-                      {partner.description}
-                    </p>
-
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {(partner.tags || []).slice(0, 4).map(tag => (
-                        <span
-                          key={tag}
-                          className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {(partner.tags?.length || 0) > 4 && (
-                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700">
-                          +{partner.tags.length - 4}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-                        <Star className="w-4 h-4 text-amber-500" />
-                        <span className="font-bold">{partner.rating.toFixed(1)}</span>
-                        <span className="text-gray-400">({partner.reviews_count})</span>
-                      </div>
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                        {partner.type}
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-gray-900 dark:text-white truncate">
+                        {partner.name}
+                      </h3>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="truncate">{partner.location}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleMessage(partner.name); }}
-                      className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors"
+                  {partner.verification_status && (
+                    <div className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-900/40 shrink-0">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Verified
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed line-clamp-3 mb-4">
+                  {partner.description}
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {(partner.tags || []).slice(0, 4).map(tag => (
+                    <span
+                      key={tag}
+                      className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700"
                     >
-                      <MessageSquare className="w-4 h-4" />
-                      Message
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleConnect(partner.name); }}
-                      className="flex items-center justify-center gap-2 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Connect
-                    </button>
+                      {tag}
+                    </span>
+                  ))}
+                  {(partner.tags?.length || 0) > 4 && (
+                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-50 text-gray-600 border border-gray-100 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700">
+                      +{partner.tags.length - 4}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <Star className="w-4 h-4 text-amber-500" />
+                    <span className="font-bold">{partner.rating.toFixed(1)}</span>
+                    <span className="text-gray-400">({partner.reviews_count})</span>
                   </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {partner.type}
+                  </div>
+                </div>
               </div>
-           ))}
+
+              <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleMessage(partner.name);
+                  }}
+                  className="flex items-center justify-center gap-2 py-2 rounded-lg border border-gray-200 dark:border-slate-700 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Message
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    handleConnect(partner.name);
+                  }}
+                  className="flex items-center justify-center gap-2 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Connect
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -597,44 +707,74 @@ export const Marketplace: React.FC = () => {
                     {selectedProfile.logo_initial}
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedProfile.name}</h2>
-                    <p className="text-sm text-gray-500 flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {selectedProfile.location}</p>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                      {selectedProfile.name}
+                    </h2>
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" /> {selectedProfile.location}
+                    </p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedProfile(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+                <button
+                  onClick={() => setSelectedProfile(null)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
               </div>
             </div>
             <div className="p-6 space-y-5">
               {/* Rating & Compliance */}
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl">
-                  <div className="flex items-center justify-center gap-1 mb-1"><Star className="w-4 h-4 text-amber-500" /></div>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedProfile.rating.toFixed(1)}</p>
-                  <p className="text-[10px] text-gray-500">{selectedProfile.reviews_count} reviews</p>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Star className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {selectedProfile.rating.toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    {selectedProfile.reviews_count} reviews
+                  </p>
                 </div>
                 <div className="p-3 bg-green-50 dark:bg-green-900/10 rounded-xl">
                   <div className="flex items-center justify-center gap-1 mb-1">
-                    {selectedProfile.verification_status ? <CheckCircle className="w-4 h-4 text-green-600" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                    {selectedProfile.verification_status ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    )}
                   </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedProfile.verification_status ? 'Verified' : 'Pending'}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    {selectedProfile.verification_status ? 'Verified' : 'Pending'}
+                  </p>
                   <p className="text-[10px] text-gray-500">KYC Status</p>
                 </div>
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl">
-                  <div className="flex items-center justify-center gap-1 mb-1"><Award className="w-4 h-4 text-blue-600" /></div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">{selectedProfile.type}</p>
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Award className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white capitalize">
+                    {selectedProfile.type}
+                  </p>
                   <p className="text-[10px] text-gray-500">Category</p>
                 </div>
               </div>
 
               {/* Supplier Performance Dashboard */}
               <div>
-                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-blue-500" /> Supplier Performance</h3>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-blue-500" /> Supplier Performance
+                </h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg">
                     <p className="text-[10px] text-gray-500 uppercase mb-0.5">On-Time Delivery</p>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: '92%' }} />
+                        <div
+                          className="h-full bg-green-500 rounded-full"
+                          style={{ width: '92%' }}
+                        />
                       </div>
                       <span className="text-xs font-bold text-green-600">92%</span>
                     </div>
@@ -661,11 +801,15 @@ export const Marketplace: React.FC = () => {
 
               <div>
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">About</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{selectedProfile.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedProfile.description}
+                </p>
               </div>
 
               <div>
-                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Compliance Status</h3>
+                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  Compliance Status
+                </h3>
                 <div className="space-y-2">
                   {[
                     { label: 'KYC/KYB Verification', status: selectedProfile.verification_status },
@@ -673,12 +817,19 @@ export const Marketplace: React.FC = () => {
                     { label: 'AML Screening', status: true },
                     { label: 'Financial Statements', status: false },
                   ].map(item => (
-                    <div key={item.label} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800 rounded-lg">
+                    <div
+                      key={item.label}
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-slate-800 rounded-lg"
+                    >
                       <span className="text-xs text-gray-600 dark:text-gray-400">{item.label}</span>
                       {item.status ? (
-                        <span className="text-[10px] font-bold text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Cleared</span>
+                        <span className="text-[10px] font-bold text-green-600 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Cleared
+                        </span>
                       ) : (
-                        <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</span>
+                        <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Pending
+                        </span>
                       )}
                     </div>
                   ))}
@@ -689,18 +840,33 @@ export const Marketplace: React.FC = () => {
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {(selectedProfile.tags || []).map(tag => (
-                    <span key={tag} className="text-xs font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">{tag}</span>
+                    <span
+                      key={tag}
+                      className="text-xs font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                    >
+                      {tag}
+                    </span>
                   ))}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => { handleMessage(selectedProfile.name); setSelectedProfile(null); }}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-colors">
+                <button
+                  onClick={() => {
+                    handleMessage(selectedProfile.name);
+                    setSelectedProfile(null);
+                  }}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-sm font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-colors"
+                >
                   <MessageSquare className="w-4 h-4" /> Message
                 </button>
-                <button onClick={() => { handleConnect(selectedProfile.name); setSelectedProfile(null); }}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors">
+                <button
+                  onClick={() => {
+                    handleConnect(selectedProfile.name);
+                    setSelectedProfile(null);
+                  }}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors"
+                >
                   <UserPlus className="w-4 h-4" /> Connect
                 </button>
               </div>
@@ -716,9 +882,13 @@ export const Marketplace: React.FC = () => {
             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Schedule B2B Meeting</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Schedule B2B Meeting
+                  </h2>
                   {selectedPartnerForMeeting && (
-                    <p className="text-sm text-gray-500 mt-1">with {selectedPartnerForMeeting.name}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      with {selectedPartnerForMeeting.name}
+                    </p>
                   )}
                 </div>
                 <button
@@ -783,7 +953,9 @@ export const Marketplace: React.FC = () => {
                 </button>
                 <button
                   onClick={() => {
-                    alert(`Meeting request sent${selectedPartnerForMeeting ? ' to ' + selectedPartnerForMeeting.name : ''}!`);
+                    alert(
+                      `Meeting request sent${selectedPartnerForMeeting ? ' to ' + selectedPartnerForMeeting.name : ''}!`
+                    );
                     setShowMeetingScheduler(false);
                     setSelectedPartnerForMeeting(null);
                   }}
@@ -804,8 +976,12 @@ export const Marketplace: React.FC = () => {
             <div className="p-6 border-b border-gray-100 dark:border-slate-700">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">AI-Matched Partners</h2>
-                  <p className="text-sm text-gray-500 mt-1">High-compatibility partners based on your profile</p>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    AI-Matched Partners
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    High-compatibility partners based on your profile
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowMatchesView(false)}
@@ -827,7 +1003,9 @@ export const Marketplace: React.FC = () => {
                         {partner.logo_initial}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 dark:text-white truncate">{partner.name}</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-white truncate">
+                          {partner.name}
+                        </h3>
                         <p className="text-xs text-gray-500 flex items-center gap-1">
                           <MapPin className="w-3 h-3" /> {partner.location}
                         </p>

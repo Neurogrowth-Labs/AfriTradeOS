@@ -19,7 +19,7 @@ import {
   MapPin,
   Zap,
   BarChart3,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import {
   BarChart,
@@ -34,7 +34,7 @@ import {
   Cell,
   AreaChart,
   Area,
-  Legend
+  Legend,
 } from 'recharts';
 
 // Sector distribution data
@@ -66,18 +66,126 @@ const INCIDENT_DATA = [
 
 // Country-level data for heatmap
 const COUNTRY_DATA = [
-  { id: 'NG', name: 'Nigeria', x: 320, y: 350, trades: 4520, compliance: 89, risk: 'low', volume: '$1.2B' },
-  { id: 'KE', name: 'Kenya', x: 580, y: 420, trades: 2340, compliance: 92, risk: 'low', volume: '$680M' },
-  { id: 'ZA', name: 'South Africa', x: 500, y: 680, trades: 5670, compliance: 95, risk: 'low', volume: '$2.1B' },
-  { id: 'EG', name: 'Egypt', x: 530, y: 120, trades: 1890, compliance: 87, risk: 'medium', volume: '$520M' },
-  { id: 'GH', name: 'Ghana', x: 280, y: 370, trades: 1560, compliance: 91, risk: 'low', volume: '$420M' },
-  { id: 'MA', name: 'Morocco', x: 280, y: 90, trades: 1230, compliance: 88, risk: 'medium', volume: '$380M' },
-  { id: 'ET', name: 'Ethiopia', x: 600, y: 340, trades: 890, compliance: 78, risk: 'high', volume: '$210M' },
-  { id: 'TZ', name: 'Tanzania', x: 580, y: 500, trades: 1120, compliance: 85, risk: 'medium', volume: '$290M' },
-  { id: 'CI', name: "Cote d'Ivoire", x: 250, y: 380, trades: 980, compliance: 84, risk: 'medium', volume: '$270M' },
-  { id: 'SN', name: 'Senegal', x: 180, y: 320, trades: 670, compliance: 90, risk: 'low', volume: '$180M' },
-  { id: 'UG', name: 'Uganda', x: 560, y: 430, trades: 540, compliance: 82, risk: 'medium', volume: '$140M' },
-  { id: 'CM', name: 'Cameroon', x: 400, y: 400, trades: 720, compliance: 79, risk: 'high', volume: '$190M' },
+  {
+    id: 'NG',
+    name: 'Nigeria',
+    x: 320,
+    y: 350,
+    trades: 4520,
+    compliance: 89,
+    risk: 'low',
+    volume: '$1.2B',
+  },
+  {
+    id: 'KE',
+    name: 'Kenya',
+    x: 580,
+    y: 420,
+    trades: 2340,
+    compliance: 92,
+    risk: 'low',
+    volume: '$680M',
+  },
+  {
+    id: 'ZA',
+    name: 'South Africa',
+    x: 500,
+    y: 680,
+    trades: 5670,
+    compliance: 95,
+    risk: 'low',
+    volume: '$2.1B',
+  },
+  {
+    id: 'EG',
+    name: 'Egypt',
+    x: 530,
+    y: 120,
+    trades: 1890,
+    compliance: 87,
+    risk: 'medium',
+    volume: '$520M',
+  },
+  {
+    id: 'GH',
+    name: 'Ghana',
+    x: 280,
+    y: 370,
+    trades: 1560,
+    compliance: 91,
+    risk: 'low',
+    volume: '$420M',
+  },
+  {
+    id: 'MA',
+    name: 'Morocco',
+    x: 280,
+    y: 90,
+    trades: 1230,
+    compliance: 88,
+    risk: 'medium',
+    volume: '$380M',
+  },
+  {
+    id: 'ET',
+    name: 'Ethiopia',
+    x: 600,
+    y: 340,
+    trades: 890,
+    compliance: 78,
+    risk: 'high',
+    volume: '$210M',
+  },
+  {
+    id: 'TZ',
+    name: 'Tanzania',
+    x: 580,
+    y: 500,
+    trades: 1120,
+    compliance: 85,
+    risk: 'medium',
+    volume: '$290M',
+  },
+  {
+    id: 'CI',
+    name: "Cote d'Ivoire",
+    x: 250,
+    y: 380,
+    trades: 980,
+    compliance: 84,
+    risk: 'medium',
+    volume: '$270M',
+  },
+  {
+    id: 'SN',
+    name: 'Senegal',
+    x: 180,
+    y: 320,
+    trades: 670,
+    compliance: 90,
+    risk: 'low',
+    volume: '$180M',
+  },
+  {
+    id: 'UG',
+    name: 'Uganda',
+    x: 560,
+    y: 430,
+    trades: 540,
+    compliance: 82,
+    risk: 'medium',
+    volume: '$140M',
+  },
+  {
+    id: 'CM',
+    name: 'Cameroon',
+    x: 400,
+    y: 400,
+    trades: 720,
+    compliance: 79,
+    risk: 'high',
+    volume: '$190M',
+  },
 ];
 
 // AfCFTA corridor data
@@ -101,16 +209,55 @@ const HS_CODE_DATA = [
 
 // Sanctioned traders list
 const SANCTIONED_TRADERS = [
-  { id: 'ST001', name: 'Dubious Exports Ltd', country: 'Nigeria', reason: 'Fraudulent documentation', date: '2024-02-15', severity: 'high' },
-  { id: 'ST002', name: 'Shadow Trading Co', country: 'Kenya', reason: 'Money laundering suspicion', date: '2024-01-28', severity: 'critical' },
-  { id: 'ST003', name: 'Phantom Logistics', country: 'South Africa', reason: 'Customs evasion', date: '2024-03-02', severity: 'medium' },
+  {
+    id: 'ST001',
+    name: 'Dubious Exports Ltd',
+    country: 'Nigeria',
+    reason: 'Fraudulent documentation',
+    date: '2024-02-15',
+    severity: 'high',
+  },
+  {
+    id: 'ST002',
+    name: 'Shadow Trading Co',
+    country: 'Kenya',
+    reason: 'Money laundering suspicion',
+    date: '2024-01-28',
+    severity: 'critical',
+  },
+  {
+    id: 'ST003',
+    name: 'Phantom Logistics',
+    country: 'South Africa',
+    reason: 'Customs evasion',
+    date: '2024-03-02',
+    severity: 'medium',
+  },
 ];
 
 // Suspicious patterns detected by AI
 const AI_PATTERNS = [
-  { id: 'AP001', pattern: 'Unusual price variance', trades: 23, risk: 'high', detected: '2 hours ago' },
-  { id: 'AP002', pattern: 'Circular trade routes', trades: 8, risk: 'critical', detected: '45 mins ago' },
-  { id: 'AP003', pattern: 'Document timestamp anomaly', trades: 15, risk: 'medium', detected: '4 hours ago' },
+  {
+    id: 'AP001',
+    pattern: 'Unusual price variance',
+    trades: 23,
+    risk: 'high',
+    detected: '2 hours ago',
+  },
+  {
+    id: 'AP002',
+    pattern: 'Circular trade routes',
+    trades: 8,
+    risk: 'critical',
+    detected: '45 mins ago',
+  },
+  {
+    id: 'AP003',
+    pattern: 'Document timestamp anomaly',
+    trades: 15,
+    risk: 'medium',
+    detected: '4 hours ago',
+  },
   { id: 'AP004', pattern: 'Rapid entity changes', trades: 5, risk: 'high', detected: '1 day ago' },
 ];
 
@@ -120,21 +267,31 @@ export const RegulatorDashboard: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<RegulatorTab>('overview');
-  const [selectedCountry, setSelectedCountry] = useState<typeof COUNTRY_DATA[0] | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<(typeof COUNTRY_DATA)[0] | null>(null);
   const [dateRange, setDateRange] = useState('30d');
   const [showAIAlerts, setShowAIAlerts] = useState(true);
 
-  const ALL_REGIONS = ['All Regions', 'West Africa', 'East Africa', 'Southern Africa', 'North Africa', 'Central Africa'];
+  const ALL_REGIONS = [
+    'All Regions',
+    'West Africa',
+    'East Africa',
+    'Southern Africa',
+    'North Africa',
+    'Central Africa',
+  ];
 
   // Filter data based on selected region
-  const filteredIncidentData = selectedRegion === 'all'
-    ? INCIDENT_DATA
-    : INCIDENT_DATA.filter(d => d.region === selectedRegion);
+  const filteredIncidentData =
+    selectedRegion === 'all'
+      ? INCIDENT_DATA
+      : INCIDENT_DATA.filter(d => d.region === selectedRegion);
 
   // Calculate totals
   const totalTradeVolume = INCIDENT_DATA.reduce((sum, r) => sum + r.revenue, 0);
   const totalTrades = INCIDENT_DATA.reduce((sum, r) => sum + r.trades, 0);
-  const avgCompliance = Math.round(COUNTRY_DATA.reduce((sum, c) => sum + c.compliance, 0) / COUNTRY_DATA.length);
+  const avgCompliance = Math.round(
+    COUNTRY_DATA.reduce((sum, c) => sum + c.compliance, 0) / COUNTRY_DATA.length
+  );
   const totalAMLIncidents = INCIDENT_DATA.reduce((sum, r) => sum + r.aml, 0);
 
   // Export report functionality
@@ -148,7 +305,10 @@ export const RegulatorDashboard: React.FC = () => {
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `regulatory_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        'download',
+        `regulatory_report_${new Date().toISOString().split('T')[0]}.csv`
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -156,7 +316,8 @@ export const RegulatorDashboard: React.FC = () => {
       let csvContent = 'data:application/vnd.ms-excel;charset=utf-8,';
       csvContent += 'AfriTradeOS Regulatory Report\n\n';
       csvContent += 'Generated: ' + new Date().toLocaleDateString() + '\n';
-      csvContent += 'Region: ' + (selectedRegion === 'all' ? 'All Regions' : selectedRegion) + '\n\n';
+      csvContent +=
+        'Region: ' + (selectedRegion === 'all' ? 'All Regions' : selectedRegion) + '\n\n';
       csvContent += 'Region,AML Alerts,Compliance Issues,Trades,Revenue (B)\n';
       filteredIncidentData.forEach(row => {
         csvContent += `${row.region},${row.aml},${row.compliance},${row.trades},${row.revenue}\n`;
@@ -164,7 +325,10 @@ export const RegulatorDashboard: React.FC = () => {
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `regulatory_report_${new Date().toISOString().split('T')[0]}.xls`);
+      link.setAttribute(
+        'download',
+        `regulatory_report_${new Date().toISOString().split('T')[0]}.xls`
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -210,10 +374,14 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low': return 'bg-green-500';
-      case 'medium': return 'bg-amber-500';
-      case 'high': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'low':
+        return 'bg-green-500';
+      case 'medium':
+        return 'bg-amber-500';
+      case 'high':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
@@ -245,7 +413,7 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
             {/* Date Range Selector */}
             <select
               value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+              onChange={e => setDateRange(e.target.value)}
               className="bg-gray-100 dark:bg-slate-700 text-sm p-2 rounded-lg border-none outline-none"
             >
               <option value="7d">Last 7 Days</option>
@@ -257,11 +425,15 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
             {/* Region Filter */}
             <select
               value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value === 'All Regions' ? 'all' : e.target.value)}
+              onChange={e =>
+                setSelectedRegion(e.target.value === 'All Regions' ? 'all' : e.target.value)
+              }
               className="bg-gray-100 dark:bg-slate-700 text-sm p-2 rounded-lg border-none outline-none"
             >
               {ALL_REGIONS.map(region => (
-                <option key={region} value={region === 'All Regions' ? 'all' : region}>{region}</option>
+                <option key={region} value={region === 'All Regions' ? 'all' : region}>
+                  {region}
+                </option>
               ))}
             </select>
 
@@ -327,26 +499,34 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
           <p className="text-xs font-bold text-gray-400 uppercase">Total Trade Volume</p>
-          <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">${totalTradeVolume.toFixed(1)}B</p>
+          <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">
+            ${totalTradeVolume.toFixed(1)}B
+          </p>
           <p className="text-xs text-green-500 font-bold mt-1 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> 12% YoY
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
           <p className="text-xs font-bold text-gray-400 uppercase">Avg Compliance Rate</p>
-          <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">{avgCompliance}%</p>
+          <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">
+            {avgCompliance}%
+          </p>
           <p className="text-xs text-green-500 font-bold mt-1 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> 2.1% from Q1
           </p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
           <p className="text-xs font-bold text-gray-400 uppercase">Active Traders</p>
-          <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">{totalTrades.toLocaleString()}</p>
+          <p className="text-3xl font-black text-trade-primary dark:text-white mt-1">
+            {totalTrades.toLocaleString()}
+          </p>
           <p className="text-xs text-gray-500 font-bold mt-1">Across 54 Countries</p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
           <p className="text-xs font-bold text-gray-400 uppercase">AML Incidents</p>
-          <p className="text-3xl font-black text-red-600 dark:text-red-400 mt-1">{totalAMLIncidents}</p>
+          <p className="text-3xl font-black text-red-600 dark:text-red-400 mt-1">
+            {totalAMLIncidents}
+          </p>
           <p className="text-xs text-red-500 font-bold mt-1 flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" /> Active Investigations
           </p>
@@ -361,9 +541,12 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
               <Zap className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <p className="font-bold text-red-800 dark:text-red-300 text-sm">AI Alert: Suspicious Pattern Detected</p>
+              <p className="font-bold text-red-800 dark:text-red-300 text-sm">
+                AI Alert: Suspicious Pattern Detected
+              </p>
               <p className="text-xs text-red-700 dark:text-red-400">
-                {AI_PATTERNS.find(p => p.risk === 'critical')?.pattern} affecting {AI_PATTERNS.find(p => p.risk === 'critical')?.trades} trades
+                {AI_PATTERNS.find(p => p.risk === 'critical')?.pattern} affecting{' '}
+                {AI_PATTERNS.find(p => p.risk === 'critical')?.trades} trades
               </p>
             </div>
           </div>
@@ -429,7 +612,7 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                         { x: 580, y: 420 }, // Nairobi
                         { x: 500, y: 680 }, // Johannesburg
                         { x: 530, y: 120 }, // Cairo
-                        { x: 280, y: 90 },  // Casablanca
+                        { x: 280, y: 90 }, // Casablanca
                       ];
                       const endPoints = [
                         { x: 280, y: 370 }, // Accra
@@ -445,7 +628,13 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                           y1={startPoints[i].y}
                           x2={endPoints[i].x}
                           y2={endPoints[i].y}
-                          stroke={corridor.status === 'optimal' ? '#10b981' : corridor.status === 'congested' ? '#f59e0b' : '#ef4444'}
+                          stroke={
+                            corridor.status === 'optimal'
+                              ? '#10b981'
+                              : corridor.status === 'congested'
+                                ? '#f59e0b'
+                                : '#ef4444'
+                          }
                           strokeWidth="3"
                           strokeDasharray={corridor.status === 'blocked' ? '8,4' : 'none'}
                           opacity="0.6"
@@ -491,33 +680,48 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                   {selectedCountry && (
                     <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg border border-gray-200 dark:border-slate-700 min-w-[200px]">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-gray-900 dark:text-white">{selectedCountry.name}</h4>
-                        <button onClick={() => setSelectedCountry(null)} className="text-gray-400 hover:text-gray-600">
+                        <h4 className="font-bold text-gray-900 dark:text-white">
+                          {selectedCountry.name}
+                        </h4>
+                        <button
+                          onClick={() => setSelectedCountry(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
                           <XCircle className="w-4 h-4" />
                         </button>
                       </div>
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-500">Trade Volume</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{selectedCountry.volume}</span>
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {selectedCountry.volume}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Active Trades</span>
-                          <span className="font-bold text-gray-900 dark:text-white">{selectedCountry.trades.toLocaleString()}</span>
+                          <span className="font-bold text-gray-900 dark:text-white">
+                            {selectedCountry.trades.toLocaleString()}
+                          </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Compliance</span>
-                          <span className={`font-bold ${selectedCountry.compliance >= 90 ? 'text-green-600' : selectedCountry.compliance >= 80 ? 'text-amber-600' : 'text-red-600'}`}>
+                          <span
+                            className={`font-bold ${selectedCountry.compliance >= 90 ? 'text-green-600' : selectedCountry.compliance >= 80 ? 'text-amber-600' : 'text-red-600'}`}
+                          >
                             {selectedCountry.compliance}%
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-500">Risk Level</span>
-                          <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
-                            selectedCountry.risk === 'low' ? 'bg-green-100 text-green-700' :
-                            selectedCountry.risk === 'medium' ? 'bg-amber-100 text-amber-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                              selectedCountry.risk === 'low'
+                                ? 'bg-green-100 text-green-700'
+                                : selectedCountry.risk === 'medium'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             {selectedCountry.risk}
                           </span>
                         </div>
@@ -562,7 +766,10 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                     {SECTOR_DATA.map(d => (
                       <div key={d.name} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: d.color }}></div>
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: d.color }}
+                          ></div>
                           <span className="text-gray-600 dark:text-gray-300">{d.name}</span>
                         </div>
                         <span className="font-bold text-gray-900 dark:text-white">{d.value}%</span>
@@ -582,21 +789,31 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                       <div
                         key={pattern.id}
                         className={`p-3 rounded-lg border ${
-                          pattern.risk === 'critical' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                          pattern.risk === 'high' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
-                          'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
+                          pattern.risk === 'critical'
+                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                            : pattern.risk === 'high'
+                              ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                              : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
                         }`}
                       >
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="font-bold text-gray-900 dark:text-white text-sm">{pattern.pattern}</p>
-                            <p className="text-xs text-gray-500 mt-1">{pattern.trades} trades • {pattern.detected}</p>
+                            <p className="font-bold text-gray-900 dark:text-white text-sm">
+                              {pattern.pattern}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {pattern.trades} trades • {pattern.detected}
+                            </p>
                           </div>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            pattern.risk === 'critical' ? 'bg-red-600 text-white' :
-                            pattern.risk === 'high' ? 'bg-amber-500 text-white' :
-                            'bg-gray-500 text-white'
-                          }`}>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              pattern.risk === 'critical'
+                                ? 'bg-red-600 text-white'
+                                : pattern.risk === 'high'
+                                  ? 'bg-amber-500 text-white'
+                                  : 'bg-gray-500 text-white'
+                            }`}
+                          >
                             {pattern.risk}
                           </span>
                         </div>
@@ -611,7 +828,9 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Compliance Trend */}
               <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
-                <h3 className="font-bold text-gray-900 dark:text-white mb-4">Compliance Rate Trend (6 Months)</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                  Compliance Rate Trend (6 Months)
+                </h3>
                 <div className="h-[250px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={COMPLIANCE_TREND}>
@@ -622,12 +841,35 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} domain={[60, 100]} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }}
+                      <XAxis
+                        dataKey="month"
+                        stroke="#94a3b8"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
                       />
-                      <Area type="monotone" dataKey="rate" stroke="#10b981" strokeWidth={3} fill="url(#colorRate)" />
+                      <YAxis
+                        stroke="#94a3b8"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        domain={[60, 100]}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: '#fff',
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="rate"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        fill="url(#colorRate)"
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -647,12 +889,38 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={filteredIncidentData}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="region" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                      <XAxis
+                        dataKey="region"
+                        stroke="#94a3b8"
+                        fontSize={10}
+                        tickLine={false}
+                        axisLine={false}
+                      />
                       <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white' }} />
+                      <Tooltip
+                        cursor={{ fill: 'transparent' }}
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: '8px',
+                          border: 'none',
+                          color: 'white',
+                        }}
+                      />
                       <Legend />
-                      <Bar dataKey="aml" name="AML Alerts" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
-                      <Bar dataKey="compliance" name="Compliance Issues" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
+                      <Bar
+                        dataKey="aml"
+                        name="AML Alerts"
+                        fill="#ef4444"
+                        radius={[4, 4, 0, 0]}
+                        barSize={20}
+                      />
+                      <Bar
+                        dataKey="compliance"
+                        name="Compliance Issues"
+                        fill="#f59e0b"
+                        radius={[4, 4, 0, 0]}
+                        barSize={20}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -665,23 +933,31 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
         {activeTab === 'corridors' && (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">AfCFTA Trade Corridors</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                AfCFTA Trade Corridors
+              </h3>
               <div className="space-y-4">
                 {CORRIDOR_DATA.map(corridor => (
                   <div
                     key={corridor.name}
                     className={`p-4 rounded-xl border flex items-center justify-between ${
-                      corridor.status === 'optimal' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
-                      corridor.status === 'congested' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
-                      'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                      corridor.status === 'optimal'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                        : corridor.status === 'congested'
+                          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${
-                        corridor.status === 'optimal' ? 'bg-green-100 text-green-600' :
-                        corridor.status === 'congested' ? 'bg-amber-100 text-amber-600' :
-                        'bg-red-100 text-red-600'
-                      }`}>
+                      <div
+                        className={`p-2 rounded-lg ${
+                          corridor.status === 'optimal'
+                            ? 'bg-green-100 text-green-600'
+                            : corridor.status === 'congested'
+                              ? 'bg-amber-100 text-amber-600'
+                              : 'bg-red-100 text-red-600'
+                        }`}
+                      >
                         <MapPin className="w-5 h-5" />
                       </div>
                       <div>
@@ -691,17 +967,28 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className={`font-bold flex items-center gap-1 ${corridor.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {corridor.growth >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                          {corridor.growth >= 0 ? '+' : ''}{corridor.growth}%
+                        <p
+                          className={`font-bold flex items-center gap-1 ${corridor.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                        >
+                          {corridor.growth >= 0 ? (
+                            <TrendingUp className="w-4 h-4" />
+                          ) : (
+                            <TrendingDown className="w-4 h-4" />
+                          )}
+                          {corridor.growth >= 0 ? '+' : ''}
+                          {corridor.growth}%
                         </p>
                         <p className="text-xs text-gray-500">YoY Growth</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                        corridor.status === 'optimal' ? 'bg-green-600 text-white' :
-                        corridor.status === 'congested' ? 'bg-amber-500 text-white' :
-                        'bg-red-600 text-white'
-                      }`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          corridor.status === 'optimal'
+                            ? 'bg-green-600 text-white'
+                            : corridor.status === 'congested'
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-red-600 text-white'
+                        }`}
+                      >
                         {corridor.status}
                       </span>
                     </div>
@@ -716,7 +1003,9 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
         {activeTab === 'commodities' && (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Top Traded Commodities by HS Code</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                Top Traded Commodities by HS Code
+              </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 border-b border-gray-200 dark:border-slate-700">
@@ -731,11 +1020,20 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {HS_CODE_DATA.map(item => (
                       <tr key={item.code} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                        <td className="p-4 font-mono font-bold text-trade-primary dark:text-trade-accent">{item.code}</td>
-                        <td className="p-4 font-medium text-gray-900 dark:text-white">{item.name}</td>
-                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">${item.value}M</td>
-                        <td className={`p-4 text-right font-bold ${item.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {item.growth >= 0 ? '+' : ''}{item.growth}%
+                        <td className="p-4 font-mono font-bold text-trade-primary dark:text-trade-accent">
+                          {item.code}
+                        </td>
+                        <td className="p-4 font-medium text-gray-900 dark:text-white">
+                          {item.name}
+                        </td>
+                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">
+                          ${item.value}M
+                        </td>
+                        <td
+                          className={`p-4 text-right font-bold ${item.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                        >
+                          {item.growth >= 0 ? '+' : ''}
+                          {item.growth}%
                         </td>
                         <td className="p-4 text-right">
                           {item.growth >= 0 ? (
@@ -763,28 +1061,38 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                   <AlertTriangle className="w-5 h-5 text-red-500" />
                   Sanctioned Trader List
                 </h3>
-                <button className="text-sm text-trade-primary font-bold hover:underline">View Full List</button>
+                <button className="text-sm text-trade-primary font-bold hover:underline">
+                  View Full List
+                </button>
               </div>
               <div className="space-y-3">
                 {SANCTIONED_TRADERS.map(trader => (
                   <div
                     key={trader.id}
                     className={`p-4 rounded-xl border flex items-center justify-between ${
-                      trader.severity === 'critical' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                      trader.severity === 'high' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
-                      'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
+                      trader.severity === 'critical'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        : trader.severity === 'high'
+                          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                          : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
                     }`}
                   >
                     <div>
                       <h4 className="font-bold text-gray-900 dark:text-white">{trader.name}</h4>
-                      <p className="text-sm text-gray-500">{trader.country} • {trader.reason}</p>
+                      <p className="text-sm text-gray-500">
+                        {trader.country} • {trader.reason}
+                      </p>
                       <p className="text-xs text-gray-400 mt-1">Sanctioned: {trader.date}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-                      trader.severity === 'critical' ? 'bg-red-600 text-white' :
-                      trader.severity === 'high' ? 'bg-amber-500 text-white' :
-                      'bg-gray-500 text-white'
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                        trader.severity === 'critical'
+                          ? 'bg-red-600 text-white'
+                          : trader.severity === 'high'
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-gray-500 text-white'
+                      }`}
+                    >
                       {trader.severity}
                     </span>
                   </div>
@@ -803,18 +1111,24 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                   <div
                     key={pattern.id}
                     className={`p-4 rounded-xl border ${
-                      pattern.risk === 'critical' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                      pattern.risk === 'high' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' :
-                      'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
+                      pattern.risk === 'critical'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        : pattern.risk === 'high'
+                          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                          : 'bg-gray-50 dark:bg-slate-700 border-gray-200 dark:border-slate-600'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="font-bold text-gray-900 dark:text-white">{pattern.pattern}</h4>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        pattern.risk === 'critical' ? 'bg-red-600 text-white' :
-                        pattern.risk === 'high' ? 'bg-amber-500 text-white' :
-                        'bg-gray-500 text-white'
-                      }`}>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          pattern.risk === 'critical'
+                            ? 'bg-red-600 text-white'
+                            : pattern.risk === 'high'
+                              ? 'bg-amber-500 text-white'
+                              : 'bg-gray-500 text-white'
+                        }`}
+                      >
                         {pattern.risk}
                       </span>
                     </div>
@@ -869,7 +1183,9 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
 
             {/* Rules of Origin by Country */}
             <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">AfCFTA Compliance by Country</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">
+                AfCFTA Compliance by Country
+              </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 border-b border-gray-200 dark:border-slate-700">
@@ -884,32 +1200,52 @@ ${CORRIDOR_DATA.map(c => `${c.name}: $${c.volume}B (${c.growth > 0 ? '+' : ''}${
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {COUNTRY_DATA.slice(0, 6).map(country => (
                       <tr key={country.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                        <td className="p-4 font-medium text-gray-900 dark:text-white">{country.name}</td>
+                        <td className="p-4 font-medium text-gray-900 dark:text-white">
+                          {country.name}
+                        </td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-24 h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
-                                  country.compliance >= 90 ? 'bg-green-500' :
-                                  country.compliance >= 80 ? 'bg-amber-500' : 'bg-red-500'
+                                  country.compliance >= 90
+                                    ? 'bg-green-500'
+                                    : country.compliance >= 80
+                                      ? 'bg-amber-500'
+                                      : 'bg-red-500'
                                 }`}
                                 style={{ width: `${country.compliance}%` }}
                               ></div>
                             </div>
-                            <span className="font-bold text-gray-900 dark:text-white">{country.compliance}%</span>
+                            <span className="font-bold text-gray-900 dark:text-white">
+                              {country.compliance}%
+                            </span>
                           </div>
                         </td>
                         <td className="p-4 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${
-                            country.compliance >= 90 ? 'bg-green-100 text-green-700' :
-                            country.compliance >= 80 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {country.compliance >= 90 ? 'Excellent' : country.compliance >= 80 ? 'Good' : 'Needs Improvement'}
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-bold ${
+                              country.compliance >= 90
+                                ? 'bg-green-100 text-green-700'
+                                : country.compliance >= 80
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {country.compliance >= 90
+                              ? 'Excellent'
+                              : country.compliance >= 80
+                                ? 'Good'
+                                : 'Needs Improvement'}
                           </span>
                         </td>
-                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">{country.trades.toLocaleString()}</td>
+                        <td className="p-4 text-right font-bold text-gray-900 dark:text-white">
+                          {country.trades.toLocaleString()}
+                        </td>
                         <td className="p-4 text-right">
-                          <button className="text-trade-primary hover:underline text-sm font-bold">View Report</button>
+                          <button className="text-trade-primary hover:underline text-sm font-bold">
+                            View Report
+                          </button>
                         </td>
                       </tr>
                     ))}

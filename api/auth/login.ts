@@ -55,7 +55,10 @@ function getSupabaseAnonKey(): string | undefined {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).setHeader('Allow', 'POST').json({ error: 'Method not allowed. Use POST.' });
+    return res
+      .status(405)
+      .setHeader('Allow', 'POST')
+      .json({ error: 'Method not allowed. Use POST.' });
   }
 
   const ip = getClientIp(req);

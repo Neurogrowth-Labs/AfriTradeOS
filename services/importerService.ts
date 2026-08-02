@@ -10,14 +10,14 @@ import { supabase } from './supabase';
  */
 function sanitizeSearchInput(input: string): string {
   return input
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/%/g, '\\%')    // Escape % wildcard
-    .replace(/_/g, '\\_')    // Escape _ wildcard
-    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
-    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/%/g, '\\%') // Escape % wildcard
+    .replace(/_/g, '\\_') // Escape _ wildcard
+    .replace(/,/g, '') // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '') // Remove parentheses
     .replace(/\)/g, '')
     .trim()
-    .slice(0, 100);          // Limit length to prevent DoS
+    .slice(0, 100); // Limit length to prevent DoS
 }
 
 // ============================================================================
@@ -38,7 +38,14 @@ export type Incoterm = 'CIF' | 'FOB' | 'DAP' | 'DDP' | 'EXW' | 'FCA' | 'CPT' | '
 
 export type ComplianceStatus = 'COMPLIANT' | 'PENDING' | 'NON_COMPLIANT' | 'NEEDS_REVIEW';
 
-export type CustomsDeclarationStatus = 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED' | 'UNDER_REVIEW' | 'CLEARED' | 'HELD' | 'REJECTED';
+export type CustomsDeclarationStatus =
+  | 'NOT_STARTED'
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'CLEARED'
+  | 'HELD'
+  | 'REJECTED';
 
 export interface ImportOrder {
   id: string;
@@ -164,7 +171,12 @@ export interface ImporterKPIs {
 export interface ComplianceAlert {
   id: string;
   orderId: string;
-  type: 'MISSING_DOCUMENT' | 'EXPIRED_LICENSE' | 'QUOTA_EXCEEDED' | 'RESTRICTED_GOODS' | 'TARIFF_CHANGE';
+  type:
+    | 'MISSING_DOCUMENT'
+    | 'EXPIRED_LICENSE'
+    | 'QUOTA_EXCEEDED'
+    | 'RESTRICTED_GOODS'
+    | 'TARIFF_CHANGE';
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
   createdAt: string;
@@ -210,7 +222,13 @@ export interface CustomsClearanceMetric {
 export interface WorkflowNotification {
   id: string;
   orderId?: string;
-  type: 'DOCUMENT_MISSING' | 'CUSTOMS_HOLD' | 'SHIPMENT_DELAY' | 'LICENSE_EXPIRY' | 'PAYMENT_DUE' | 'DELIVERY_UPDATE';
+  type:
+    | 'DOCUMENT_MISSING'
+    | 'CUSTOMS_HOLD'
+    | 'SHIPMENT_DELAY'
+    | 'LICENSE_EXPIRY'
+    | 'PAYMENT_DUE'
+    | 'DELIVERY_UPDATE';
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   title: string;
   message: string;
@@ -269,7 +287,7 @@ const _MOCK_IMPORT_ORDERS: ImportOrder[] = [
     volume: 45,
     containerNumbers: ['MSCU3456789'],
     createdAt: '2026-01-15T08:30:00Z',
-    updatedAt: '2026-02-18T14:20:00Z'
+    updatedAt: '2026-02-18T14:20:00Z',
   },
   {
     id: 'IMP-002',
@@ -297,7 +315,7 @@ const _MOCK_IMPORT_ORDERS: ImportOrder[] = [
     volume: 38,
     containerNumbers: ['CMAU8765432'],
     createdAt: '2026-02-01T10:15:00Z',
-    updatedAt: '2026-02-19T09:45:00Z'
+    updatedAt: '2026-02-19T09:45:00Z',
   },
   {
     id: 'IMP-003',
@@ -322,7 +340,7 @@ const _MOCK_IMPORT_ORDERS: ImportOrder[] = [
     quantity: 3,
     weight: 5400,
     createdAt: '2026-02-12T11:00:00Z',
-    updatedAt: '2026-02-19T16:30:00Z'
+    updatedAt: '2026-02-19T16:30:00Z',
   },
   {
     id: 'IMP-004',
@@ -350,7 +368,7 @@ const _MOCK_IMPORT_ORDERS: ImportOrder[] = [
     volume: 12,
     containerNumbers: ['MSCU1122334'],
     createdAt: '2025-12-20T09:00:00Z',
-    updatedAt: '2026-01-30T10:00:00Z'
+    updatedAt: '2026-01-30T10:00:00Z',
   },
   {
     id: 'IMP-005',
@@ -372,8 +390,8 @@ const _MOCK_IMPORT_ORDERS: ImportOrder[] = [
     quantity: 5000,
     weight: 850,
     createdAt: '2026-02-18T14:30:00Z',
-    updatedAt: '2026-02-19T08:15:00Z'
-  }
+    updatedAt: '2026-02-19T08:15:00Z',
+  },
 ];
 
 const _MOCK_SUPPLIERS: SupplierProfile[] = [
@@ -390,7 +408,7 @@ const _MOCK_SUPPLIERS: SupplierProfile[] = [
     paymentTerms: ['LC at sight', 'T/T 30 days'],
     minimumOrderValue: 50000,
     leadTime: 35,
-    productCategories: ['Electronics', 'Mobile devices', 'Accessories']
+    productCategories: ['Electronics', 'Mobile devices', 'Accessories'],
   },
   {
     id: 'SUP-IN-012',
@@ -405,7 +423,7 @@ const _MOCK_SUPPLIERS: SupplierProfile[] = [
     paymentTerms: ['LC 90 days', 'T/T 60 days'],
     minimumOrderValue: 25000,
     leadTime: 28,
-    productCategories: ['Textiles', 'Apparel', 'Fabrics']
+    productCategories: ['Textiles', 'Apparel', 'Fabrics'],
   },
   {
     id: 'SUP-DE-005',
@@ -420,7 +438,7 @@ const _MOCK_SUPPLIERS: SupplierProfile[] = [
     paymentTerms: ['LC at sight', 'Bank guarantee'],
     minimumOrderValue: 100000,
     leadTime: 45,
-    productCategories: ['Industrial machinery', 'Equipment']
+    productCategories: ['Industrial machinery', 'Equipment'],
   },
   {
     id: 'SUP-ZA-008',
@@ -435,7 +453,7 @@ const _MOCK_SUPPLIERS: SupplierProfile[] = [
     paymentTerms: ['T/T 30 days', 'LC 60 days'],
     minimumOrderValue: 15000,
     leadTime: 21,
-    productCategories: ['Wine', 'Beverages']
+    productCategories: ['Wine', 'Beverages'],
   },
   {
     id: 'SUP-AE-003',
@@ -450,8 +468,8 @@ const _MOCK_SUPPLIERS: SupplierProfile[] = [
     paymentTerms: ['LC at sight', 'T/T advance'],
     minimumOrderValue: 75000,
     leadTime: 14,
-    productCategories: ['Pharmaceuticals', 'Medical supplies']
-  }
+    productCategories: ['Pharmaceuticals', 'Medical supplies'],
+  },
 ];
 
 const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
@@ -464,7 +482,7 @@ const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
     message: 'PO-2026-0256: Additional documentation required for machinery import clearance',
     actionUrl: '/importer?tab=compliance',
     createdAt: '2026-02-19T16:30:00Z',
-    read: false
+    read: false,
   },
   {
     id: 'NOT-002',
@@ -475,7 +493,7 @@ const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
     message: 'PO-2026-0234: ETA delayed by 3 days due to port congestion',
     actionUrl: '/importer?tab=shipments',
     createdAt: '2026-02-18T11:20:00Z',
-    read: false
+    read: false,
   },
   {
     id: 'NOT-003',
@@ -485,7 +503,7 @@ const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
     message: 'Your pharmaceutical import license expires in 15 days',
     actionUrl: '/importer?tab=compliance',
     createdAt: '2026-02-17T09:00:00Z',
-    read: true
+    read: true,
   },
   {
     id: 'NOT-004',
@@ -496,8 +514,8 @@ const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
     message: 'PO-2026-0289: Certificate of Origin required for customs clearance',
     actionUrl: '/importer?tab=documents',
     createdAt: '2026-02-19T08:15:00Z',
-    read: false
-  }
+    read: false,
+  },
 ];
 
 // ============================================================================
@@ -507,11 +525,7 @@ const _MOCK_NOTIFICATIONS: WorkflowNotification[] = [
 export async function getDashboardKPIs(): Promise<ImporterKPIs> {
   try {
     // Try to fetch from Supabase
-    const { data, error } = await supabase
-      .from('importer_kpis')
-      .select('*')
-      .limit(1)
-      .single();
+    const { data, error } = await supabase.from('importer_kpis').select('*').limit(1).single();
 
     if (error) throw error;
 
@@ -529,7 +543,7 @@ export async function getDashboardKPIs(): Promise<ImporterKPIs> {
       customsClearanceTime: 0,
       complianceScore: 0,
       onTimeDeliveryRate: 0,
-      supplierPerformance: 0
+      supplierPerformance: 0,
     };
   }
 }
@@ -622,7 +636,10 @@ export async function getDocuments(orderId?: string): Promise<DocumentRecord[]> 
   }
 }
 
-export async function getCustomsRequirements(hsCode: string, country: string): Promise<CustomsRequirement | null> {
+export async function getCustomsRequirements(
+  hsCode: string,
+  country: string
+): Promise<CustomsRequirement | null> {
   try {
     const { data, error } = await supabase
       .from('customs_requirements')
@@ -657,7 +674,9 @@ export async function getCostBreakdown(orderId: string): Promise<CostBreakdown |
   }
 }
 
-export async function getNotifications(unreadOnly: boolean = false): Promise<WorkflowNotification[]> {
+export async function getNotifications(
+  unreadOnly: boolean = false
+): Promise<WorkflowNotification[]> {
   try {
     let query = supabase.from('importer_notifications').select('*');
     if (unreadOnly) {
@@ -710,7 +729,9 @@ export async function getCarrierPerformanceMetrics(): Promise<CarrierPerformance
   }
 }
 
-export async function getCustomsClearanceMetrics(months: number = 6): Promise<CustomsClearanceMetric[]> {
+export async function getCustomsClearanceMetrics(
+  months: number = 6
+): Promise<CustomsClearanceMetric[]> {
   try {
     const { data, error } = await supabase
       .from('customs_clearance_metrics')

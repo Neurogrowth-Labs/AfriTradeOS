@@ -125,7 +125,6 @@ export interface TradeStatData {
 // ============================================================================
 
 export const governmentService = {
-
   // ---- DASHBOARD KPIs ----
   getDashboardKPIs: async (): Promise<DashboardKPIs> => {
     try {
@@ -144,11 +143,20 @@ export const governmentService = {
       const borderPosts = borderRes.data || [];
 
       const totalTradeValue = trades.reduce((sum: number, t: any) => sum + (t.value || 0), 0);
-      const avgClearanceHours = borderPosts.length > 0
-        ? borderPosts.reduce((sum: number, b: any) => sum + (b.avg_clearance_hours || 0), 0) / borderPosts.length
-        : 0;
-      const pendingKYC = kycRequests.filter((k: any) => k.status === 'not_started' || k.status === 'documents_pending' || k.status === 'under_review').length;
-      const activeAMLAlerts = amlAlerts.filter((a: any) => a.status === 'Open' || a.status === 'Investigating').length;
+      const avgClearanceHours =
+        borderPosts.length > 0
+          ? borderPosts.reduce((sum: number, b: any) => sum + (b.avg_clearance_hours || 0), 0) /
+            borderPosts.length
+          : 0;
+      const pendingKYC = kycRequests.filter(
+        (k: any) =>
+          k.status === 'not_started' ||
+          k.status === 'documents_pending' ||
+          k.status === 'under_review'
+      ).length;
+      const activeAMLAlerts = amlAlerts.filter(
+        (a: any) => a.status === 'Open' || a.status === 'Investigating'
+      ).length;
 
       // Aggregate trades by country
       const countryMap: Record<string, { value: number; count: number }> = {};
@@ -167,7 +175,10 @@ export const governmentService = {
       trades.forEach((t: any) => {
         statusMap[t.status] = (statusMap[t.status] || 0) + 1;
       });
-      const tradesByStatus = Object.entries(statusMap).map(([status, count]) => ({ status, count }));
+      const tradesByStatus = Object.entries(statusMap).map(([status, count]) => ({
+        status,
+        count,
+      }));
 
       // Monthly volumes (last 12 months)
       const monthlyMap: Record<string, { imports: number; exports: number }> = {};
@@ -200,9 +211,16 @@ export const governmentService = {
     } catch (e) {
       console.error('getDashboardKPIs error:', e);
       return {
-        totalTradeValue: 0, totalTrades: 0, avgClearanceHours: 0,
-        pendingKYC: 0, activeAMLAlerts: 0, totalOrganizations: 0,
-        tradesByCountry: [], tradesByStatus: [], recentTrades: [], monthlyVolumes: [],
+        totalTradeValue: 0,
+        totalTrades: 0,
+        avgClearanceHours: 0,
+        pendingKYC: 0,
+        activeAMLAlerts: 0,
+        totalOrganizations: 0,
+        tradesByCountry: [],
+        tradesByStatus: [],
+        recentTrades: [],
+        monthlyVolumes: [],
       };
     }
   },
@@ -367,14 +385,31 @@ export const governmentService = {
         totalImportValue,
         totalExportValue,
         totalTrades: allTrades.length,
-        tradesByProduct: Object.entries(productMap).map(([product, d]) => ({ product, ...d })).sort((a, b) => b.value - a.value),
-        tradesByOrigin: Object.entries(originMap).map(([country, d]) => ({ country, ...d })).sort((a, b) => b.value - a.value),
-        tradesByDestination: Object.entries(destMap).map(([country, d]) => ({ country, ...d })).sort((a, b) => b.value - a.value),
-        monthlyTrends: Object.entries(monthMap).map(([month, d]) => ({ month, ...d })).sort((a, b) => a.month.localeCompare(b.month)).slice(-12),
+        tradesByProduct: Object.entries(productMap)
+          .map(([product, d]) => ({ product, ...d }))
+          .sort((a, b) => b.value - a.value),
+        tradesByOrigin: Object.entries(originMap)
+          .map(([country, d]) => ({ country, ...d }))
+          .sort((a, b) => b.value - a.value),
+        tradesByDestination: Object.entries(destMap)
+          .map(([country, d]) => ({ country, ...d }))
+          .sort((a, b) => b.value - a.value),
+        monthlyTrends: Object.entries(monthMap)
+          .map(([month, d]) => ({ month, ...d }))
+          .sort((a, b) => a.month.localeCompare(b.month))
+          .slice(-12),
       };
     } catch (e) {
       console.error('getTradeStatistics error:', e);
-      return { totalImportValue: 0, totalExportValue: 0, totalTrades: 0, tradesByProduct: [], tradesByOrigin: [], tradesByDestination: [], monthlyTrends: [] };
+      return {
+        totalImportValue: 0,
+        totalExportValue: 0,
+        totalTrades: 0,
+        tradesByProduct: [],
+        tradesByOrigin: [],
+        tradesByDestination: [],
+        monthlyTrends: [],
+      };
     }
   },
 
@@ -411,10 +446,7 @@ export const governmentService = {
   // ---- ORGANIZATIONS (for Business Registry) ----
   getOrganizations: async (): Promise<any[]> => {
     try {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('name');
+      const { data, error } = await supabase.from('organizations').select('*').order('name');
       if (error) throw error;
       return data || [];
     } catch (e) {
@@ -439,7 +471,9 @@ export const governmentService = {
   },
 
   // ---- CORRIDOR STATS (derived from trades) ----
-  getCorridorStats: async (): Promise<{ origin: string; destination: string; value: number; count: number; avgDays: number }[]> => {
+  getCorridorStats: async (): Promise<
+    { origin: string; destination: string; value: number; count: number; avgDays: number }[]
+  > => {
     try {
       const { data: trades, error } = await supabase
         .from('trades')

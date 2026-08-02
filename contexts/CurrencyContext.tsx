@@ -69,51 +69,62 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const currencyData = CURRENCIES.find(c => c.code === currency);
   const currencySymbol = currencyData?.symbol || '$';
 
-  const convertFromUSD = useCallback((usdAmount: number): number => {
-    const rate = EXCHANGE_RATES[currency] || 1;
-    return usdAmount * rate;
-  }, [currency]);
+  const convertFromUSD = useCallback(
+    (usdAmount: number): number => {
+      const rate = EXCHANGE_RATES[currency] || 1;
+      return usdAmount * rate;
+    },
+    [currency]
+  );
 
-  const convertToUSD = useCallback((amount: number): number => {
-    const rate = EXCHANGE_RATES[currency] || 1;
-    return amount / rate;
-  }, [currency]);
+  const convertToUSD = useCallback(
+    (amount: number): number => {
+      const rate = EXCHANGE_RATES[currency] || 1;
+      return amount / rate;
+    },
+    [currency]
+  );
 
-  const formatCurrency = useCallback((amount: number, showCode = false): string => {
-    const symbol = currencyData?.symbol || '$';
-    const rate = EXCHANGE_RATES[currency] || 1;
-    const convertedAmount = amount * rate;
-    
-    // Format based on currency
-    let formatted: string;
-    if (convertedAmount >= 1000000000) {
-      formatted = `${symbol}${(convertedAmount / 1000000000).toFixed(1)}B`;
-    } else if (convertedAmount >= 1000000) {
-      formatted = `${symbol}${(convertedAmount / 1000000).toFixed(1)}M`;
-    } else if (convertedAmount >= 1000) {
-      formatted = `${symbol}${(convertedAmount / 1000).toFixed(1)}K`;
-    } else {
-      formatted = `${symbol}${convertedAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-    }
-    
-    if (showCode) {
-      formatted += ` ${currency}`;
-    }
-    
-    return formatted;
-  }, [currency, currencyData]);
+  const formatCurrency = useCallback(
+    (amount: number, showCode = false): string => {
+      const symbol = currencyData?.symbol || '$';
+      const rate = EXCHANGE_RATES[currency] || 1;
+      const convertedAmount = amount * rate;
+
+      // Format based on currency
+      let formatted: string;
+      if (convertedAmount >= 1000000000) {
+        formatted = `${symbol}${(convertedAmount / 1000000000).toFixed(1)}B`;
+      } else if (convertedAmount >= 1000000) {
+        formatted = `${symbol}${(convertedAmount / 1000000).toFixed(1)}M`;
+      } else if (convertedAmount >= 1000) {
+        formatted = `${symbol}${(convertedAmount / 1000).toFixed(1)}K`;
+      } else {
+        formatted = `${symbol}${convertedAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      }
+
+      if (showCode) {
+        formatted += ` ${currency}`;
+      }
+
+      return formatted;
+    },
+    [currency, currencyData]
+  );
 
   return (
-    <CurrencyContext.Provider value={{
-      currency,
-      setCurrency,
-      currencySymbol,
-      currencyData,
-      formatCurrency,
-      convertFromUSD,
-      convertToUSD,
-      CURRENCIES,
-    }}>
+    <CurrencyContext.Provider
+      value={{
+        currency,
+        setCurrency,
+        currencySymbol,
+        currencyData,
+        formatCurrency,
+        convertFromUSD,
+        convertToUSD,
+        CURRENCIES,
+      }}
+    >
       {children}
     </CurrencyContext.Provider>
   );

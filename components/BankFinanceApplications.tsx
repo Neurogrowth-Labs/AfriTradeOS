@@ -13,7 +13,7 @@ import {
   Edit2,
   MoreVertical,
   DollarSign,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 import { ApplicationBuilder } from './finance/ApplicationBuilder';
 import { DocumentExtraction } from './finance/DocumentExtraction';
@@ -27,7 +27,7 @@ import {
   WorkflowTemplate,
   WorkflowAction,
   ApplicationTab,
-  DocumentExtractionResult
+  DocumentExtractionResult,
 } from './finance/FinanceApplicationTypes';
 
 interface BankFinanceApplicationsProps {
@@ -49,22 +49,74 @@ const MOCK_APPLICATIONS: FinanceApplication[] = [
     creditScore: 745,
     riskRating: 'low',
     documents: [
-      { id: 'd1', name: 'Commercial Invoice.pdf', type: 'invoice', status: 'verified', uploadedDate: '2024-01-15', extractedData: { confidence: 0.95, documentNumber: 'INV-2024-001', amount: 250000, currency: 'USD' } },
-      { id: 'd2', name: 'Bill of Lading.pdf', type: 'bill_of_lading', status: 'uploaded', uploadedDate: '2024-01-16' },
-      { id: 'd3', name: 'Certificate of Origin.pdf', type: 'certificate_of_origin', status: 'pending' }
+      {
+        id: 'd1',
+        name: 'Commercial Invoice.pdf',
+        type: 'invoice',
+        status: 'verified',
+        uploadedDate: '2024-01-15',
+        extractedData: {
+          confidence: 0.95,
+          documentNumber: 'INV-2024-001',
+          amount: 250000,
+          currency: 'USD',
+        },
+      },
+      {
+        id: 'd2',
+        name: 'Bill of Lading.pdf',
+        type: 'bill_of_lading',
+        status: 'uploaded',
+        uploadedDate: '2024-01-16',
+      },
+      {
+        id: 'd3',
+        name: 'Certificate of Origin.pdf',
+        type: 'certificate_of_origin',
+        status: 'pending',
+      },
     ],
     workflowStage: {
       currentStage: 'verification',
       completedStages: ['application', 'document_collection'],
       pendingActions: [
-        { id: 'a1', type: 'verify_document', description: 'Verify Bill of Lading authenticity', assignedTo: 'Sarah Okonkwo', status: 'in_progress', dueDate: '2024-01-20' },
-        { id: 'a2', type: 'credit_check', description: 'Complete credit assessment', status: 'pending' }
+        {
+          id: 'a1',
+          type: 'verify_document',
+          description: 'Verify Bill of Lading authenticity',
+          assignedTo: 'Sarah Okonkwo',
+          status: 'in_progress',
+          dueDate: '2024-01-20',
+        },
+        {
+          id: 'a2',
+          type: 'credit_check',
+          description: 'Complete credit assessment',
+          status: 'pending',
+        },
       ],
       timeline: [
-        { id: 't1', timestamp: '2024-01-15T10:30:00Z', action: 'Application submitted', actor: 'John Mwangi' },
-        { id: 't2', timestamp: '2024-01-15T14:00:00Z', action: 'Application assigned', actor: 'System', details: 'Assigned to Sarah Okonkwo' },
-        { id: 't3', timestamp: '2024-01-16T09:15:00Z', action: 'Documents uploaded', actor: 'John Mwangi', details: '3 documents uploaded' }
-      ]
+        {
+          id: 't1',
+          timestamp: '2024-01-15T10:30:00Z',
+          action: 'Application submitted',
+          actor: 'John Mwangi',
+        },
+        {
+          id: 't2',
+          timestamp: '2024-01-15T14:00:00Z',
+          action: 'Application assigned',
+          actor: 'System',
+          details: 'Assigned to Sarah Okonkwo',
+        },
+        {
+          id: 't3',
+          timestamp: '2024-01-16T09:15:00Z',
+          action: 'Documents uploaded',
+          actor: 'John Mwangi',
+          details: '3 documents uploaded',
+        },
+      ],
     },
     tradeDetails: {
       exporterCountry: 'Kenya',
@@ -75,8 +127,8 @@ const MOCK_APPLICATIONS: FinanceApplication[] = [
       shippingMethod: 'sea',
       estimatedShipmentDate: '2024-02-15',
       portOfLoading: 'Mombasa',
-      portOfDischarge: 'Hamburg'
-    }
+      portOfDischarge: 'Hamburg',
+    },
   },
   {
     id: 'APP-2024-002',
@@ -92,17 +144,43 @@ const MOCK_APPLICATIONS: FinanceApplication[] = [
     creditScore: 820,
     riskRating: 'low',
     documents: [
-      { id: 'd4', name: 'Sales Contract.pdf', type: 'contract', status: 'verified', uploadedDate: '2024-01-10', extractedData: { confidence: 0.92 } },
-      { id: 'd5', name: 'Financial Statements.pdf', type: 'financial_statement', status: 'verified', uploadedDate: '2024-01-10', extractedData: { confidence: 0.88 } }
+      {
+        id: 'd4',
+        name: 'Sales Contract.pdf',
+        type: 'contract',
+        status: 'verified',
+        uploadedDate: '2024-01-10',
+        extractedData: { confidence: 0.92 },
+      },
+      {
+        id: 'd5',
+        name: 'Financial Statements.pdf',
+        type: 'financial_statement',
+        status: 'verified',
+        uploadedDate: '2024-01-10',
+        extractedData: { confidence: 0.88 },
+      },
     ],
     workflowStage: {
       currentStage: 'disbursement',
-      completedStages: ['application', 'document_collection', 'verification', 'credit_assessment', 'approval'],
-      pendingActions: [
-        { id: 'a3', type: 'disbursement', description: 'Process fund disbursement', assignedTo: 'Treasury Dept', status: 'in_progress' }
+      completedStages: [
+        'application',
+        'document_collection',
+        'verification',
+        'credit_assessment',
+        'approval',
       ],
-      timeline: []
-    }
+      pendingActions: [
+        {
+          id: 'a3',
+          type: 'disbursement',
+          description: 'Process fund disbursement',
+          assignedTo: 'Treasury Dept',
+          status: 'in_progress',
+        },
+      ],
+      timeline: [],
+    },
   },
   {
     id: 'APP-2024-003',
@@ -119,12 +197,22 @@ const MOCK_APPLICATIONS: FinanceApplication[] = [
       currentStage: 'application',
       completedStages: [],
       pendingActions: [
-        { id: 'a4', type: 'upload_document', description: 'Upload required documents', status: 'pending' }
+        {
+          id: 'a4',
+          type: 'upload_document',
+          description: 'Upload required documents',
+          status: 'pending',
+        },
       ],
       timeline: [
-        { id: 't4', timestamp: '2024-01-18T08:00:00Z', action: 'Application submitted', actor: 'Pierre Dubois' }
-      ]
-    }
+        {
+          id: 't4',
+          timestamp: '2024-01-18T08:00:00Z',
+          action: 'Application submitted',
+          actor: 'Pierre Dubois',
+        },
+      ],
+    },
   },
   {
     id: 'APP-2024-004',
@@ -140,15 +228,22 @@ const MOCK_APPLICATIONS: FinanceApplication[] = [
     creditScore: 480,
     riskRating: 'high',
     documents: [
-      { id: 'd6', name: 'Invoice Bundle.pdf', type: 'invoice', status: 'rejected', uploadedDate: '2024-01-05', verificationNotes: 'Inconsistent amounts detected' }
+      {
+        id: 'd6',
+        name: 'Invoice Bundle.pdf',
+        type: 'invoice',
+        status: 'rejected',
+        uploadedDate: '2024-01-05',
+        verificationNotes: 'Inconsistent amounts detected',
+      },
     ],
     workflowStage: {
       currentStage: 'verification',
       completedStages: ['application', 'document_collection'],
       pendingActions: [],
-      timeline: []
-    }
-  }
+      timeline: [],
+    },
+  },
 ];
 
 const MOCK_TEMPLATES: WorkflowTemplate[] = [
@@ -157,53 +252,174 @@ const MOCK_TEMPLATES: WorkflowTemplate[] = [
     name: 'Standard LC Workflow',
     applicationType: 'letter_of_credit',
     stages: [
-      { id: 's1', name: 'Application Review', order: 1, requiredDocuments: ['invoice', 'contract'], requiredApprovals: ['officer'], autoActions: ['notify_applicant'], slaHours: 24 },
-      { id: 's2', name: 'Document Collection', order: 2, requiredDocuments: ['bill_of_lading', 'certificate_of_origin', 'insurance'], requiredApprovals: [], autoActions: ['extract_data'], slaHours: 48 },
-      { id: 's3', name: 'Verification', order: 3, requiredDocuments: [], requiredApprovals: ['compliance'], autoActions: ['aml_check'], slaHours: 24 },
-      { id: 's4', name: 'Credit Assessment', order: 4, requiredDocuments: ['financial_statement'], requiredApprovals: ['credit_officer'], autoActions: ['credit_score'], slaHours: 48 },
-      { id: 's5', name: 'Approval', order: 5, requiredDocuments: [], requiredApprovals: ['manager', 'head_of_trade'], autoActions: [], slaHours: 24 },
-      { id: 's6', name: 'Disbursement', order: 6, requiredDocuments: [], requiredApprovals: ['treasury'], autoActions: ['process_payment'], slaHours: 4 }
-    ]
+      {
+        id: 's1',
+        name: 'Application Review',
+        order: 1,
+        requiredDocuments: ['invoice', 'contract'],
+        requiredApprovals: ['officer'],
+        autoActions: ['notify_applicant'],
+        slaHours: 24,
+      },
+      {
+        id: 's2',
+        name: 'Document Collection',
+        order: 2,
+        requiredDocuments: ['bill_of_lading', 'certificate_of_origin', 'insurance'],
+        requiredApprovals: [],
+        autoActions: ['extract_data'],
+        slaHours: 48,
+      },
+      {
+        id: 's3',
+        name: 'Verification',
+        order: 3,
+        requiredDocuments: [],
+        requiredApprovals: ['compliance'],
+        autoActions: ['aml_check'],
+        slaHours: 24,
+      },
+      {
+        id: 's4',
+        name: 'Credit Assessment',
+        order: 4,
+        requiredDocuments: ['financial_statement'],
+        requiredApprovals: ['credit_officer'],
+        autoActions: ['credit_score'],
+        slaHours: 48,
+      },
+      {
+        id: 's5',
+        name: 'Approval',
+        order: 5,
+        requiredDocuments: [],
+        requiredApprovals: ['manager', 'head_of_trade'],
+        autoActions: [],
+        slaHours: 24,
+      },
+      {
+        id: 's6',
+        name: 'Disbursement',
+        order: 6,
+        requiredDocuments: [],
+        requiredApprovals: ['treasury'],
+        autoActions: ['process_payment'],
+        slaHours: 4,
+      },
+    ],
   },
   {
     id: 'tpl-2',
     name: 'Fast Track Trade Finance',
     applicationType: 'trade_finance',
     stages: [
-      { id: 's7', name: 'Quick Review', order: 1, requiredDocuments: ['contract'], requiredApprovals: ['officer'], autoActions: [], slaHours: 12 },
-      { id: 's8', name: 'Auto Assessment', order: 2, requiredDocuments: [], requiredApprovals: [], autoActions: ['credit_score', 'aml_check'], slaHours: 4 },
-      { id: 's9', name: 'Approval', order: 3, requiredDocuments: [], requiredApprovals: ['manager'], autoActions: [], slaHours: 12 },
-      { id: 's10', name: 'Disbursement', order: 4, requiredDocuments: [], requiredApprovals: ['treasury'], autoActions: ['process_payment'], slaHours: 4 }
-    ]
-  }
+      {
+        id: 's7',
+        name: 'Quick Review',
+        order: 1,
+        requiredDocuments: ['contract'],
+        requiredApprovals: ['officer'],
+        autoActions: [],
+        slaHours: 12,
+      },
+      {
+        id: 's8',
+        name: 'Auto Assessment',
+        order: 2,
+        requiredDocuments: [],
+        requiredApprovals: [],
+        autoActions: ['credit_score', 'aml_check'],
+        slaHours: 4,
+      },
+      {
+        id: 's9',
+        name: 'Approval',
+        order: 3,
+        requiredDocuments: [],
+        requiredApprovals: ['manager'],
+        autoActions: [],
+        slaHours: 12,
+      },
+      {
+        id: 's10',
+        name: 'Disbursement',
+        order: 4,
+        requiredDocuments: [],
+        requiredApprovals: ['treasury'],
+        autoActions: ['process_payment'],
+        slaHours: 4,
+      },
+    ],
+  },
 ];
 
 const MOCK_ASSESSMENT: CreditAssessment = {
   applicationId: 'APP-2024-001',
   creditScore: 745,
   scoreBreakdown: [
-    { category: 'Payment History', score: 180, maxScore: 200, weight: 0.35, factors: ['On-time payments', 'No defaults'] },
-    { category: 'Credit Utilization', score: 140, maxScore: 150, weight: 0.30, factors: ['Low utilization ratio'] },
-    { category: 'Business Stability', score: 120, maxScore: 150, weight: 0.20, factors: ['5+ years in business', 'Stable revenue'] },
-    { category: 'Trade Experience', score: 85, maxScore: 100, weight: 0.15, factors: ['Previous LC experience', 'Good track record'] }
+    {
+      category: 'Payment History',
+      score: 180,
+      maxScore: 200,
+      weight: 0.35,
+      factors: ['On-time payments', 'No defaults'],
+    },
+    {
+      category: 'Credit Utilization',
+      score: 140,
+      maxScore: 150,
+      weight: 0.3,
+      factors: ['Low utilization ratio'],
+    },
+    {
+      category: 'Business Stability',
+      score: 120,
+      maxScore: 150,
+      weight: 0.2,
+      factors: ['5+ years in business', 'Stable revenue'],
+    },
+    {
+      category: 'Trade Experience',
+      score: 85,
+      maxScore: 100,
+      weight: 0.15,
+      factors: ['Previous LC experience', 'Good track record'],
+    },
   ],
   financialRatios: [
     { name: 'Current Ratio', value: 2.1, benchmark: 1.5, status: 'good' },
     { name: 'Debt-to-Equity', value: 0.8, benchmark: 1.0, status: 'good' },
     { name: 'Interest Coverage', value: 4.2, benchmark: 3.0, status: 'good' },
-    { name: 'Quick Ratio', value: 1.4, benchmark: 1.0, status: 'acceptable' }
+    { name: 'Quick Ratio', value: 1.4, benchmark: 1.0, status: 'acceptable' },
   ],
   riskFactors: [
-    { category: 'country', description: 'Kenya has stable trade relations with EU', severity: 'low', mitigants: ['AfCFTA member', 'Strong export history'] },
-    { category: 'industry', description: 'Coffee commodity price volatility', severity: 'medium', mitigants: ['Hedging strategy in place', 'Long-term contracts'] },
-    { category: 'financial', description: 'Currency exposure (KES/EUR)', severity: 'low', mitigants: ['Forward contracts available'] }
+    {
+      category: 'country',
+      description: 'Kenya has stable trade relations with EU',
+      severity: 'low',
+      mitigants: ['AfCFTA member', 'Strong export history'],
+    },
+    {
+      category: 'industry',
+      description: 'Coffee commodity price volatility',
+      severity: 'medium',
+      mitigants: ['Hedging strategy in place', 'Long-term contracts'],
+    },
+    {
+      category: 'financial',
+      description: 'Currency exposure (KES/EUR)',
+      severity: 'low',
+      mitigants: ['Forward contracts available'],
+    },
   ],
   recommendation: 'approve',
   assessmentDate: '2024-01-17',
-  assessedBy: 'AI Credit Engine v2.1'
+  assessedBy: 'AI Credit Engine v2.1',
 };
 
-export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = ({ userRole = 'bank_officer' }) => {
+export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = ({
+  userRole = 'bank_officer',
+}) => {
   const [applications, setApplications] = useState<FinanceApplication[]>(MOCK_APPLICATIONS);
   const [selectedApplication, setSelectedApplication] = useState<FinanceApplication | null>(null);
   const [activeTab, setActiveTab] = useState<ApplicationTab>('builder');
@@ -214,7 +430,7 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
   const [isLoading, setIsLoading] = useState(false);
 
   const filteredApplications = applications.filter(app => {
-    const matchesSearch = 
+    const matchesSearch =
       app.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.applicantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       app.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -225,10 +441,11 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
 
   const stats = {
     total: applications.length,
-    pending: applications.filter(a => ['draft', 'submitted', 'under_review'].includes(a.status)).length,
+    pending: applications.filter(a => ['draft', 'submitted', 'under_review'].includes(a.status))
+      .length,
     approved: applications.filter(a => a.status === 'approved').length,
     disbursed: applications.filter(a => a.status === 'disbursed').length,
-    totalValue: applications.reduce((sum, a) => sum + a.amount, 0)
+    totalValue: applications.reduce((sum, a) => sum + a.amount, 0),
   };
 
   const getStatusStyle = (status: FinanceApplication['status']) => {
@@ -238,7 +455,7 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
       under_review: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: Eye },
       approved: { bg: 'bg-green-500/20', text: 'text-green-400', icon: CheckCircle2 },
       rejected: { bg: 'bg-red-500/20', text: 'text-red-400', icon: XCircle },
-      disbursed: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', icon: DollarSign }
+      disbursed: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', icon: DollarSign },
     };
     return styles[status] || styles.draft;
   };
@@ -246,7 +463,7 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
   const handleSubmitApplication = async (data: ApplicationFormData) => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     const newApp: FinanceApplication = {
       id: `APP-2024-${String(applications.length + 1).padStart(3, '0')}`,
       applicantName: data.applicantName || data.contactPerson,
@@ -262,13 +479,23 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
         currentStage: 'application',
         completedStages: [],
         pendingActions: [
-          { id: `a-${Date.now()}`, type: 'upload_document', description: 'Upload required documents', status: 'pending' }
+          {
+            id: `a-${Date.now()}`,
+            type: 'upload_document',
+            description: 'Upload required documents',
+            status: 'pending',
+          },
         ],
         timeline: [
-          { id: `t-${Date.now()}`, timestamp: new Date().toISOString(), action: 'Application submitted', actor: data.contactPerson }
-        ]
+          {
+            id: `t-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            action: 'Application submitted',
+            actor: data.contactPerson,
+          },
+        ],
       },
-      tradeDetails: data.tradeDetails as FinanceApplication['tradeDetails']
+      tradeDetails: data.tradeDetails as FinanceApplication['tradeDetails'],
     };
 
     setApplications(prev => [newApp, ...prev]);
@@ -284,88 +511,118 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
 
   const handleDocumentUpload = async (files: File[], documentType: ApplicationDocument['type']) => {
     if (!selectedApplication) return;
-    
+
     await new Promise(resolve => setTimeout(resolve, 1500));
-    
+
     const newDocs: ApplicationDocument[] = files.map((file, idx) => ({
       id: `doc-${Date.now()}-${idx}`,
       name: file.name,
       type: documentType,
       status: 'uploaded',
-      uploadedDate: new Date().toISOString().split('T')[0]
+      uploadedDate: new Date().toISOString().split('T')[0],
     }));
 
-    setApplications(prev => prev.map(app => 
-      app.id === selectedApplication.id
-        ? { ...app, documents: [...app.documents, ...newDocs], lastUpdated: new Date().toISOString().split('T')[0] }
-        : app
-    ));
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === selectedApplication.id
+          ? {
+              ...app,
+              documents: [...app.documents, ...newDocs],
+              lastUpdated: new Date().toISOString().split('T')[0],
+            }
+          : app
+      )
+    );
 
-    setSelectedApplication(prev => prev ? { ...prev, documents: [...prev.documents, ...newDocs] } : null);
+    setSelectedApplication(prev =>
+      prev ? { ...prev, documents: [...prev.documents, ...newDocs] } : null
+    );
   };
 
   const handleDocumentVerify = async (documentId: string) => {
     if (!selectedApplication) return;
-    
-    setApplications(prev => prev.map(app => 
-      app.id === selectedApplication.id
-        ? {
-            ...app,
-            documents: app.documents.map(doc => 
-              doc.id === documentId ? { ...doc, status: 'verified' } : doc
-            )
-          }
-        : app
-    ));
 
-    setSelectedApplication(prev => prev ? {
-      ...prev,
-      documents: prev.documents.map(doc => 
-        doc.id === documentId ? { ...doc, status: 'verified' } : doc
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === selectedApplication.id
+          ? {
+              ...app,
+              documents: app.documents.map(doc =>
+                doc.id === documentId ? { ...doc, status: 'verified' } : doc
+              ),
+            }
+          : app
       )
-    } : null);
+    );
+
+    setSelectedApplication(prev =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map(doc =>
+              doc.id === documentId ? { ...doc, status: 'verified' } : doc
+            ),
+          }
+        : null
+    );
   };
 
   const handleDocumentReject = async (documentId: string, reason: string) => {
     if (!selectedApplication) return;
-    
-    setApplications(prev => prev.map(app => 
-      app.id === selectedApplication.id
-        ? {
-            ...app,
-            documents: app.documents.map(doc => 
-              doc.id === documentId ? { ...doc, status: 'rejected', verificationNotes: reason } : doc
-            )
-          }
-        : app
-    ));
 
-    setSelectedApplication(prev => prev ? {
-      ...prev,
-      documents: prev.documents.map(doc => 
-        doc.id === documentId ? { ...doc, status: 'rejected', verificationNotes: reason } : doc
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === selectedApplication.id
+          ? {
+              ...app,
+              documents: app.documents.map(doc =>
+                doc.id === documentId
+                  ? { ...doc, status: 'rejected', verificationNotes: reason }
+                  : doc
+              ),
+            }
+          : app
       )
-    } : null);
+    );
+
+    setSelectedApplication(prev =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.map(doc =>
+              doc.id === documentId
+                ? { ...doc, status: 'rejected', verificationNotes: reason }
+                : doc
+            ),
+          }
+        : null
+    );
   };
 
   const handleDocumentDelete = async (documentId: string) => {
     if (!selectedApplication) return;
-    
-    setApplications(prev => prev.map(app => 
-      app.id === selectedApplication.id
-        ? { ...app, documents: app.documents.filter(doc => doc.id !== documentId) }
-        : app
-    ));
 
-    setSelectedApplication(prev => prev ? {
-      ...prev,
-      documents: prev.documents.filter(doc => doc.id !== documentId)
-    } : null);
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === selectedApplication.id
+          ? { ...app, documents: app.documents.filter(doc => doc.id !== documentId) }
+          : app
+      )
+    );
+
+    setSelectedApplication(prev =>
+      prev
+        ? {
+            ...prev,
+            documents: prev.documents.filter(doc => doc.id !== documentId),
+          }
+        : null
+    );
   };
 
   const handleDocumentExtract = async (documentId: string): Promise<DocumentExtractionResult> => {
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     const result: DocumentExtractionResult = {
       success: true,
       documentType: 'invoice',
@@ -374,29 +631,35 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
         issueDate: new Date().toISOString().split('T')[0],
         amount: Math.floor(Math.random() * 100000) + 10000,
         currency: 'USD',
-        confidence: 0.92
+        confidence: 0.92,
       },
-      confidence: 0.92
+      confidence: 0.92,
     };
 
     if (selectedApplication) {
-      setApplications(prev => prev.map(app => 
-        app.id === selectedApplication.id
-          ? {
-              ...app,
-              documents: app.documents.map(doc => 
-                doc.id === documentId ? { ...doc, extractedData: result.extractedFields } : doc
-              )
-            }
-          : app
-      ));
-
-      setSelectedApplication(prev => prev ? {
-        ...prev,
-        documents: prev.documents.map(doc => 
-          doc.id === documentId ? { ...doc, extractedData: result.extractedFields } : doc
+      setApplications(prev =>
+        prev.map(app =>
+          app.id === selectedApplication.id
+            ? {
+                ...app,
+                documents: app.documents.map(doc =>
+                  doc.id === documentId ? { ...doc, extractedData: result.extractedFields } : doc
+                ),
+              }
+            : app
         )
-      } : null);
+      );
+
+      setSelectedApplication(prev =>
+        prev
+          ? {
+              ...prev,
+              documents: prev.documents.map(doc =>
+                doc.id === documentId ? { ...doc, extractedData: result.extractedFields } : doc
+              ),
+            }
+          : null
+      );
     }
 
     return result;
@@ -412,26 +675,33 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
 
   const handleActionComplete = async (actionId: string) => {
     if (!selectedApplication) return;
-    
+
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    setApplications(prev => prev.map(app => 
-      app.id === selectedApplication.id
-        ? {
-            ...app,
-            workflowStage: {
-              ...app.workflowStage,
-              pendingActions: app.workflowStage.pendingActions.map(action =>
-                action.id === actionId ? { ...action, status: 'completed' } : action
-              ),
-              timeline: [
-                ...app.workflowStage.timeline,
-                { id: `t-${Date.now()}`, timestamp: new Date().toISOString(), action: 'Action completed', actor: 'Current User' }
-              ]
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === selectedApplication.id
+          ? {
+              ...app,
+              workflowStage: {
+                ...app.workflowStage,
+                pendingActions: app.workflowStage.pendingActions.map(action =>
+                  action.id === actionId ? { ...action, status: 'completed' } : action
+                ),
+                timeline: [
+                  ...app.workflowStage.timeline,
+                  {
+                    id: `t-${Date.now()}`,
+                    timestamp: new Date().toISOString(),
+                    action: 'Action completed',
+                    actor: 'Current User',
+                  },
+                ],
+              },
             }
-          }
-        : app
-    ));
+          : app
+      )
+    );
   };
 
   const handleActionAssign = async (actionId: string, userId: string) => {
@@ -443,28 +713,34 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
 
     const newAction: WorkflowAction = {
       ...action,
-      id: `action-${Date.now()}`
+      id: `action-${Date.now()}`,
     };
 
-    setApplications(prev => prev.map(app => 
-      app.id === selectedApplication.id
-        ? {
-            ...app,
-            workflowStage: {
-              ...app.workflowStage,
-              pendingActions: [...app.workflowStage.pendingActions, newAction]
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === selectedApplication.id
+          ? {
+              ...app,
+              workflowStage: {
+                ...app.workflowStage,
+                pendingActions: [...app.workflowStage.pendingActions, newAction],
+              },
             }
-          }
-        : app
-    ));
+          : app
+      )
+    );
 
-    setSelectedApplication(prev => prev ? {
-      ...prev,
-      workflowStage: {
-        ...prev.workflowStage,
-        pendingActions: [...prev.workflowStage.pendingActions, newAction]
-      }
-    } : null);
+    setSelectedApplication(prev =>
+      prev
+        ? {
+            ...prev,
+            workflowStage: {
+              ...prev.workflowStage,
+              pendingActions: [...prev.workflowStage.pendingActions, newAction],
+            },
+          }
+        : null
+    );
   };
 
   const handleApplyTemplate = async (templateId: string) => {
@@ -527,7 +803,9 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-400">Total Value</p>
-              <p className="text-2xl font-bold text-white mt-1">${(stats.totalValue / 1000000).toFixed(2)}M</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                ${(stats.totalValue / 1000000).toFixed(2)}M
+              </p>
             </div>
             <div className="p-3 bg-purple-500/20 rounded-lg">
               <TrendingUp className="w-6 h-6 text-purple-400" />
@@ -593,13 +871,19 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-700">
-                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Application ID</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">
+                  Application ID
+                </th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Company</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Type</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Amount</th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Status</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Credit Score</th>
-                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Submitted</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">
+                  Credit Score
+                </th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">
+                  Submitted
+                </th>
                 <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Actions</th>
               </tr>
             </thead>
@@ -636,7 +920,9 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
+                      >
                         <StatusIcon className="w-3 h-3" />
                         {app.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
@@ -644,18 +930,27 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
                     <td className="px-6 py-4">
                       {app.creditScore ? (
                         <div className="flex items-center gap-2">
-                          <span className={`font-medium ${
-                            app.creditScore >= 700 ? 'text-green-400' :
-                            app.creditScore >= 600 ? 'text-amber-400' : 'text-red-400'
-                          }`}>
+                          <span
+                            className={`font-medium ${
+                              app.creditScore >= 700
+                                ? 'text-green-400'
+                                : app.creditScore >= 600
+                                  ? 'text-amber-400'
+                                  : 'text-red-400'
+                            }`}
+                          >
                             {app.creditScore}
                           </span>
                           {app.riskRating && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              app.riskRating === 'low' ? 'bg-green-500/20 text-green-400' :
-                              app.riskRating === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                              'bg-red-500/20 text-red-400'
-                            }`}>
+                            <span
+                              className={`text-xs px-1.5 py-0.5 rounded ${
+                                app.riskRating === 'low'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : app.riskRating === 'medium'
+                                    ? 'bg-amber-500/20 text-amber-400'
+                                    : 'bg-red-500/20 text-red-400'
+                              }`}
+                            >
                               {app.riskRating}
                             </span>
                           )}
@@ -726,7 +1021,9 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
             <p className="text-slate-400">{selectedApplication.companyName}</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusStyle.bg} ${statusStyle.text}`}
+            >
               <StatusIcon className="w-4 h-4" />
               {selectedApplication.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </span>
@@ -749,10 +1046,15 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Credit Score</p>
-            <p className={`text-xl font-bold mt-1 ${
-              (selectedApplication.creditScore || 0) >= 700 ? 'text-green-400' :
-              (selectedApplication.creditScore || 0) >= 600 ? 'text-amber-400' : 'text-red-400'
-            }`}>
+            <p
+              className={`text-xl font-bold mt-1 ${
+                (selectedApplication.creditScore || 0) >= 700
+                  ? 'text-green-400'
+                  : (selectedApplication.creditScore || 0) >= 600
+                    ? 'text-amber-400'
+                    : 'text-red-400'
+              }`}
+            >
               {selectedApplication.creditScore || 'Pending'}
             </p>
           </div>
@@ -770,7 +1072,7 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
             {[
               { id: 'documents', label: 'Documents', icon: Upload },
               { id: 'credit', label: 'Credit Scoring', icon: BarChart3 },
-              { id: 'workflow', label: 'Workflow', icon: GitBranch }
+              { id: 'workflow', label: 'Workflow', icon: GitBranch },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -857,10 +1159,7 @@ export const BankFinanceApplications: React.FC<BankFinanceApplicationsProps> = (
                 <h2 className="text-2xl font-bold text-white">New Finance Application</h2>
               </div>
             </div>
-            <ApplicationBuilder
-              onSubmit={handleSubmitApplication}
-              onSaveDraft={handleSaveDraft}
-            />
+            <ApplicationBuilder onSubmit={handleSubmitApplication} onSaveDraft={handleSaveDraft} />
           </div>
         ) : selectedApplication ? (
           renderApplicationDetail()

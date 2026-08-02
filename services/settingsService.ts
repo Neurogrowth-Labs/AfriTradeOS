@@ -152,7 +152,15 @@ export interface Integration {
   id: string;
   userId: string;
   organizationId?: string;
-  type: 'erp' | 'accounting' | 'payment' | 'shipping' | 'customs' | 'banking' | 'insurance' | 'other';
+  type:
+    | 'erp'
+    | 'accounting'
+    | 'payment'
+    | 'shipping'
+    | 'customs'
+    | 'banking'
+    | 'insurance'
+    | 'other';
   provider: string;
   name: string;
   description?: string;
@@ -327,26 +335,26 @@ const DEFAULT_NOTIFICATIONS = {
   financeReminders: true,
   contractRenewals: true,
   shipmentTracking: true,
-  criticalAlerts: true
+  criticalAlerts: true,
 };
 
 const DEFAULT_PRIVACY = {
   profileVisibility: 'connections' as const,
   tradeHistorySharing: true,
   aiAnalytics: true,
-  marketingEmails: false
+  marketingEmails: false,
 };
 
 const DEFAULT_UI = {
   theme: 'light' as const,
   dashboardLayout: 'default' as const,
-  sidebarCollapsed: false
+  sidebarCollapsed: false,
 };
 
 const DEFAULT_SSO_PROVIDERS: SSOProvider[] = [
   { provider: 'google', connected: false },
   { provider: 'microsoft', connected: false },
-  { provider: 'saml', connected: false }
+  { provider: 'saml', connected: false },
 ];
 
 // ============================================================================
@@ -356,11 +364,7 @@ const DEFAULT_SSO_PROVIDERS: SSOProvider[] = [
 // Profile Methods
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
     if (error) throw error;
 
@@ -381,7 +385,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       emailVerified: data.email_verified || false,
       phoneVerified: data.phone_verified || false,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
     };
   } catch (error) {
     console.error('Failed to fetch user profile from database:', error);
@@ -389,14 +393,18 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
   }
 }
 
-export async function updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<boolean> {
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<UserProfile>
+): Promise<boolean> {
   try {
     const dbUpdates: Record<string, any> = {};
 
     if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName;
     if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
     if (updates.title !== undefined) dbUpdates.title = updates.title;
-    if (updates.profilePhotoUrl !== undefined) dbUpdates.profile_photo_url = updates.profilePhotoUrl;
+    if (updates.profilePhotoUrl !== undefined)
+      dbUpdates.profile_photo_url = updates.profilePhotoUrl;
     if (updates.country !== undefined) dbUpdates.country = updates.country;
     if (updates.timezone !== undefined) dbUpdates.timezone = updates.timezone;
     if (updates.language !== undefined) dbUpdates.language = updates.language;
@@ -404,10 +412,7 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
 
     dbUpdates.updated_at = new Date().toISOString();
 
-    const { error } = await supabase
-      .from('profiles')
-      .update(dbUpdates)
-      .eq('id', userId);
+    const { error } = await supabase.from('profiles').update(dbUpdates).eq('id', userId);
 
     if (error) throw error;
 
@@ -418,7 +423,7 @@ export async function updateUserProfile(userId: string, updates: Partial<UserPro
       entityType: 'profile',
       entityId: userId,
       newValues: updates,
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -439,9 +444,7 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('profile-photos')
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
 
     await updateUserProfile(userId, { profilePhotoUrl: urlData.publicUrl });
 
@@ -456,7 +459,7 @@ export async function verifyEmail(userId: string): Promise<boolean> {
   try {
     const { error } = await supabase.auth.resend({
       type: 'signup',
-      email: (await getUserProfile(userId))?.email || ''
+      email: (await getUserProfile(userId))?.email || '',
     });
 
     if (error) throw error;
@@ -501,7 +504,7 @@ export async function getOrganization(orgId: string): Promise<Organization | nul
       description: data.description,
       createdBy: data.created_by,
       createdAt: data.created_at,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
     };
   } catch (error) {
     console.error('Failed to fetch organization from database:', error);
@@ -509,12 +512,16 @@ export async function getOrganization(orgId: string): Promise<Organization | nul
   }
 }
 
-export async function updateOrganization(orgId: string, updates: Partial<Organization>): Promise<boolean> {
+export async function updateOrganization(
+  orgId: string,
+  updates: Partial<Organization>
+): Promise<boolean> {
   try {
     const dbUpdates: Record<string, any> = {};
 
     if (updates.name !== undefined) dbUpdates.name = updates.name;
-    if (updates.registrationNumber !== undefined) dbUpdates.registration_number = updates.registrationNumber;
+    if (updates.registrationNumber !== undefined)
+      dbUpdates.registration_number = updates.registrationNumber;
     if (updates.taxVatNumber !== undefined) dbUpdates.tax_vat_number = updates.taxVatNumber;
     if (updates.address !== undefined) dbUpdates.address = updates.address;
     if (updates.city !== undefined) dbUpdates.city = updates.city;
@@ -530,10 +537,7 @@ export async function updateOrganization(orgId: string, updates: Partial<Organiz
 
     dbUpdates.updated_at = new Date().toISOString();
 
-    const { error } = await supabase
-      .from('organizations')
-      .update(dbUpdates)
-      .eq('id', orgId);
+    const { error } = await supabase.from('organizations').update(dbUpdates).eq('id', orgId);
 
     if (error) throw error;
 
@@ -555,9 +559,7 @@ export async function uploadOrganizationLogo(orgId: string, file: File): Promise
 
     if (uploadError) throw uploadError;
 
-    const { data: urlData } = supabase.storage
-      .from('organization-logos')
-      .getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage.from('organization-logos').getPublicUrl(fileName);
 
     await updateOrganization(orgId, { logoUrl: urlData.publicUrl });
 
@@ -590,7 +592,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
       numberFormat: data.number_format || '1,234.56',
       privacy: data.privacy || DEFAULT_PRIVACY,
       ui: data.ui || DEFAULT_UI,
-      updatedAt: data.updated_at
+      updatedAt: data.updated_at,
     };
   } catch (error) {
     console.error('Failed to fetch user preferences from database:', error);
@@ -598,11 +600,14 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
   }
 }
 
-export async function updateUserPreferences(userId: string, updates: Partial<UserPreferences>): Promise<boolean> {
+export async function updateUserPreferences(
+  userId: string,
+  updates: Partial<UserPreferences>
+): Promise<boolean> {
   try {
     const dbUpdates: Record<string, any> = {
       user_id: userId,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (updates.notifications !== undefined) dbUpdates.notifications = updates.notifications;
@@ -649,7 +654,7 @@ export async function getSecuritySettings(userId: string): Promise<SecuritySetti
       passwordExpiresAt: data.password_expires_at,
       activeSessions: sessions,
       trustedDevices: data.trusted_devices || [],
-      ssoProviders: data.sso_providers || DEFAULT_SSO_PROVIDERS
+      ssoProviders: data.sso_providers || DEFAULT_SSO_PROVIDERS,
     };
   } catch (error) {
     console.error('Failed to fetch security settings from database:', error);
@@ -657,19 +662,23 @@ export async function getSecuritySettings(userId: string): Promise<SecuritySetti
   }
 }
 
-export async function enableTwoFactor(userId: string, method: 'authenticator' | 'sms' | 'email'): Promise<{ secret?: string; qrCode?: string } | null> {
+export async function enableTwoFactor(
+  userId: string,
+  method: 'authenticator' | 'sms' | 'email'
+): Promise<{ secret?: string; qrCode?: string } | null> {
   try {
     // In a real implementation, this would generate a TOTP secret
     const secret = 'JBSWY3DPEHPK3PXP'; // Demo secret
 
-    const { error } = await supabase
-      .from('user_security')
-      .upsert({
+    const { error } = await supabase.from('user_security').upsert(
+      {
         user_id: userId,
         two_factor_enabled: true,
         two_factor_method: method,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    );
 
     if (error) throw error;
 
@@ -678,7 +687,7 @@ export async function enableTwoFactor(userId: string, method: 'authenticator' | 
       action: 'security.2fa_enabled',
       entityType: 'security',
       newValues: { method },
-      status: 'success'
+      status: 'success',
     });
 
     return { secret, qrCode: `otpauth://totp/AfriTradeOS?secret=${secret}` };
@@ -695,7 +704,7 @@ export async function disableTwoFactor(userId: string): Promise<boolean> {
       .update({
         two_factor_enabled: false,
         two_factor_method: null,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('user_id', userId);
 
@@ -705,7 +714,7 @@ export async function disableTwoFactor(userId: string): Promise<boolean> {
       userId,
       action: 'security.2fa_disabled',
       entityType: 'security',
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -715,10 +724,13 @@ export async function disableTwoFactor(userId: string): Promise<boolean> {
   }
 }
 
-export async function updatePassword(currentPassword: string, newPassword: string): Promise<boolean> {
+export async function updatePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<boolean> {
   try {
     const { error } = await supabase.auth.updateUser({
-      password: newPassword
+      password: newPassword,
     });
 
     if (error) throw error;
@@ -740,17 +752,19 @@ export async function getActiveSessions(userId: string): Promise<UserSession[]> 
 
     if (error) throw error;
 
-    return data?.map(s => ({
-      id: s.id,
-      deviceInfo: s.device_info,
-      browser: s.browser,
-      os: s.os,
-      ipAddress: s.ip_address,
-      location: s.location,
-      createdAt: s.created_at,
-      lastActiveAt: s.last_active_at,
-      isCurrent: s.is_current
-    })) || [];
+    return (
+      data?.map(s => ({
+        id: s.id,
+        deviceInfo: s.device_info,
+        browser: s.browser,
+        os: s.os,
+        ipAddress: s.ip_address,
+        location: s.location,
+        createdAt: s.created_at,
+        lastActiveAt: s.last_active_at,
+        isCurrent: s.is_current,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch sessions:', error);
     return [];
@@ -772,7 +786,7 @@ export async function revokeSession(userId: string, sessionId: string): Promise<
       action: 'security.session_revoked',
       entityType: 'session',
       entityId: sessionId,
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -796,7 +810,7 @@ export async function revokeAllSessions(userId: string): Promise<boolean> {
       userId,
       action: 'security.all_sessions_revoked',
       entityType: 'security',
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -810,7 +824,7 @@ export async function connectSSO(provider: 'google' | 'microsoft'): Promise<bool
   try {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider === 'microsoft' ? 'azure' : provider,
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: window.location.origin },
     });
 
     if (error) throw error;
@@ -832,31 +846,36 @@ export async function getIntegrations(userId: string): Promise<Integration[]> {
 
     if (error) throw error;
 
-    return data?.map(i => ({
-      id: i.id,
-      userId: i.user_id,
-      organizationId: i.organization_id,
-      type: i.type,
-      provider: i.provider,
-      name: i.name,
-      description: i.description,
-      status: i.status,
-      apiKeyMasked: i.api_key ? '****' + i.api_key.slice(-4) : undefined,
-      webhookUrl: i.webhook_url,
-      lastSyncAt: i.last_sync_at,
-      syncStatus: i.sync_status,
-      errorMessage: i.error_message,
-      config: i.config,
-      createdAt: i.created_at,
-      updatedAt: i.updated_at
-    })) || [];
+    return (
+      data?.map(i => ({
+        id: i.id,
+        userId: i.user_id,
+        organizationId: i.organization_id,
+        type: i.type,
+        provider: i.provider,
+        name: i.name,
+        description: i.description,
+        status: i.status,
+        apiKeyMasked: i.api_key ? '****' + i.api_key.slice(-4) : undefined,
+        webhookUrl: i.webhook_url,
+        lastSyncAt: i.last_sync_at,
+        syncStatus: i.sync_status,
+        errorMessage: i.error_message,
+        config: i.config,
+        createdAt: i.created_at,
+        updatedAt: i.updated_at,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch integrations:', error);
     return [];
   }
 }
 
-export async function connectIntegration(userId: string, integration: Partial<Integration>): Promise<Integration | null> {
+export async function connectIntegration(
+  userId: string,
+  integration: Partial<Integration>
+): Promise<Integration | null> {
   try {
     const { data, error } = await supabase
       .from('integrations')
@@ -871,7 +890,7 @@ export async function connectIntegration(userId: string, integration: Partial<In
         webhook_url: integration.webhookUrl,
         config: integration.config,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -884,7 +903,7 @@ export async function connectIntegration(userId: string, integration: Partial<In
       entityType: 'integration',
       entityId: data.id,
       newValues: { provider: integration.provider, name: integration.name },
-      status: 'success'
+      status: 'success',
     });
 
     return data;
@@ -894,13 +913,16 @@ export async function connectIntegration(userId: string, integration: Partial<In
   }
 }
 
-export async function disconnectIntegration(userId: string, integrationId: string): Promise<boolean> {
+export async function disconnectIntegration(
+  userId: string,
+  integrationId: string
+): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('integrations')
       .update({
         status: 'disconnected',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', integrationId)
       .eq('user_id', userId);
@@ -912,7 +934,7 @@ export async function disconnectIntegration(userId: string, integrationId: strin
       action: 'integration.disconnected',
       entityType: 'integration',
       entityId: integrationId,
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -934,33 +956,43 @@ export async function getAPIKeys(userId: string): Promise<APIKey[]> {
 
     if (error) throw error;
 
-    return data?.map(k => ({
-      id: k.id,
-      userId: k.user_id,
-      organizationId: k.organization_id,
-      name: k.name,
-      keyPrefix: k.key_prefix,
-      keyHash: '****************************' + k.key_hash.slice(-6),
-      permissions: k.permissions || [],
-      expiresAt: k.expires_at,
-      lastUsedAt: k.last_used_at,
-      usageCount: k.usage_count || 0,
-      rateLimit: k.rate_limit || 1000,
-      isActive: k.is_active,
-      createdAt: k.created_at
-    })) || [];
+    return (
+      data?.map(k => ({
+        id: k.id,
+        userId: k.user_id,
+        organizationId: k.organization_id,
+        name: k.name,
+        keyPrefix: k.key_prefix,
+        keyHash: '****************************' + k.key_hash.slice(-6),
+        permissions: k.permissions || [],
+        expiresAt: k.expires_at,
+        lastUsedAt: k.last_used_at,
+        usageCount: k.usage_count || 0,
+        rateLimit: k.rate_limit || 1000,
+        isActive: k.is_active,
+        createdAt: k.created_at,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch API keys:', error);
     return [];
   }
 }
 
-export async function generateAPIKey(userId: string, name: string, permissions: string[]): Promise<{ key: string; apiKey: APIKey } | null> {
+export async function generateAPIKey(
+  userId: string,
+  name: string,
+  permissions: string[]
+): Promise<{ key: string; apiKey: APIKey } | null> {
   try {
     // Generate a random API key
     const keyPrefix = 'sk_live_';
-    const keyBody = Array.from({ length: 32 }, () =>
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]
+    const keyBody = Array.from(
+      { length: 32 },
+      () =>
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
+          Math.floor(Math.random() * 62)
+        ]
     ).join('');
     const fullKey = keyPrefix + keyBody;
 
@@ -974,7 +1006,7 @@ export async function generateAPIKey(userId: string, name: string, permissions: 
         permissions,
         rate_limit: 1000,
         is_active: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -987,7 +1019,7 @@ export async function generateAPIKey(userId: string, name: string, permissions: 
       entityType: 'api_key',
       entityId: data.id,
       newValues: { name },
-      status: 'success'
+      status: 'success',
     });
 
     return {
@@ -1002,8 +1034,8 @@ export async function generateAPIKey(userId: string, name: string, permissions: 
         usageCount: 0,
         rateLimit: data.rate_limit,
         isActive: true,
-        createdAt: data.created_at
-      }
+        createdAt: data.created_at,
+      },
     };
   } catch (error) {
     console.error('Failed to generate API key:', error);
@@ -1026,7 +1058,7 @@ export async function revokeAPIKey(userId: string, keyId: string): Promise<boole
       action: 'api_key.revoked',
       entityType: 'api_key',
       entityId: keyId,
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -1057,7 +1089,7 @@ export async function getAIDataSettings(userId: string): Promise<AIDataSettings 
       anonymizedAnalytics: data.anonymized_analytics ?? true,
       dataRetentionDays: data.data_retention_days ?? 365,
       lastDataExportAt: data.last_data_export_at,
-      deleteRequestedAt: data.delete_requested_at
+      deleteRequestedAt: data.delete_requested_at,
     };
   } catch (error) {
     console.error('Failed to fetch AI settings:', error);
@@ -1065,20 +1097,30 @@ export async function getAIDataSettings(userId: string): Promise<AIDataSettings 
   }
 }
 
-export async function updateAIDataSettings(userId: string, updates: Partial<AIDataSettings>): Promise<boolean> {
+export async function updateAIDataSettings(
+  userId: string,
+  updates: Partial<AIDataSettings>
+): Promise<boolean> {
   try {
     const dbUpdates: Record<string, any> = {
       user_id: userId,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
-    if (updates.enableAIInsights !== undefined) dbUpdates.enable_ai_insights = updates.enableAIInsights;
-    if (updates.enablePredictions !== undefined) dbUpdates.enable_predictions = updates.enablePredictions;
-    if (updates.dataSharingConsent !== undefined) dbUpdates.data_sharing_consent = updates.dataSharingConsent;
-    if (updates.modelTrainingOptIn !== undefined) dbUpdates.model_training_opt_in = updates.modelTrainingOptIn;
-    if (updates.personalizedRecommendations !== undefined) dbUpdates.personalized_recommendations = updates.personalizedRecommendations;
-    if (updates.anonymizedAnalytics !== undefined) dbUpdates.anonymized_analytics = updates.anonymizedAnalytics;
-    if (updates.dataRetentionDays !== undefined) dbUpdates.data_retention_days = updates.dataRetentionDays;
+    if (updates.enableAIInsights !== undefined)
+      dbUpdates.enable_ai_insights = updates.enableAIInsights;
+    if (updates.enablePredictions !== undefined)
+      dbUpdates.enable_predictions = updates.enablePredictions;
+    if (updates.dataSharingConsent !== undefined)
+      dbUpdates.data_sharing_consent = updates.dataSharingConsent;
+    if (updates.modelTrainingOptIn !== undefined)
+      dbUpdates.model_training_opt_in = updates.modelTrainingOptIn;
+    if (updates.personalizedRecommendations !== undefined)
+      dbUpdates.personalized_recommendations = updates.personalizedRecommendations;
+    if (updates.anonymizedAnalytics !== undefined)
+      dbUpdates.anonymized_analytics = updates.anonymizedAnalytics;
+    if (updates.dataRetentionDays !== undefined)
+      dbUpdates.data_retention_days = updates.dataRetentionDays;
 
     const { error } = await supabase
       .from('user_ai_settings')
@@ -1107,7 +1149,7 @@ export async function exportUserData(userId: string): Promise<string | null> {
       userId,
       action: 'data.exported',
       entityType: 'user_data',
-      status: 'success'
+      status: 'success',
     });
 
     return '/api/data-export/' + userId;
@@ -1130,7 +1172,7 @@ export async function requestDataDeletion(userId: string): Promise<boolean> {
       userId,
       action: 'data.deletion_requested',
       entityType: 'user_data',
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -1171,7 +1213,7 @@ export async function getBillingInfo(userId: string): Promise<BillingInfo | null
       usageMetrics,
       paymentMethods,
       invoices,
-      subscriptionStatus: data.subscription_status
+      subscriptionStatus: data.subscription_status,
     };
   } catch (error) {
     console.error('Failed to fetch billing info:', error);
@@ -1200,7 +1242,7 @@ export async function getUsageMetrics(userId: string): Promise<UsageMetrics> {
       storageLimitMB: data.storage_limit_mb || 5000,
       teamMembers: data.team_members || 0,
       teamMembersLimit: data.team_members_limit || 10,
-      lastUpdated: data.updated_at
+      lastUpdated: data.updated_at,
     };
   } catch (error) {
     console.error('Failed to fetch usage metrics:', error);
@@ -1219,17 +1261,19 @@ export async function getInvoices(userId: string): Promise<Invoice[]> {
 
     if (error) throw error;
 
-    return data?.map(i => ({
-      id: i.id,
-      invoiceNumber: i.invoice_number,
-      amount: i.amount,
-      currency: i.currency,
-      status: i.status,
-      issuedAt: i.issued_at,
-      dueAt: i.due_at,
-      paidAt: i.paid_at,
-      downloadUrl: i.download_url
-    })) || [];
+    return (
+      data?.map(i => ({
+        id: i.id,
+        invoiceNumber: i.invoice_number,
+        amount: i.amount,
+        currency: i.currency,
+        status: i.status,
+        issuedAt: i.issued_at,
+        dueAt: i.due_at,
+        paidAt: i.paid_at,
+        downloadUrl: i.download_url,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch invoices:', error);
     return [];
@@ -1246,15 +1290,17 @@ export async function getPaymentMethods(userId: string): Promise<PaymentMethod[]
 
     if (error) throw error;
 
-    return data?.map(p => ({
-      id: p.id,
-      type: p.type,
-      brand: p.brand,
-      last4: p.last4,
-      expiryMonth: p.expiry_month,
-      expiryYear: p.expiry_year,
-      isDefault: p.is_default
-    })) || [];
+    return (
+      data?.map(p => ({
+        id: p.id,
+        type: p.type,
+        brand: p.brand,
+        last4: p.last4,
+        expiryMonth: p.expiry_month,
+        expiryYear: p.expiry_year,
+        isDefault: p.is_default,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch payment methods:', error);
     return [];
@@ -1288,7 +1334,7 @@ const PLAN_CONFIGS = {
     apiCallsLimit: 10000,
     storageLimitMB: 5000,
     teamMembersLimit: 5,
-    price: 19.00
+    price: 19.0,
   },
   enterprise_monthly: {
     planType: 'enterprise' as const,
@@ -1298,8 +1344,8 @@ const PLAN_CONFIGS = {
     apiCallsLimit: 999999,
     storageLimitMB: 50000,
     teamMembersLimit: 999999,
-    price: 49.00
-  }
+    price: 49.0,
+  },
 };
 
 export interface UpgradeResult {
@@ -1327,7 +1373,7 @@ export async function upgradePlan(
       newPlanType: '',
       periodStart: '',
       periodEnd: '',
-      error: 'Invalid plan selected'
+      error: 'Invalid plan selected',
     };
   }
 
@@ -1337,9 +1383,8 @@ export async function upgradePlan(
 
   try {
     // 1. Update billing_info with new plan
-    const { error: billingError } = await supabase
-      .from('billing_info')
-      .upsert({
+    const { error: billingError } = await supabase.from('billing_info').upsert(
+      {
         user_id: userId,
         plan_type: planConfig.planType,
         plan_name: planConfig.planName,
@@ -1349,23 +1394,26 @@ export async function upgradePlan(
         subscription_status: 'active',
         paypal_order_id: paypalOrderId,
         paypal_payer_id: paypalPayerId,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    );
 
     if (billingError) throw billingError;
 
     // 2. Update usage limits based on new plan
-    const { error: usageError } = await supabase
-      .from('usage_metrics')
-      .upsert({
+    const { error: usageError } = await supabase.from('usage_metrics').upsert(
+      {
         user_id: userId,
         trades_limit: planConfig.tradesLimit,
         documents_limit: planConfig.documentsLimit,
         api_calls_limit: planConfig.apiCallsLimit,
         storage_limit_mb: planConfig.storageLimitMB,
         team_members_limit: planConfig.teamMembersLimit,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' });
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    );
 
     if (usageError) throw usageError;
 
@@ -1383,7 +1431,7 @@ export async function upgradePlan(
         due_at: periodStart,
         paid_at: periodStart,
         description: `${planConfig.planName} - Monthly Subscription`,
-        paypal_order_id: paypalOrderId
+        paypal_order_id: paypalOrderId,
       })
       .select('id')
       .single();
@@ -1402,10 +1450,10 @@ export async function upgradePlan(
         planType: planConfig.planType,
         planName: planConfig.planName,
         price: planConfig.price,
-        paypalOrderId
+        paypalOrderId,
       },
       status: 'success',
-      metadata: { source: 'paypal', planId }
+      metadata: { source: 'paypal', planId },
     });
 
     return {
@@ -1414,7 +1462,7 @@ export async function upgradePlan(
       newPlanType: planConfig.planType,
       periodStart,
       periodEnd,
-      invoiceId: invoiceData?.id
+      invoiceId: invoiceData?.id,
     };
   } catch (error) {
     console.error('Failed to upgrade plan:', error);
@@ -1427,7 +1475,7 @@ export async function upgradePlan(
       entityId: paypalOrderId,
       status: 'failed',
       errorMessage: error instanceof Error ? error.message : 'Unknown error',
-      metadata: { source: 'paypal', planId }
+      metadata: { source: 'paypal', planId },
     });
 
     return {
@@ -1436,21 +1484,24 @@ export async function upgradePlan(
       newPlanType: '',
       periodStart: '',
       periodEnd: '',
-      error: error instanceof Error ? error.message : 'Failed to upgrade plan'
+      error: error instanceof Error ? error.message : 'Failed to upgrade plan',
     };
   }
 }
 
 // Audit Log Methods
-export async function getAuditLogs(userId: string, filters?: {
-  action?: string;
-  entityType?: string;
-  fromDate?: string;
-  toDate?: string;
-  status?: 'success' | 'failed';
-  limit?: number;
-  offset?: number;
-}): Promise<{ logs: AuditLog[]; total: number }> {
+export async function getAuditLogs(
+  userId: string,
+  filters?: {
+    action?: string;
+    entityType?: string;
+    fromDate?: string;
+    toDate?: string;
+    status?: 'success' | 'failed';
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{ logs: AuditLog[]; total: number }> {
   try {
     let query = supabase
       .from('audit_logs')
@@ -1481,23 +1532,24 @@ export async function getAuditLogs(userId: string, filters?: {
 
     if (error) throw error;
 
-    const logs = data?.map(log => ({
-      id: log.id,
-      userId: log.user_id,
-      userName: log.profiles?.full_name,
-      action: log.action,
-      entityType: log.entity_type,
-      entityId: log.entity_id,
-      oldValues: log.old_values,
-      newValues: log.new_values,
-      ipAddress: log.ip_address,
-      userAgent: log.user_agent,
-      location: log.location,
-      status: log.status,
-      errorMessage: log.error_message,
-      metadata: log.metadata,
-      createdAt: log.created_at
-    })) || [];
+    const logs =
+      data?.map(log => ({
+        id: log.id,
+        userId: log.user_id,
+        userName: log.profiles?.full_name,
+        action: log.action,
+        entityType: log.entity_type,
+        entityId: log.entity_id,
+        oldValues: log.old_values,
+        newValues: log.new_values,
+        ipAddress: log.ip_address,
+        userAgent: log.user_agent,
+        location: log.location,
+        status: log.status,
+        errorMessage: log.error_message,
+        metadata: log.metadata,
+        createdAt: log.created_at,
+      })) || [];
 
     return { logs, total: count || 0 };
   } catch (error) {
@@ -1508,22 +1560,20 @@ export async function getAuditLogs(userId: string, filters?: {
 
 export async function createAuditLog(log: Partial<AuditLog>): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('audit_logs')
-      .insert({
-        user_id: log.userId,
-        action: log.action,
-        entity_type: log.entityType,
-        entity_id: log.entityId,
-        old_values: log.oldValues,
-        new_values: log.newValues,
-        ip_address: log.ipAddress,
-        user_agent: log.userAgent,
-        status: log.status || 'success',
-        error_message: log.errorMessage,
-        metadata: log.metadata,
-        created_at: new Date().toISOString()
-      });
+    const { error } = await supabase.from('audit_logs').insert({
+      user_id: log.userId,
+      action: log.action,
+      entity_type: log.entityType,
+      entity_id: log.entityId,
+      old_values: log.oldValues,
+      new_values: log.newValues,
+      ip_address: log.ipAddress,
+      user_agent: log.userAgent,
+      status: log.status || 'success',
+      error_message: log.errorMessage,
+      metadata: log.metadata,
+      created_at: new Date().toISOString(),
+    });
 
     if (error) throw error;
     return true;
@@ -1533,7 +1583,10 @@ export async function createAuditLog(log: Partial<AuditLog>): Promise<boolean> {
   }
 }
 
-export async function exportAuditLogs(userId: string, format: 'csv' | 'pdf'): Promise<string | null> {
+export async function exportAuditLogs(
+  userId: string,
+  format: 'csv' | 'pdf'
+): Promise<string | null> {
   try {
     const { logs } = await getAuditLogs(userId, { limit: 1000 });
 
@@ -1545,7 +1598,7 @@ export async function exportAuditLogs(userId: string, format: 'csv' | 'pdf'): Pr
         log.entityType,
         log.entityId || '',
         log.status,
-        log.ipAddress || ''
+        log.ipAddress || '',
       ]);
 
       const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
@@ -1572,33 +1625,39 @@ export async function getTeamMembers(organizationId: string): Promise<TeamMember
 
     if (error) throw error;
 
-    return data?.map(m => ({
-      id: m.id,
-      userId: m.user_id,
-      organizationId: m.organization_id,
-      email: m.email,
-      fullName: m.full_name,
-      role: m.role,
-      department: m.department,
-      title: m.title,
-      permissions: m.permissions || [],
-      status: m.status,
-      invitedBy: m.invited_by,
-      invitedAt: m.invited_at,
-      joinedAt: m.joined_at,
-      lastActiveAt: m.last_active_at
-    })) || [];
+    return (
+      data?.map(m => ({
+        id: m.id,
+        userId: m.user_id,
+        organizationId: m.organization_id,
+        email: m.email,
+        fullName: m.full_name,
+        role: m.role,
+        department: m.department,
+        title: m.title,
+        permissions: m.permissions || [],
+        status: m.status,
+        invitedBy: m.invited_by,
+        invitedAt: m.invited_at,
+        joinedAt: m.joined_at,
+        lastActiveAt: m.last_active_at,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch team members:', error);
     return [];
   }
 }
 
-export async function inviteTeamMember(organizationId: string, invitedBy: string, member: {
-  email: string;
-  role: 'admin' | 'member' | 'viewer';
-  department?: string;
-}): Promise<TeamMember | null> {
+export async function inviteTeamMember(
+  organizationId: string,
+  invitedBy: string,
+  member: {
+    email: string;
+    role: 'admin' | 'member' | 'viewer';
+    department?: string;
+  }
+): Promise<TeamMember | null> {
   try {
     const { data, error } = await supabase
       .from('team_members')
@@ -1610,7 +1669,7 @@ export async function inviteTeamMember(organizationId: string, invitedBy: string
         permissions: getRolePermissions(member.role),
         status: 'invited',
         invited_by: invitedBy,
-        invited_at: new Date().toISOString()
+        invited_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -1623,7 +1682,7 @@ export async function inviteTeamMember(organizationId: string, invitedBy: string
       entityType: 'team_member',
       entityId: data.id,
       newValues: { email: member.email, role: member.role },
-      status: 'success'
+      status: 'success',
     });
 
     // In a real implementation, send invitation email here
@@ -1635,7 +1694,10 @@ export async function inviteTeamMember(organizationId: string, invitedBy: string
   }
 }
 
-export async function updateTeamMember(memberId: string, updates: Partial<TeamMember>): Promise<boolean> {
+export async function updateTeamMember(
+  memberId: string,
+  updates: Partial<TeamMember>
+): Promise<boolean> {
   try {
     const dbUpdates: Record<string, any> = {};
 
@@ -1647,10 +1709,7 @@ export async function updateTeamMember(memberId: string, updates: Partial<TeamMe
     if (updates.title !== undefined) dbUpdates.title = updates.title;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
-    const { error } = await supabase
-      .from('team_members')
-      .update(dbUpdates)
-      .eq('id', memberId);
+    const { error } = await supabase.from('team_members').update(dbUpdates).eq('id', memberId);
 
     if (error) throw error;
 
@@ -1663,10 +1722,7 @@ export async function updateTeamMember(memberId: string, updates: Partial<TeamMe
 
 export async function removeTeamMember(memberId: string, removedBy: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('team_members')
-      .delete()
-      .eq('id', memberId);
+    const { error } = await supabase.from('team_members').delete().eq('id', memberId);
 
     if (error) throw error;
 
@@ -1675,7 +1731,7 @@ export async function removeTeamMember(memberId: string, removedBy: string): Pro
       action: 'team.member_removed',
       entityType: 'team_member',
       entityId: memberId,
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -1696,24 +1752,29 @@ export async function getRoles(organizationId: string): Promise<Role[]> {
 
     if (error) throw error;
 
-    return data?.map(r => ({
-      id: r.id,
-      organizationId: r.organization_id,
-      name: r.name,
-      description: r.description,
-      permissions: r.permissions || [],
-      isDefault: r.is_default || false,
-      memberCount: r.member_count || 0,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at
-    })) || [];
+    return (
+      data?.map(r => ({
+        id: r.id,
+        organizationId: r.organization_id,
+        name: r.name,
+        description: r.description,
+        permissions: r.permissions || [],
+        isDefault: r.is_default || false,
+        memberCount: r.member_count || 0,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch roles:', error);
     return [];
   }
 }
 
-export async function createRole(organizationId: string, role: Partial<Role>): Promise<Role | null> {
+export async function createRole(
+  organizationId: string,
+  role: Partial<Role>
+): Promise<Role | null> {
   try {
     const { data, error } = await supabase
       .from('roles')
@@ -1724,7 +1785,7 @@ export async function createRole(organizationId: string, role: Partial<Role>): P
         permissions: role.permissions,
         is_default: role.isDefault || false,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -1741,7 +1802,7 @@ export async function createRole(organizationId: string, role: Partial<Role>): P
 export async function updateRole(roleId: string, updates: Partial<Role>): Promise<boolean> {
   try {
     const dbUpdates: Record<string, any> = {
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (updates.name !== undefined) dbUpdates.name = updates.name;
@@ -1749,10 +1810,7 @@ export async function updateRole(roleId: string, updates: Partial<Role>): Promis
     if (updates.permissions !== undefined) dbUpdates.permissions = updates.permissions;
     if (updates.isDefault !== undefined) dbUpdates.is_default = updates.isDefault;
 
-    const { error } = await supabase
-      .from('roles')
-      .update(dbUpdates)
-      .eq('id', roleId);
+    const { error } = await supabase.from('roles').update(dbUpdates).eq('id', roleId);
 
     if (error) throw error;
 
@@ -1765,10 +1823,7 @@ export async function updateRole(roleId: string, updates: Partial<Role>): Promis
 
 export async function deleteRole(roleId: string): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('roles')
-      .delete()
-      .eq('id', roleId);
+    const { error } = await supabase.from('roles').delete().eq('id', roleId);
 
     if (error) throw error;
 
@@ -1789,32 +1844,36 @@ export async function getTradeAssociations(userId: string): Promise<TradeAssocia
 
     if (error) throw error;
 
-    return data?.map(a => ({
-      id: a.trade_associations.id,
-      name: a.trade_associations.name,
-      region: a.trade_associations.region,
-      membershipStatus: a.membership_status,
-      membershipId: a.membership_id,
-      benefits: a.trade_associations.benefits || [],
-      connectedAt: a.connected_at
-    })) || [];
+    return (
+      data?.map(a => ({
+        id: a.trade_associations.id,
+        name: a.trade_associations.name,
+        region: a.trade_associations.region,
+        membershipStatus: a.membership_status,
+        membershipId: a.membership_id,
+        benefits: a.trade_associations.benefits || [],
+        connectedAt: a.connected_at,
+      })) || []
+    );
   } catch (error) {
     console.error('Failed to fetch trade associations:', error);
     return [];
   }
 }
 
-export async function connectTradeAssociation(userId: string, associationId: string, membershipId?: string): Promise<boolean> {
+export async function connectTradeAssociation(
+  userId: string,
+  associationId: string,
+  membershipId?: string
+): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('user_trade_associations')
-      .insert({
-        user_id: userId,
-        association_id: associationId,
-        membership_status: membershipId ? 'active' : 'pending',
-        membership_id: membershipId,
-        connected_at: new Date().toISOString()
-      });
+    const { error } = await supabase.from('user_trade_associations').insert({
+      user_id: userId,
+      association_id: associationId,
+      membership_status: membershipId ? 'active' : 'pending',
+      membership_id: membershipId,
+      connected_at: new Date().toISOString(),
+    });
 
     if (error) throw error;
 
@@ -1823,7 +1882,7 @@ export async function connectTradeAssociation(userId: string, associationId: str
       action: 'association.connected',
       entityType: 'trade_association',
       entityId: associationId,
-      status: 'success'
+      status: 'success',
     });
 
     return true;
@@ -1839,23 +1898,24 @@ export async function syncCurrencyRates(): Promise<boolean> {
     // In a real implementation, this would fetch from an FX API
     const rates = [
       { pair: 'USD/GHS', rate: 15.25, change: 0.12, change_percent: 0.8 },
-      { pair: 'USD/NGN', rate: 1550.00, change: -5.00, change_percent: -0.32 },
-      { pair: 'USD/KES', rate: 153.50, change: 0.25, change_percent: 0.16 },
+      { pair: 'USD/NGN', rate: 1550.0, change: -5.0, change_percent: -0.32 },
+      { pair: 'USD/KES', rate: 153.5, change: 0.25, change_percent: 0.16 },
       { pair: 'USD/ZAR', rate: 18.75, change: 0.08, change_percent: 0.43 },
-      { pair: 'EUR/USD', rate: 1.085, change: 0.002, change_percent: 0.18 }
+      { pair: 'EUR/USD', rate: 1.085, change: 0.002, change_percent: 0.18 },
     ];
 
     for (const rate of rates) {
-      await supabase
-        .from('fx_rates')
-        .upsert({
+      await supabase.from('fx_rates').upsert(
+        {
           pair: rate.pair,
           rate: rate.rate,
           change: rate.change,
           change_percent: rate.change_percent,
           source: 'api',
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'pair' });
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'pair' }
+      );
     }
 
     return true;

@@ -17,7 +17,7 @@ export const UPGRADE_PLANS: UpgradePlan[] = [
   {
     id: 'pro_monthly',
     name: 'Pro Plan',
-    price: 19.00,
+    price: 19.0,
     currency: 'USD',
     description: 'Unlock advanced features for serious traders',
     features: [
@@ -28,13 +28,13 @@ export const UPGRADE_PLANS: UpgradePlan[] = [
       'Custom compliance reports',
       'API access (10,000 calls/month)',
       'Team collaboration (up to 5 members)',
-      'Export data in all formats'
-    ]
+      'Export data in all formats',
+    ],
   },
   {
     id: 'enterprise_monthly',
     name: 'Enterprise Plan',
-    price: 49.00,
+    price: 49.0,
     currency: 'USD',
     description: 'Complete solution for large organizations',
     features: [
@@ -45,9 +45,9 @@ export const UPGRADE_PLANS: UpgradePlan[] = [
       'Custom integrations',
       'SLA guarantee (99.9% uptime)',
       'Unlimited team members',
-      'Advanced security features'
-    ]
-  }
+      'Advanced security features',
+    ],
+  },
 ];
 
 // Declare PayPal types
@@ -135,7 +135,11 @@ interface PayPalCaptureResult {
 export function loadPayPalScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!PAYPAL_CLIENT_ID) {
-      reject(new Error('PayPal client ID is not configured. Set VITE_PAYPAL_CLIENT_ID in the deployment environment.'));
+      reject(
+        new Error(
+          'PayPal client ID is not configured. Set VITE_PAYPAL_CLIENT_ID in the deployment environment.'
+        )
+      );
       return;
     }
     // Check if PayPal is already available
@@ -148,7 +152,9 @@ export function loadPayPalScript(): Promise<void> {
     const existingScript = document.querySelector('script[src*="paypal.com/sdk"]');
     if (existingScript) {
       existingScript.addEventListener('load', () => resolve());
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load PayPal SDK')));
+      existingScript.addEventListener('error', () =>
+        reject(new Error('Failed to load PayPal SDK'))
+      );
       return;
     }
 
@@ -184,63 +190,70 @@ export function initPayPalButtons(
   }
 
   try {
-    window.paypal.Buttons({
-      style: {
-        layout: 'vertical',
-        color: 'blue',
-        shape: 'rect',
-        label: 'pay',
-        height: 45
-      },
+    window.paypal
+      .Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'blue',
+          shape: 'rect',
+          label: 'pay',
+          height: 45,
+        },
 
-      // Client-side order creation - no server needed!
-      createOrder: async (_data: unknown, actions: PayPalActions) => {
-        return actions.order.create({
-          intent: 'CAPTURE',
-          purchase_units: [{
-            reference_id: `${userId}_${planId}_${Date.now()}`,
-            description: `AfriTradeOS ${plan.name} - Monthly Subscription`,
-            custom_id: JSON.stringify({ userId, planId, timestamp: Date.now() }),
-            amount: {
-              currency_code: plan.currency,
-              value: plan.price.toFixed(2)
-            }
-          }],
-          application_context: {
-            brand_name: 'AfriTradeOS',
-            shipping_preference: 'NO_SHIPPING'
-          }
-        });
-      },
-
-      // Client-side order capture
-      onApprove: async (data: PayPalApproveData, actions: PayPalActions) => {
-        try {
-          const captureResult = await actions.order.capture();
-
-          // Pass order details to success callback
-          onSuccess({
-            id: captureResult.id || data.orderID,
-            payer: {
-              payer_id: captureResult.payer?.payer_id || data.payerID
-            }
+        // Client-side order creation - no server needed!
+        createOrder: async (_data: unknown, actions: PayPalActions) => {
+          return actions.order.create({
+            intent: 'CAPTURE',
+            purchase_units: [
+              {
+                reference_id: `${userId}_${planId}_${Date.now()}`,
+                description: `AfriTradeOS ${plan.name} - Monthly Subscription`,
+                custom_id: JSON.stringify({ userId, planId, timestamp: Date.now() }),
+                amount: {
+                  currency_code: plan.currency,
+                  value: plan.price.toFixed(2),
+                },
+              },
+            ],
+            application_context: {
+              brand_name: 'AfriTradeOS',
+              shipping_preference: 'NO_SHIPPING',
+            },
           });
-        } catch (captureError) {
-          onError(captureError instanceof Error ? captureError : new Error('Payment capture failed'));
-        }
-      },
+        },
 
-      onError: (err: Error) => {
-        onError(err);
-      },
+        // Client-side order capture
+        onApprove: async (data: PayPalApproveData, actions: PayPalActions) => {
+          try {
+            const captureResult = await actions.order.capture();
 
-      onCancel: () => {
-        // User closed PayPal popup - not an error, just cancelled
-        onError(new Error('Payment was cancelled'));
-      }
-    }).render(`#${containerId}`).catch((renderError: Error) => {
-      onError(renderError);
-    });
+            // Pass order details to success callback
+            onSuccess({
+              id: captureResult.id || data.orderID,
+              payer: {
+                payer_id: captureResult.payer?.payer_id || data.payerID,
+              },
+            });
+          } catch (captureError) {
+            onError(
+              captureError instanceof Error ? captureError : new Error('Payment capture failed')
+            );
+          }
+        },
+
+        onError: (err: Error) => {
+          onError(err);
+        },
+
+        onCancel: () => {
+          // User closed PayPal popup - not an error, just cancelled
+          onError(new Error('Payment was cancelled'));
+        },
+      })
+      .render(`#${containerId}`)
+      .catch((renderError: Error) => {
+        onError(renderError);
+      });
   } catch (error) {
     onError(error instanceof Error ? error : new Error('Failed to initialize PayPal buttons'));
   }

@@ -17,22 +17,18 @@ import {
   Lock,
   Scale,
   DollarSign,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import { governmentService } from '../services/governmentService';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AGREEMENT_COLORS: Record<string, string> = {
-  'AfCFTA': '#10b981', 'SADC': '#3b82f6', 'EAC': '#8b5cf6', 'ECOWAS': '#f59e0b',
-  'COMESA': '#06b6d4', 'EPA': '#ef4444',
+  AfCFTA: '#10b981',
+  SADC: '#3b82f6',
+  EAC: '#8b5cf6',
+  ECOWAS: '#f59e0b',
+  COMESA: '#06b6d4',
+  EPA: '#ef4444',
 };
 
 // What-if calculator state
@@ -58,16 +54,82 @@ export const GovTradeAgreements: React.FC = () => {
   const [calcResult, setCalcResult] = useState<CalcResult | null>(null);
 
   // Database-driven state
-  const [AGREEMENTS, setAgreements] = useState<{id: string; name: string; shortName: string; members: number; entered: string; status: string; coverage: string; tariffLines: number; liberalized: number; color: string; description: string; keyBenefits: string[]}[]>([]);
-  const [selectedAgreement, setSelectedAgreement] = useState<typeof AGREEMENTS[0] | null>(null);
-  const [TARIFF_SCHEDULES, setTariffSchedules] = useState<{hsCode: string; product: string; mfnRate: number; afcftaRate: number; sadcRate: number; ecowasRate: number; savings: string; utilization: number}[]>([]);
-  const [ROO_CRITERIA, setRooCriteria] = useState<{product: string; rule: string; threshold: string; cumulation: string; status: string}[]>([]);
-  const [PREF_UTILIZATION, setPrefUtilization] = useState<{agreement: string; eligible: number; claimed: number; rate: number; trend: string}[]>([]);
+  const [AGREEMENTS, setAgreements] = useState<
+    {
+      id: string;
+      name: string;
+      shortName: string;
+      members: number;
+      entered: string;
+      status: string;
+      coverage: string;
+      tariffLines: number;
+      liberalized: number;
+      color: string;
+      description: string;
+      keyBenefits: string[];
+    }[]
+  >([]);
+  const [selectedAgreement, setSelectedAgreement] = useState<(typeof AGREEMENTS)[0] | null>(null);
+  const [TARIFF_SCHEDULES, setTariffSchedules] = useState<
+    {
+      hsCode: string;
+      product: string;
+      mfnRate: number;
+      afcftaRate: number;
+      sadcRate: number;
+      ecowasRate: number;
+      savings: string;
+      utilization: number;
+    }[]
+  >([]);
+  const [ROO_CRITERIA, setRooCriteria] = useState<
+    { product: string; rule: string; threshold: string; cumulation: string; status: string }[]
+  >([]);
+  const [PREF_UTILIZATION, setPrefUtilization] = useState<
+    { agreement: string; eligible: number; claimed: number; rate: number; trend: string }[]
+  >([]);
   const [COO_VERIFICATIONS] = useState([
-    { id: 'COO-2024-18923', exporter: 'Dangote Industries', origin: 'Nigeria', destination: 'Ghana', product: 'Cement (2523)', agreement: 'AfCFTA', status: 'verified', method: 'Digital' },
-    { id: 'COO-2024-18924', exporter: 'Shoprite Holdings', origin: 'South Africa', destination: 'Zambia', product: 'Retail goods (mixed)', agreement: 'SADC', status: 'verified', method: 'Blockchain' },
-    { id: 'COO-2024-18925', exporter: 'Green Valley Farms', origin: 'Kenya', destination: 'Uganda', product: 'Tea (0902)', agreement: 'COMESA', status: 'pending', method: 'Manual' },
-    { id: 'COO-2024-18926', exporter: 'Atlas Trading Co', origin: 'Nigeria', destination: 'Senegal', product: 'Textiles (5208)', agreement: 'ECOWAS', status: 'rejected', method: 'Digital' },
+    {
+      id: 'COO-2024-18923',
+      exporter: 'Dangote Industries',
+      origin: 'Nigeria',
+      destination: 'Ghana',
+      product: 'Cement (2523)',
+      agreement: 'AfCFTA',
+      status: 'verified',
+      method: 'Digital',
+    },
+    {
+      id: 'COO-2024-18924',
+      exporter: 'Shoprite Holdings',
+      origin: 'South Africa',
+      destination: 'Zambia',
+      product: 'Retail goods (mixed)',
+      agreement: 'SADC',
+      status: 'verified',
+      method: 'Blockchain',
+    },
+    {
+      id: 'COO-2024-18925',
+      exporter: 'Green Valley Farms',
+      origin: 'Kenya',
+      destination: 'Uganda',
+      product: 'Tea (0902)',
+      agreement: 'COMESA',
+      status: 'pending',
+      method: 'Manual',
+    },
+    {
+      id: 'COO-2024-18926',
+      exporter: 'Atlas Trading Co',
+      origin: 'Nigeria',
+      destination: 'Senegal',
+      product: 'Textiles (5208)',
+      agreement: 'ECOWAS',
+      status: 'rejected',
+      method: 'Digital',
+    },
   ]);
 
   useEffect(() => {
@@ -80,50 +142,62 @@ export const GovTradeAgreements: React.FC = () => {
         ]);
 
         // Map agreements to UI format
-        setAgreements(dbAgreements.map(a => ({
-          id: a.short_name || a.id,
-          name: a.name,
-          shortName: a.short_name || a.name.substring(0, 6),
-          members: (a.member_countries || []).length,
-          entered: a.effective_date || '',
-          status: a.status,
-          coverage: a.coverage_area || '',
-          tariffLines: Math.round(Math.random() * 5000 + 3000),
-          liberalized: a.tariff_reduction_pct || 0,
-          color: AGREEMENT_COLORS[a.short_name || ''] || '#6b7280',
-          description: `${a.name} - ${a.agreement_type} covering ${a.coverage_area || 'multiple regions'}`,
-          keyBenefits: a.key_provisions || [],
-        })));
+        setAgreements(
+          dbAgreements.map(a => ({
+            id: a.short_name || a.id,
+            name: a.name,
+            shortName: a.short_name || a.name.substring(0, 6),
+            members: (a.member_countries || []).length,
+            entered: a.effective_date || '',
+            status: a.status,
+            coverage: a.coverage_area || '',
+            tariffLines: Math.round(Math.random() * 5000 + 3000),
+            liberalized: a.tariff_reduction_pct || 0,
+            color: AGREEMENT_COLORS[a.short_name || ''] || '#6b7280',
+            description: `${a.name} - ${a.agreement_type} covering ${a.coverage_area || 'multiple regions'}`,
+            keyBenefits: a.key_provisions || [],
+          }))
+        );
 
         // Map tariff schedules
-        setTariffSchedules(dbTariffs.map(t => ({
-          hsCode: t.hs_code,
-          product: t.product_description,
-          mfnRate: t.mfn_rate,
-          afcftaRate: t.preferential_rate || 0,
-          sadcRate: t.preferential_rate || 0,
-          ecowasRate: Math.round((t.mfn_rate - (t.margin_of_preference || 0)) * 10) / 10,
-          savings: `$${(Math.random() * 10 + 0.5).toFixed(1)}M`,
-          utilization: Math.round(Math.random() * 60 + 30),
-        })));
+        setTariffSchedules(
+          dbTariffs.map(t => ({
+            hsCode: t.hs_code,
+            product: t.product_description,
+            mfnRate: t.mfn_rate,
+            afcftaRate: t.preferential_rate || 0,
+            sadcRate: t.preferential_rate || 0,
+            ecowasRate: Math.round((t.mfn_rate - (t.margin_of_preference || 0)) * 10) / 10,
+            savings: `$${(Math.random() * 10 + 0.5).toFixed(1)}M`,
+            utilization: Math.round(Math.random() * 60 + 30),
+          }))
+        );
 
         // Build Rules of Origin from tariff schedules
-        setRooCriteria(dbTariffs.filter(t => t.origin_criteria).map(t => ({
-          product: `${t.product_description} (${t.hs_code})`,
-          rule: t.origin_criteria || 'N/A',
-          threshold: t.origin_criteria?.includes('DVA') ? t.origin_criteria.match(/\d+%/)?.[0] || 'N/A' : 'N/A',
-          cumulation: 'Full',
-          status: (t.origin_criteria || '').length > 10 ? 'complex' : 'simple',
-        })));
+        setRooCriteria(
+          dbTariffs
+            .filter(t => t.origin_criteria)
+            .map(t => ({
+              product: `${t.product_description} (${t.hs_code})`,
+              rule: t.origin_criteria || 'N/A',
+              threshold: t.origin_criteria?.includes('DVA')
+                ? t.origin_criteria.match(/\d+%/)?.[0] || 'N/A'
+                : 'N/A',
+              cumulation: 'Full',
+              status: (t.origin_criteria || '').length > 10 ? 'complex' : 'simple',
+            }))
+        );
 
         // Preference utilization from agreements
-        setPrefUtilization(dbAgreements.map(a => ({
-          agreement: a.short_name || a.name,
-          eligible: Math.round(Math.random() * 10000 + 2000),
-          claimed: Math.round(Math.random() * 5000 + 500),
-          rate: a.utilization_rate || 0,
-          trend: a.utilization_rate > 40 ? 'up' : 'stable',
-        })));
+        setPrefUtilization(
+          dbAgreements.map(a => ({
+            agreement: a.short_name || a.name,
+            eligible: Math.round(Math.random() * 10000 + 2000),
+            claimed: Math.round(Math.random() * 5000 + 500),
+            rate: a.utilization_rate || 0,
+            trend: a.utilization_rate > 40 ? 'up' : 'stable',
+          }))
+        );
       } catch (e) {
         console.error('Trade agreements data fetch error:', e);
       } finally {
@@ -170,7 +244,10 @@ export const GovTradeAgreements: React.FC = () => {
             <h1 className="text-xl lg:text-2xl font-bold font-heading text-trade-primary dark:text-white flex items-center gap-2">
               <FileSignature className="w-6 h-6 text-trade-accent" /> Trade Agreements Hub
             </h1>
-            <p className="text-xs text-gray-500 mt-1">Agreements as operational tools — tariff schedules, rules of origin & preference tracking</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Agreements as operational tools — tariff schedules, rules of origin & preference
+              tracking
+            </p>
           </div>
           <div className="flex gap-2">
             <button className="flex items-center gap-1.5 px-3 py-2 bg-trade-primary text-white rounded-lg text-xs font-bold">
@@ -187,7 +264,9 @@ export const GovTradeAgreements: React.FC = () => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as ActiveTab)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-              activeTab === tab.id ? 'bg-trade-primary text-white shadow-sm' : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700'
+              activeTab === tab.id
+                ? 'bg-trade-primary text-white shadow-sm'
+                : 'text-gray-500 hover:bg-gray-50 dark:hover:bg-slate-700'
             }`}
           >
             <tab.icon className="w-3.5 h-3.5" /> {tab.label}
@@ -208,7 +287,7 @@ export const GovTradeAgreements: React.FC = () => {
                 </h3>
                 <select
                   value={selectedCountry}
-                  onChange={(e) => setSelectedCountry(e.target.value)}
+                  onChange={e => setSelectedCountry(e.target.value)}
                   className="bg-gray-50 dark:bg-slate-700 text-xs p-2 rounded-lg border-none outline-none"
                 >
                   <option value="">Select country to see benefits...</option>
@@ -234,20 +313,38 @@ export const GovTradeAgreements: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: agreement.color }}></div>
-                      <span className="font-bold text-gray-900 dark:text-white text-xs">{agreement.shortName}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ml-auto ${
-                        agreement.status === 'active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                        'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                      }`}>{agreement.status}</span>
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: agreement.color }}
+                      ></div>
+                      <span className="font-bold text-gray-900 dark:text-white text-xs">
+                        {agreement.shortName}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ml-auto ${
+                          agreement.status === 'active'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                        }`}
+                      >
+                        {agreement.status}
+                      </span>
                     </div>
                     <p className="text-[10px] text-gray-500 mb-2 line-clamp-2">{agreement.name}</p>
                     <div className="flex items-center justify-between text-[10px]">
                       <span className="text-gray-400">{agreement.members} members</span>
-                      <span className="font-bold" style={{ color: agreement.color }}>{agreement.liberalized}% liberalized</span>
+                      <span className="font-bold" style={{ color: agreement.color }}>
+                        {agreement.liberalized}% liberalized
+                      </span>
                     </div>
                     <div className="mt-2 w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full">
-                      <div className="h-full rounded-full" style={{ width: `${agreement.liberalized}%`, backgroundColor: agreement.color }}></div>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${agreement.liberalized}%`,
+                          backgroundColor: agreement.color,
+                        }}
+                      ></div>
                     </div>
                   </div>
                 ))}
@@ -259,36 +356,54 @@ export const GovTradeAgreements: React.FC = () => {
               <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-100 dark:border-slate-700">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">{selectedAgreement.name}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                      {selectedAgreement.name}
+                    </h3>
                     <p className="text-xs text-gray-500 mt-1">{selectedAgreement.description}</p>
                   </div>
-                  <button onClick={() => setSelectedAgreement(null)} className="text-gray-400 hover:text-gray-600">
+                  <button
+                    onClick={() => setSelectedAgreement(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
                     <XCircle className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Members</p>
-                    <p className="text-xl font-black text-gray-900 dark:text-white">{selectedAgreement.members}</p>
+                    <p className="text-xl font-black text-gray-900 dark:text-white">
+                      {selectedAgreement.members}
+                    </p>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Tariff Lines</p>
-                    <p className="text-xl font-black text-gray-900 dark:text-white">{selectedAgreement.tariffLines.toLocaleString()}</p>
+                    <p className="text-xl font-black text-gray-900 dark:text-white">
+                      {selectedAgreement.tariffLines.toLocaleString()}
+                    </p>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
                     <p className="text-[10px] text-gray-400 uppercase font-bold">Liberalized</p>
-                    <p className="text-xl font-black" style={{ color: selectedAgreement.color }}>{selectedAgreement.liberalized}%</p>
+                    <p className="text-xl font-black" style={{ color: selectedAgreement.color }}>
+                      {selectedAgreement.liberalized}%
+                    </p>
                   </div>
                   <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                    <p className="text-[10px] text-gray-400 uppercase font-bold">Entry Into Force</p>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{selectedAgreement.entered}</p>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold">
+                      Entry Into Force
+                    </p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                      {selectedAgreement.entered}
+                    </p>
                   </div>
                 </div>
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase mb-2">Key Benefits</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedAgreement.keyBenefits.map((b, i) => (
-                      <span key={i} className="px-2.5 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-[10px] font-medium flex items-center gap-1">
+                      <span
+                        key={i}
+                        className="px-2.5 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-[10px] font-medium flex items-center gap-1"
+                      >
                         <CheckCircle className="w-3 h-3 text-green-500" /> {b}
                       </span>
                     ))}
@@ -325,26 +440,47 @@ export const GovTradeAgreements: React.FC = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {COO_VERIFICATIONS.map(coo => (
                       <tr key={coo.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                        <td className="p-3 font-mono font-bold text-trade-primary dark:text-trade-accent text-[10px]">{coo.id}</td>
-                        <td className="p-3 font-medium text-gray-900 dark:text-white">{coo.exporter}</td>
-                        <td className="p-3 text-gray-600 dark:text-gray-400">{coo.origin} <ArrowRight className="w-3 h-3 inline mx-1" /> {coo.destination}</td>
+                        <td className="p-3 font-mono font-bold text-trade-primary dark:text-trade-accent text-[10px]">
+                          {coo.id}
+                        </td>
+                        <td className="p-3 font-medium text-gray-900 dark:text-white">
+                          {coo.exporter}
+                        </td>
+                        <td className="p-3 text-gray-600 dark:text-gray-400">
+                          {coo.origin} <ArrowRight className="w-3 h-3 inline mx-1" />{' '}
+                          {coo.destination}
+                        </td>
                         <td className="p-3 text-gray-600 dark:text-gray-400">{coo.product}</td>
                         <td className="p-3 text-center">
-                          <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 rounded text-[10px] font-bold">{coo.agreement}</span>
+                          <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-700 rounded text-[10px] font-bold">
+                            {coo.agreement}
+                          </span>
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            coo.method === 'Blockchain' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                            coo.method === 'Digital' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                            'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-400'
-                          }`}>{coo.method}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              coo.method === 'Blockchain'
+                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                : coo.method === 'Digital'
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                  : 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-400'
+                            }`}
+                          >
+                            {coo.method}
+                          </span>
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            coo.status === 'verified' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                            coo.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                          }`}>{coo.status}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              coo.status === 'verified'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : coo.status === 'pending'
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`}
+                          >
+                            {coo.status}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -365,23 +501,75 @@ export const GovTradeAgreements: React.FC = () => {
                   <BarChart3 className="w-4 h-4 text-trade-accent" /> Visual Tariff Comparison
                 </h3>
                 <div className="flex gap-2 text-[10px]">
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-gray-400"></div> MFN Rate</span>
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-green-500"></div> AfCFTA</span>
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-blue-500"></div> SADC</span>
-                  <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-amber-500"></div> ECOWAS</span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded bg-gray-400"></div> MFN Rate
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded bg-green-500"></div> AfCFTA
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded bg-blue-500"></div> SADC
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2.5 h-2.5 rounded bg-amber-500"></div> ECOWAS
+                  </span>
                 </div>
               </div>
               <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={TARIFF_SCHEDULES} barCategoryGap="20%">
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="product" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '11px' }} />
-                    <Bar dataKey="mfnRate" name="MFN Rate" fill="#94a3b8" radius={[2, 2, 0, 0]} barSize={14} />
-                    <Bar dataKey="afcftaRate" name="AfCFTA" fill="#10b981" radius={[2, 2, 0, 0]} barSize={14} />
-                    <Bar dataKey="sadcRate" name="SADC" fill="#3b82f6" radius={[2, 2, 0, 0]} barSize={14} />
-                    <Bar dataKey="ecowasRate" name="ECOWAS" fill="#f59e0b" radius={[2, 2, 0, 0]} barSize={14} />
+                    <XAxis
+                      dataKey="product"
+                      stroke="#94a3b8"
+                      fontSize={10}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#94a3b8"
+                      fontSize={10}
+                      tickLine={false}
+                      axisLine={false}
+                      unit="%"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1e293b',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '11px',
+                      }}
+                    />
+                    <Bar
+                      dataKey="mfnRate"
+                      name="MFN Rate"
+                      fill="#94a3b8"
+                      radius={[2, 2, 0, 0]}
+                      barSize={14}
+                    />
+                    <Bar
+                      dataKey="afcftaRate"
+                      name="AfCFTA"
+                      fill="#10b981"
+                      radius={[2, 2, 0, 0]}
+                      barSize={14}
+                    />
+                    <Bar
+                      dataKey="sadcRate"
+                      name="SADC"
+                      fill="#3b82f6"
+                      radius={[2, 2, 0, 0]}
+                      barSize={14}
+                    />
+                    <Bar
+                      dataKey="ecowasRate"
+                      name="ECOWAS"
+                      fill="#f59e0b"
+                      radius={[2, 2, 0, 0]}
+                      barSize={14}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -409,20 +597,32 @@ export const GovTradeAgreements: React.FC = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {TARIFF_SCHEDULES.map(ts => (
                       <tr key={ts.hsCode} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                        <td className="p-3 font-mono font-bold text-trade-primary dark:text-trade-accent">{ts.hsCode}</td>
-                        <td className="p-3 font-medium text-gray-900 dark:text-white">{ts.product}</td>
+                        <td className="p-3 font-mono font-bold text-trade-primary dark:text-trade-accent">
+                          {ts.hsCode}
+                        </td>
+                        <td className="p-3 font-medium text-gray-900 dark:text-white">
+                          {ts.product}
+                        </td>
                         <td className="p-3 text-center text-gray-500">{ts.mfnRate}%</td>
-                        <td className="p-3 text-center font-bold text-green-600">{ts.afcftaRate}%</td>
+                        <td className="p-3 text-center font-bold text-green-600">
+                          {ts.afcftaRate}%
+                        </td>
                         <td className="p-3 text-center font-bold text-blue-600">{ts.sadcRate}%</td>
-                        <td className="p-3 text-center font-bold text-amber-600">{ts.ecowasRate}%</td>
+                        <td className="p-3 text-center font-bold text-amber-600">
+                          {ts.ecowasRate}%
+                        </td>
                         <td className="p-3 text-right font-bold text-green-600">{ts.savings}</td>
                         <td className="p-3">
                           <div className="flex items-center justify-center gap-1.5">
                             <div className="w-12 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full">
-                              <div className={`h-full rounded-full ${ts.utilization >= 70 ? 'bg-green-500' : ts.utilization >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
-                                style={{ width: `${ts.utilization}%` }}></div>
+                              <div
+                                className={`h-full rounded-full ${ts.utilization >= 70 ? 'bg-green-500' : ts.utilization >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                style={{ width: `${ts.utilization}%` }}
+                              ></div>
                             </div>
-                            <span className="text-[10px] font-bold text-gray-500 w-8">{ts.utilization}%</span>
+                            <span className="text-[10px] font-bold text-gray-500 w-8">
+                              {ts.utilization}%
+                            </span>
                           </div>
                         </td>
                       </tr>
@@ -441,8 +641,12 @@ export const GovTradeAgreements: React.FC = () => {
               <div className="flex items-center gap-3 mb-3">
                 <Shield className="w-6 h-6 text-green-600" />
                 <div>
-                  <h3 className="font-bold text-green-900 dark:text-green-200">AfCFTA Rules of Origin Engine</h3>
-                  <p className="text-xs text-green-700 dark:text-green-400">Automated verification of product-specific rules & cumulation criteria</p>
+                  <h3 className="font-bold text-green-900 dark:text-green-200">
+                    AfCFTA Rules of Origin Engine
+                  </h3>
+                  <p className="text-xs text-green-700 dark:text-green-400">
+                    Automated verification of product-specific rules & cumulation criteria
+                  </p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -451,7 +655,7 @@ export const GovTradeAgreements: React.FC = () => {
                   <input
                     type="text"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={e => setSearchQuery(e.target.value)}
                     placeholder="Search by HS code or product name..."
                     className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-800 rounded-lg text-xs border border-green-200 dark:border-green-700 outline-none"
                   />
@@ -464,7 +668,9 @@ export const GovTradeAgreements: React.FC = () => {
 
             {/* ROO Table */}
             <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-100 dark:border-slate-700">
-              <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-4">Product-Specific Rules</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-4">
+                Product-Specific Rules
+              </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 dark:bg-slate-900 text-gray-500 border-b border-gray-200 dark:border-slate-700">
@@ -480,21 +686,35 @@ export const GovTradeAgreements: React.FC = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {ROO_CRITERIA.map((roo, i) => (
                       <tr key={i} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                        <td className="p-3 font-medium text-gray-900 dark:text-white">{roo.product}</td>
+                        <td className="p-3 font-medium text-gray-900 dark:text-white">
+                          {roo.product}
+                        </td>
                         <td className="p-3 text-gray-600 dark:text-gray-400">{roo.rule}</td>
-                        <td className="p-3 text-center font-bold text-gray-900 dark:text-white">{roo.threshold}</td>
-                        <td className="p-3 text-center">
-                          <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-[10px] font-bold">{roo.cumulation}</span>
+                        <td className="p-3 text-center font-bold text-gray-900 dark:text-white">
+                          {roo.threshold}
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            roo.status === 'simple' ? 'bg-green-100 text-green-700' :
-                            roo.status === 'moderate' ? 'bg-amber-100 text-amber-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>{roo.status}</span>
+                          <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-[10px] font-bold">
+                            {roo.cumulation}
+                          </span>
                         </td>
                         <td className="p-3 text-center">
-                          <button className="px-2 py-1 bg-trade-primary text-white rounded text-[10px] font-bold">Verify</button>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              roo.status === 'simple'
+                                ? 'bg-green-100 text-green-700'
+                                : roo.status === 'moderate'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {roo.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <button className="px-2 py-1 bg-trade-primary text-white rounded text-[10px] font-bold">
+                            Verify
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -510,29 +730,47 @@ export const GovTradeAgreements: React.FC = () => {
           <div className="space-y-4 animate-fade-in">
             <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-100 dark:border-slate-700">
               <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-sm mb-4">
-                <BarChart3 className="w-4 h-4 text-trade-accent" /> Preference Utilization by Agreement
+                <BarChart3 className="w-4 h-4 text-trade-accent" /> Preference Utilization by
+                Agreement
               </h3>
               <div className="space-y-3">
                 {PREF_UTILIZATION.map(pref => (
-                  <div key={pref.agreement} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                  <div
+                    key={pref.agreement}
+                    className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30"
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <p className="font-bold text-gray-900 dark:text-white text-sm">{pref.agreement}</p>
+                        <p className="font-bold text-gray-900 dark:text-white text-sm">
+                          {pref.agreement}
+                        </p>
                         {pref.trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500" />}
                         {pref.trend === 'down' && <TrendingDown className="w-4 h-4 text-red-500" />}
-                        {pref.trend === 'stable' && <ArrowRight className="w-4 h-4 text-gray-400" />}
+                        {pref.trend === 'stable' && (
+                          <ArrowRight className="w-4 h-4 text-gray-400" />
+                        )}
                       </div>
-                      <span className={`text-lg font-black ${pref.rate >= 60 ? 'text-green-600' : pref.rate >= 40 ? 'text-amber-600' : 'text-red-600'}`}>
+                      <span
+                        className={`text-lg font-black ${pref.rate >= 60 ? 'text-green-600' : pref.rate >= 40 ? 'text-amber-600' : 'text-red-600'}`}
+                      >
                         {pref.rate}%
                       </span>
                     </div>
                     <div className="w-full h-3 bg-gray-200 dark:bg-slate-700 rounded-full mb-2">
-                      <div className={`h-full rounded-full transition-all ${pref.rate >= 60 ? 'bg-green-500' : pref.rate >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
-                        style={{ width: `${pref.rate}%` }}></div>
+                      <div
+                        className={`h-full rounded-full transition-all ${pref.rate >= 60 ? 'bg-green-500' : pref.rate >= 40 ? 'bg-amber-500' : 'bg-red-500'}`}
+                        style={{ width: `${pref.rate}%` }}
+                      ></div>
                     </div>
                     <div className="flex justify-between text-[10px] text-gray-400">
-                      <span>{pref.claimed.toLocaleString()} claimed of {pref.eligible.toLocaleString()} eligible</span>
-                      <span>Potential revenue: ${((pref.eligible - pref.claimed) * 450).toLocaleString()}</span>
+                      <span>
+                        {pref.claimed.toLocaleString()} claimed of {pref.eligible.toLocaleString()}{' '}
+                        eligible
+                      </span>
+                      <span>
+                        Potential revenue: $
+                        {((pref.eligible - pref.claimed) * 450).toLocaleString()}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -552,21 +790,25 @@ export const GovTradeAgreements: React.FC = () => {
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">HS Code</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                      HS Code
+                    </label>
                     <input
                       type="text"
                       value={calcHsCode}
-                      onChange={(e) => setCalcHsCode(e.target.value)}
+                      onChange={e => setCalcHsCode(e.target.value)}
                       placeholder="e.g., 0901.11"
                       className="w-full p-2.5 bg-gray-50 dark:bg-slate-700 rounded-lg text-xs border-none outline-none"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Origin Country</label>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                        Origin Country
+                      </label>
                       <select
                         value={calcOrigin}
-                        onChange={(e) => setCalcOrigin(e.target.value)}
+                        onChange={e => setCalcOrigin(e.target.value)}
                         className="w-full p-2.5 bg-gray-50 dark:bg-slate-700 rounded-lg text-xs border-none outline-none"
                       >
                         <option value="">Select...</option>
@@ -578,10 +820,12 @@ export const GovTradeAgreements: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Destination</label>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                        Destination
+                      </label>
                       <select
                         value={calcDest}
-                        onChange={(e) => setCalcDest(e.target.value)}
+                        onChange={e => setCalcDest(e.target.value)}
                         className="w-full p-2.5 bg-gray-50 dark:bg-slate-700 rounded-lg text-xs border-none outline-none"
                       >
                         <option value="">Select...</option>
@@ -594,11 +838,13 @@ export const GovTradeAgreements: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">Trade Value (USD)</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase block mb-1">
+                      Trade Value (USD)
+                    </label>
                     <input
                       type="number"
                       value={calcValue}
-                      onChange={(e) => setCalcValue(e.target.value)}
+                      onChange={e => setCalcValue(e.target.value)}
                       placeholder="e.g., 100000"
                       className="w-full p-2.5 bg-gray-50 dark:bg-slate-700 rounded-lg text-xs border-none outline-none"
                     />
@@ -622,31 +868,49 @@ export const GovTradeAgreements: React.FC = () => {
                     <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-800">
                       <div className="flex items-center gap-2 mb-2">
                         <CheckCircle className="w-5 h-5 text-green-600" />
-                        <p className="font-bold text-green-900 dark:text-green-200">Eligible for Preferential Treatment</p>
+                        <p className="font-bold text-green-900 dark:text-green-200">
+                          Eligible for Preferential Treatment
+                        </p>
                       </div>
-                      <p className="text-xs text-green-700 dark:text-green-400">Best agreement: <strong>{calcResult.bestAgreement}</strong></p>
+                      <p className="text-xs text-green-700 dark:text-green-400">
+                        Best agreement: <strong>{calcResult.bestAgreement}</strong>
+                      </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-center">
                         <p className="text-[10px] text-gray-400 uppercase font-bold">MFN Duty</p>
-                        <p className="text-xl font-black text-red-600">${calcResult.mfnDuty.toLocaleString()}</p>
+                        <p className="text-xl font-black text-red-600">
+                          ${calcResult.mfnDuty.toLocaleString()}
+                        </p>
                       </div>
                       <div className="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-center">
-                        <p className="text-[10px] text-gray-400 uppercase font-bold">Preferential Duty</p>
-                        <p className="text-xl font-black text-green-600">${calcResult.preferentialDuty.toLocaleString()}</p>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold">
+                          Preferential Duty
+                        </p>
+                        <p className="text-xl font-black text-green-600">
+                          ${calcResult.preferentialDuty.toLocaleString()}
+                        </p>
                       </div>
                     </div>
                     <div className="p-4 bg-trade-primary/5 dark:bg-trade-accent/10 rounded-xl border-2 border-trade-accent text-center">
                       <p className="text-[10px] text-gray-400 uppercase font-bold">Total Savings</p>
-                      <p className="text-3xl font-black text-trade-primary dark:text-trade-accent">${calcResult.savings.toLocaleString()}</p>
-                      <p className="text-xs text-gray-500 mt-1">per shipment using {calcResult.bestAgreement}</p>
+                      <p className="text-3xl font-black text-trade-primary dark:text-trade-accent">
+                        ${calcResult.savings.toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        per shipment using {calcResult.bestAgreement}
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[300px] text-center">
                     <Calculator className="w-10 h-10 text-gray-300 mb-3" />
-                    <p className="text-sm text-gray-400">Enter trade details to calculate optimal tariff route</p>
-                    <p className="text-[10px] text-gray-300 mt-1">Compare MFN rates vs preferential treatment across all agreements</p>
+                    <p className="text-sm text-gray-400">
+                      Enter trade details to calculate optimal tariff route
+                    </p>
+                    <p className="text-[10px] text-gray-300 mt-1">
+                      Compare MFN rates vs preferential treatment across all agreements
+                    </p>
                   </div>
                 )}
               </div>
@@ -657,22 +921,39 @@ export const GovTradeAgreements: React.FC = () => {
               <h3 className="font-bold text-purple-900 dark:text-purple-200 flex items-center gap-2 text-sm mb-3">
                 <MapPin className="w-4 h-4 text-purple-600" /> Best Route Optimizer
               </h3>
-              <p className="text-xs text-purple-700 dark:text-purple-400 mb-3">AI-powered route optimization considering tariffs, transit time, and total landed cost</p>
+              <p className="text-xs text-purple-700 dark:text-purple-400 mb-3">
+                AI-powered route optimization considering tariffs, transit time, and total landed
+                cost
+              </p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
-                  <p className="text-[10px] font-bold text-purple-500 uppercase mb-1">Route 1 (Recommended)</p>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">Direct: Kenya &rarr; Ghana via AfCFTA</p>
-                  <p className="text-[10px] text-gray-500 mt-1">Duty: 0% | Transit: 14 days | Cost: $2,400</p>
+                  <p className="text-[10px] font-bold text-purple-500 uppercase mb-1">
+                    Route 1 (Recommended)
+                  </p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                    Direct: Kenya &rarr; Ghana via AfCFTA
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Duty: 0% | Transit: 14 days | Cost: $2,400
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Route 2</p>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">Via COMESA: Kenya &rarr; Uganda &rarr; Ghana</p>
-                  <p className="text-[10px] text-gray-500 mt-1">Duty: 3% | Transit: 21 days | Cost: $3,100</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                    Via COMESA: Kenya &rarr; Uganda &rarr; Ghana
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Duty: 3% | Transit: 21 days | Cost: $3,100
+                  </p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Route 3</p>
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">MFN Rate: Kenya &rarr; Ghana (no pref)</p>
-                  <p className="text-[10px] text-gray-500 mt-1">Duty: 15% | Transit: 14 days | Cost: $4,800</p>
+                  <p className="text-xs font-bold text-gray-900 dark:text-white">
+                    MFN Rate: Kenya &rarr; Ghana (no pref)
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Duty: 15% | Transit: 14 days | Cost: $4,800
+                  </p>
                 </div>
               </div>
             </div>

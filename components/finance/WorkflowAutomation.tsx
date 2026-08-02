@@ -17,7 +17,7 @@ import {
   MessageSquare,
   Settings,
   Plus,
-  X
+  X,
 } from 'lucide-react';
 import { WorkflowStage, WorkflowAction, WorkflowTemplate } from './FinanceApplicationTypes';
 
@@ -31,7 +31,14 @@ interface WorkflowAutomationProps {
   onApplyTemplate: (templateId: string) => Promise<void>;
 }
 
-const STAGE_ORDER = ['application', 'document_collection', 'verification', 'credit_assessment', 'approval', 'disbursement'];
+const STAGE_ORDER = [
+  'application',
+  'document_collection',
+  'verification',
+  'credit_assessment',
+  'approval',
+  'disbursement',
+];
 
 const STAGE_INFO: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   application: { label: 'Application', icon: FileText, color: 'blue' },
@@ -39,7 +46,7 @@ const STAGE_INFO: Record<string, { label: string; icon: React.ElementType; color
   verification: { label: 'Verification', icon: Shield, color: 'cyan' },
   credit_assessment: { label: 'Credit Assessment', icon: DollarSign, color: 'amber' },
   approval: { label: 'Approval', icon: CheckCircle2, color: 'green' },
-  disbursement: { label: 'Disbursement', icon: Send, color: 'emerald' }
+  disbursement: { label: 'Disbursement', icon: Send, color: 'emerald' },
 };
 
 const ACTION_ICONS: Record<string, React.ElementType> = {
@@ -48,7 +55,7 @@ const ACTION_ICONS: Record<string, React.ElementType> = {
   credit_check: DollarSign,
   manager_approval: User,
   compliance_review: Shield,
-  disbursement: Send
+  disbursement: Send,
 };
 
 export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
@@ -58,14 +65,14 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
   onActionComplete,
   onActionAssign,
   onAddAction,
-  onApplyTemplate
+  onApplyTemplate,
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [showAddAction, setShowAddAction] = useState(false);
   const [newAction, setNewAction] = useState<Partial<WorkflowAction>>({
     type: 'upload_document',
     description: '',
-    status: 'pending'
+    status: 'pending',
   });
   const [processingAction, setProcessingAction] = useState<string | null>(null);
 
@@ -98,13 +105,33 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
   const getActionStatusStyle = (status: WorkflowAction['status']) => {
     switch (status) {
       case 'completed':
-        return { bg: 'bg-green-500/20', border: 'border-green-500/30', text: 'text-green-400', icon: CheckCircle2 };
+        return {
+          bg: 'bg-green-500/20',
+          border: 'border-green-500/30',
+          text: 'text-green-400',
+          icon: CheckCircle2,
+        };
       case 'in_progress':
-        return { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400', icon: Play };
+        return {
+          bg: 'bg-blue-500/20',
+          border: 'border-blue-500/30',
+          text: 'text-blue-400',
+          icon: Play,
+        };
       case 'blocked':
-        return { bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-400', icon: AlertCircle };
+        return {
+          bg: 'bg-red-500/20',
+          border: 'border-red-500/30',
+          text: 'text-red-400',
+          icon: AlertCircle,
+        };
       default:
-        return { bg: 'bg-slate-500/20', border: 'border-slate-500/30', text: 'text-slate-400', icon: Circle };
+        return {
+          bg: 'bg-slate-500/20',
+          border: 'border-slate-500/30',
+          text: 'text-slate-400',
+          icon: Circle,
+        };
     }
   };
 
@@ -114,7 +141,7 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -152,15 +179,25 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
                       isCompleted
                         ? 'bg-green-500 text-white'
                         : isCurrent
-                        ? 'bg-blue-500 text-white ring-4 ring-blue-500/30'
-                        : 'bg-slate-700 text-slate-400'
+                          ? 'bg-blue-500 text-white ring-4 ring-blue-500/30'
+                          : 'bg-slate-700 text-slate-400'
                     }`}
                   >
-                    {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-6 h-6" />}
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-6 h-6" />
+                    ) : (
+                      <Icon className="w-6 h-6" />
+                    )}
                   </div>
-                  <span className={`text-xs mt-3 text-center max-w-[80px] ${
-                    isCurrent ? 'text-white font-medium' : isPending ? 'text-slate-500' : 'text-slate-400'
-                  }`}>
+                  <span
+                    className={`text-xs mt-3 text-center max-w-[80px] ${
+                      isCurrent
+                        ? 'text-white font-medium'
+                        : isPending
+                          ? 'text-slate-500'
+                          : 'text-slate-400'
+                    }`}
+                  >
                     {info.label}
                   </span>
                 </div>
@@ -337,7 +374,9 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
                   <div className="flex-1 p-3 bg-slate-800/50 rounded-lg">
                     <div className="flex items-center justify-between">
                       <p className="text-white font-medium">{event.action}</p>
-                      <span className="text-xs text-slate-500">{formatTimestamp(event.timestamp)}</span>
+                      <span className="text-xs text-slate-500">
+                        {formatTimestamp(event.timestamp)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <User className="w-3 h-3 text-slate-500" />
@@ -373,7 +412,12 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
                 <label className="block text-sm font-medium text-slate-300 mb-1">Action Type</label>
                 <select
                   value={newAction.type}
-                  onChange={e => setNewAction(prev => ({ ...prev, type: e.target.value as WorkflowAction['type'] }))}
+                  onChange={e =>
+                    setNewAction(prev => ({
+                      ...prev,
+                      type: e.target.value as WorkflowAction['type'],
+                    }))
+                  }
                   className="w-full px-4 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="upload_document">Upload Document</option>
@@ -397,7 +441,9 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Assign To (Optional)</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Assign To (Optional)
+                </label>
                 <input
                   type="text"
                   value={newAction.assignedTo || ''}
@@ -408,7 +454,9 @@ export const WorkflowAutomation: React.FC<WorkflowAutomationProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Due Date (Optional)</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Due Date (Optional)
+                </label>
                 <input
                   type="date"
                   value={newAction.dueDate || ''}

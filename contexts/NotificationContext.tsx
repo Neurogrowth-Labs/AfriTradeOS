@@ -63,9 +63,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         .update({ is_read: true, read_at: new Date().toISOString() })
         .eq('id', notificationId);
 
-      setNotifications(prev => prev.map(n =>
-        n.id === notificationId ? { ...n, is_read: true } : n
-      ));
+      setNotifications(prev =>
+        prev.map(n => (n.id === notificationId ? { ...n, is_read: true } : n))
+      );
     } catch (e) {
       console.error('Failed to mark notification as read:', e);
     }
@@ -89,10 +89,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const clearAllNotifications = useCallback(async () => {
     try {
       if (userProfile?.id) {
-        await supabase
-          .from('notifications')
-          .delete()
-          .eq('user_id', userProfile.id);
+        await supabase.from('notifications').delete().eq('user_id', userProfile.id);
       }
       setNotifications([]);
     } catch (e) {
@@ -109,7 +106,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       .channel(`notifications:${userProfile.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userProfile.id}` },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userProfile.id}`,
+        },
         () => fetchNotifications()
       )
       .subscribe();

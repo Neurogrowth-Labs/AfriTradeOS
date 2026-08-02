@@ -25,7 +25,7 @@ import {
   BadgeCheck,
   ShieldAlert,
   ShieldCheck,
-  Ban
+  Ban,
 } from 'lucide-react';
 
 interface KYCProfile {
@@ -46,7 +46,15 @@ interface KYCProfile {
 
 interface KYCDocument {
   id: string;
-  type: 'passport' | 'national_id' | 'company_registration' | 'tax_certificate' | 'bank_statement' | 'utility_bill' | 'beneficial_ownership' | 'financial_statement';
+  type:
+    | 'passport'
+    | 'national_id'
+    | 'company_registration'
+    | 'tax_certificate'
+    | 'bank_statement'
+    | 'utility_bill'
+    | 'beneficial_ownership'
+    | 'financial_statement';
   name: string;
   status: 'pending' | 'verified' | 'rejected' | 'expired';
   uploadedDate: string;
@@ -67,7 +75,13 @@ interface Verification {
 
 interface ComplianceFlag {
   id: string;
-  type: 'sanctions' | 'pep' | 'adverse_media' | 'high_risk_country' | 'unusual_activity' | 'document_issue';
+  type:
+    | 'sanctions'
+    | 'pep'
+    | 'adverse_media'
+    | 'high_risk_country'
+    | 'unusual_activity'
+    | 'document_issue';
   severity: 'info' | 'warning' | 'critical';
   description: string;
   raisedDate: string;
@@ -117,16 +131,56 @@ const MOCK_KYC_PROFILES: KYCProfile[] = [
     assignedAnalyst: 'Sarah Okonkwo',
     completionPercentage: 100,
     documents: [
-      { id: 'd1', type: 'company_registration', name: 'Certificate of Incorporation.pdf', status: 'verified', uploadedDate: '2024-01-05', verifiedBy: 'Sarah Okonkwo' },
-      { id: 'd2', type: 'tax_certificate', name: 'Tax Compliance Certificate.pdf', status: 'verified', uploadedDate: '2024-01-05', expiryDate: '2024-12-31', verifiedBy: 'Sarah Okonkwo' },
-      { id: 'd3', type: 'beneficial_ownership', name: 'UBO Declaration.pdf', status: 'verified', uploadedDate: '2024-01-06', verifiedBy: 'Sarah Okonkwo' }
+      {
+        id: 'd1',
+        type: 'company_registration',
+        name: 'Certificate of Incorporation.pdf',
+        status: 'verified',
+        uploadedDate: '2024-01-05',
+        verifiedBy: 'Sarah Okonkwo',
+      },
+      {
+        id: 'd2',
+        type: 'tax_certificate',
+        name: 'Tax Compliance Certificate.pdf',
+        status: 'verified',
+        uploadedDate: '2024-01-05',
+        expiryDate: '2024-12-31',
+        verifiedBy: 'Sarah Okonkwo',
+      },
+      {
+        id: 'd3',
+        type: 'beneficial_ownership',
+        name: 'UBO Declaration.pdf',
+        status: 'verified',
+        uploadedDate: '2024-01-06',
+        verifiedBy: 'Sarah Okonkwo',
+      },
     ],
     verifications: [
-      { id: 'v1', type: 'sanctions', status: 'passed', lastChecked: '2024-01-10', source: 'OFAC, UN, EU Sanctions Lists' },
-      { id: 'v2', type: 'pep', status: 'passed', lastChecked: '2024-01-10', source: 'Global PEP Database' },
-      { id: 'v3', type: 'adverse_media', status: 'passed', lastChecked: '2024-01-10', source: 'LexisNexis' }
+      {
+        id: 'v1',
+        type: 'sanctions',
+        status: 'passed',
+        lastChecked: '2024-01-10',
+        source: 'OFAC, UN, EU Sanctions Lists',
+      },
+      {
+        id: 'v2',
+        type: 'pep',
+        status: 'passed',
+        lastChecked: '2024-01-10',
+        source: 'Global PEP Database',
+      },
+      {
+        id: 'v3',
+        type: 'adverse_media',
+        status: 'passed',
+        lastChecked: '2024-01-10',
+        source: 'LexisNexis',
+      },
     ],
-    flags: []
+    flags: [],
   },
   {
     id: 'KYC-002',
@@ -140,18 +194,64 @@ const MOCK_KYC_PROFILES: KYCProfile[] = [
     assignedAnalyst: 'Michael Adeyemi',
     completionPercentage: 65,
     documents: [
-      { id: 'd4', type: 'passport', name: 'Passport.pdf', status: 'verified', uploadedDate: '2024-01-12', expiryDate: '2028-05-20', verifiedBy: 'Michael Adeyemi' },
-      { id: 'd5', type: 'utility_bill', name: 'Utility Bill.pdf', status: 'pending', uploadedDate: '2024-01-14' },
-      { id: 'd6', type: 'bank_statement', name: 'Bank Statement.pdf', status: 'pending', uploadedDate: '2024-01-14' }
+      {
+        id: 'd4',
+        type: 'passport',
+        name: 'Passport.pdf',
+        status: 'verified',
+        uploadedDate: '2024-01-12',
+        expiryDate: '2028-05-20',
+        verifiedBy: 'Michael Adeyemi',
+      },
+      {
+        id: 'd5',
+        type: 'utility_bill',
+        name: 'Utility Bill.pdf',
+        status: 'pending',
+        uploadedDate: '2024-01-14',
+      },
+      {
+        id: 'd6',
+        type: 'bank_statement',
+        name: 'Bank Statement.pdf',
+        status: 'pending',
+        uploadedDate: '2024-01-14',
+      },
     ],
     verifications: [
-      { id: 'v4', type: 'identity', status: 'passed', lastChecked: '2024-01-12', source: 'ID Verification API' },
-      { id: 'v5', type: 'sanctions', status: 'passed', lastChecked: '2024-01-15', source: 'OFAC, UN, EU Sanctions Lists' },
-      { id: 'v6', type: 'pep', status: 'review_required', lastChecked: '2024-01-15', source: 'Global PEP Database', details: 'Potential match found - requires manual review', matchScore: 72 }
+      {
+        id: 'v4',
+        type: 'identity',
+        status: 'passed',
+        lastChecked: '2024-01-12',
+        source: 'ID Verification API',
+      },
+      {
+        id: 'v5',
+        type: 'sanctions',
+        status: 'passed',
+        lastChecked: '2024-01-15',
+        source: 'OFAC, UN, EU Sanctions Lists',
+      },
+      {
+        id: 'v6',
+        type: 'pep',
+        status: 'review_required',
+        lastChecked: '2024-01-15',
+        source: 'Global PEP Database',
+        details: 'Potential match found - requires manual review',
+        matchScore: 72,
+      },
     ],
     flags: [
-      { id: 'f1', type: 'pep', severity: 'warning', description: 'Potential PEP match detected - family member of government official', raisedDate: '2024-01-15' }
-    ]
+      {
+        id: 'f1',
+        type: 'pep',
+        severity: 'warning',
+        description: 'Potential PEP match detected - family member of government official',
+        raisedDate: '2024-01-15',
+      },
+    ],
   },
   {
     id: 'KYC-003',
@@ -164,15 +264,40 @@ const MOCK_KYC_PROFILES: KYCProfile[] = [
     nextReviewDate: '2024-01-20',
     completionPercentage: 30,
     documents: [
-      { id: 'd7', type: 'company_registration', name: 'CAC Certificate.pdf', status: 'expired', uploadedDate: '2023-06-15', expiryDate: '2023-12-31' }
+      {
+        id: 'd7',
+        type: 'company_registration',
+        name: 'CAC Certificate.pdf',
+        status: 'expired',
+        uploadedDate: '2023-06-15',
+        expiryDate: '2023-12-31',
+      },
     ],
     verifications: [
-      { id: 'v7', type: 'sanctions', status: 'pending', lastChecked: '2023-06-20', source: 'OFAC, UN, EU Sanctions Lists' }
+      {
+        id: 'v7',
+        type: 'sanctions',
+        status: 'pending',
+        lastChecked: '2023-06-20',
+        source: 'OFAC, UN, EU Sanctions Lists',
+      },
     ],
     flags: [
-      { id: 'f2', type: 'document_issue', severity: 'critical', description: 'Company registration document has expired', raisedDate: '2024-01-01' },
-      { id: 'f3', type: 'high_risk_country', severity: 'warning', description: 'Entity operates in high-risk jurisdiction', raisedDate: '2023-06-20' }
-    ]
+      {
+        id: 'f2',
+        type: 'document_issue',
+        severity: 'critical',
+        description: 'Company registration document has expired',
+        raisedDate: '2024-01-01',
+      },
+      {
+        id: 'f3',
+        type: 'high_risk_country',
+        severity: 'warning',
+        description: 'Entity operates in high-risk jurisdiction',
+        raisedDate: '2023-06-20',
+      },
+    ],
   },
   {
     id: 'KYC-004',
@@ -187,12 +312,25 @@ const MOCK_KYC_PROFILES: KYCProfile[] = [
     completionPercentage: 100,
     documents: [],
     verifications: [
-      { id: 'v8', type: 'sanctions', status: 'failed', lastChecked: '2024-01-05', source: 'OFAC Sanctions List', details: 'Entity found on OFAC SDN List' }
+      {
+        id: 'v8',
+        type: 'sanctions',
+        status: 'failed',
+        lastChecked: '2024-01-05',
+        source: 'OFAC Sanctions List',
+        details: 'Entity found on OFAC SDN List',
+      },
     ],
     flags: [
-      { id: 'f4', type: 'sanctions', severity: 'critical', description: 'Entity appears on OFAC SDN List - immediate action required', raisedDate: '2024-01-05' }
-    ]
-  }
+      {
+        id: 'f4',
+        type: 'sanctions',
+        severity: 'critical',
+        description: 'Entity appears on OFAC SDN List - immediate action required',
+        raisedDate: '2024-01-05',
+      },
+    ],
+  },
 ];
 
 const MOCK_AML_ALERTS: AMLAlert[] = [
@@ -203,14 +341,42 @@ const MOCK_AML_ALERTS: AMLAlert[] = [
     alertType: 'pattern',
     severity: 'medium',
     status: 'investigating',
-    description: 'Unusual transaction pattern detected - multiple high-value transfers to different countries within 24 hours',
+    description:
+      'Unusual transaction pattern detected - multiple high-value transfers to different countries within 24 hours',
     createdDate: '2024-01-16',
     assignedTo: 'Michael Adeyemi',
     transactionDetails: [
-      { id: 't1', date: '2024-01-15', amount: 45000, currency: 'USD', type: 'debit', counterparty: 'ABC Trading LLC', country: 'UAE', flagReason: 'High-risk jurisdiction' },
-      { id: 't2', date: '2024-01-15', amount: 32000, currency: 'USD', type: 'debit', counterparty: 'XYZ Imports', country: 'Turkey', flagReason: 'Rapid succession' },
-      { id: 't3', date: '2024-01-15', amount: 28000, currency: 'USD', type: 'debit', counterparty: 'Global Supplies', country: 'Lebanon', flagReason: 'High-risk jurisdiction' }
-    ]
+      {
+        id: 't1',
+        date: '2024-01-15',
+        amount: 45000,
+        currency: 'USD',
+        type: 'debit',
+        counterparty: 'ABC Trading LLC',
+        country: 'UAE',
+        flagReason: 'High-risk jurisdiction',
+      },
+      {
+        id: 't2',
+        date: '2024-01-15',
+        amount: 32000,
+        currency: 'USD',
+        type: 'debit',
+        counterparty: 'XYZ Imports',
+        country: 'Turkey',
+        flagReason: 'Rapid succession',
+      },
+      {
+        id: 't3',
+        date: '2024-01-15',
+        amount: 28000,
+        currency: 'USD',
+        type: 'debit',
+        counterparty: 'Global Supplies',
+        country: 'Lebanon',
+        flagReason: 'High-risk jurisdiction',
+      },
+    ],
   },
   {
     id: 'AML-002',
@@ -219,11 +385,21 @@ const MOCK_AML_ALERTS: AMLAlert[] = [
     alertType: 'threshold',
     severity: 'high',
     status: 'new',
-    description: 'Transaction exceeds reporting threshold - $500,000 wire transfer to offshore account',
+    description:
+      'Transaction exceeds reporting threshold - $500,000 wire transfer to offshore account',
     createdDate: '2024-01-17',
     transactionDetails: [
-      { id: 't4', date: '2024-01-17', amount: 500000, currency: 'USD', type: 'debit', counterparty: 'Cayman Holdings Ltd', country: 'Cayman Islands', flagReason: 'Offshore jurisdiction, threshold exceeded' }
-    ]
+      {
+        id: 't4',
+        date: '2024-01-17',
+        amount: 500000,
+        currency: 'USD',
+        type: 'debit',
+        counterparty: 'Cayman Holdings Ltd',
+        country: 'Cayman Islands',
+        flagReason: 'Offshore jurisdiction, threshold exceeded',
+      },
+    ],
   },
   {
     id: 'AML-003',
@@ -235,7 +411,7 @@ const MOCK_AML_ALERTS: AMLAlert[] = [
     description: 'Attempted transaction with sanctioned entity - blocked automatically',
     createdDate: '2024-01-05',
     assignedTo: 'Compliance Head',
-    relatedEntities: ['OFAC SDN Entity #12345']
+    relatedEntities: ['OFAC SDN Entity #12345'],
   },
   {
     id: 'AML-004',
@@ -244,10 +420,11 @@ const MOCK_AML_ALERTS: AMLAlert[] = [
     alertType: 'adverse_media',
     severity: 'low',
     status: 'resolved',
-    description: 'News article mentioning company in context of industry-wide investigation - no direct involvement',
+    description:
+      'News article mentioning company in context of industry-wide investigation - no direct involvement',
     createdDate: '2024-01-08',
-    assignedTo: 'Sarah Okonkwo'
-  }
+    assignedTo: 'Sarah Okonkwo',
+  },
 ];
 
 export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
@@ -260,7 +437,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [riskFilter, setRiskFilter] = useState('all');
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['documents', 'verifications', 'flags']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['documents', 'verifications', 'flags'])
+  );
   const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
 
   const toggleSection = (section: string) => {
@@ -291,18 +470,19 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
     total: kycProfiles.length,
     approved: kycProfiles.filter(p => p.status === 'approved').length,
     pending: kycProfiles.filter(p => ['pending', 'in_progress'].includes(p.status)).length,
-    highRisk: kycProfiles.filter(p => ['high', 'critical'].includes(p.riskLevel)).length
+    highRisk: kycProfiles.filter(p => ['high', 'critical'].includes(p.riskLevel)).length,
   };
 
   const amlStats = {
     total: amlAlerts.length,
     new: amlAlerts.filter(a => a.status === 'new').length,
     investigating: amlAlerts.filter(a => a.status === 'investigating').length,
-    critical: amlAlerts.filter(a => a.severity === 'critical').length
+    critical: amlAlerts.filter(a => a.severity === 'critical').length,
   };
 
   const filteredProfiles = kycProfiles.filter(profile => {
-    const matchesSearch = profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      profile.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       profile.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || profile.status === statusFilter;
     const matchesRisk = riskFilter === 'all' || profile.riskLevel === riskFilter;
@@ -310,7 +490,8 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
   });
 
   const filteredAlerts = amlAlerts.filter(alert => {
-    const matchesSearch = alert.entityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      alert.entityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       alert.id.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || alert.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -321,7 +502,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
       low: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
       medium: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
       high: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-      critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' }
+      critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
     };
     return styles[risk];
   };
@@ -334,7 +515,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
       rejected: { bg: 'bg-red-500/20', text: 'text-red-400', icon: XCircle },
       expired: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: AlertCircle },
       verified: { bg: 'bg-green-500/20', text: 'text-green-400', icon: CheckCircle2 },
-      uploaded: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: Clock }
+      uploaded: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: Clock },
     };
     return styles[status] || styles.pending;
   };
@@ -344,7 +525,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
       low: { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
       medium: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
       high: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-      critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' }
+      critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
     };
     return styles[severity];
   };
@@ -355,7 +536,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
       investigating: { bg: 'bg-amber-500/20', text: 'text-amber-400' },
       escalated: { bg: 'bg-red-500/20', text: 'text-red-400' },
       resolved: { bg: 'bg-green-500/20', text: 'text-green-400' },
-      false_positive: { bg: 'bg-slate-500/20', text: 'text-slate-400' }
+      false_positive: { bg: 'bg-slate-500/20', text: 'text-slate-400' },
     };
     return styles[status];
   };
@@ -367,7 +548,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
       sanctions: Ban,
       pep: Users,
       adverse_media: FileText,
-      beneficial_ownership: Building2
+      beneficial_ownership: Building2,
     };
     return icons[type];
   };
@@ -461,7 +642,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Risk Level</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Status</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Completion</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Next Review</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">
+                Next Review
+              </th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Actions</th>
             </tr>
           </thead>
@@ -479,7 +662,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${profile.entityType === 'company' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}>
+                      <div
+                        className={`p-2 rounded-lg ${profile.entityType === 'company' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}
+                      >
                         {profile.entityType === 'company' ? (
                           <Building2 className="w-5 h-5 text-blue-400" />
                         ) : (
@@ -499,12 +684,16 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}
+                    >
                       {profile.riskLevel.toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
+                    >
                       <StatusIcon className="w-3 h-3" />
                       {profile.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
@@ -514,13 +703,18 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                       <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            profile.completionPercentage === 100 ? 'bg-green-500' :
-                            profile.completionPercentage >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                            profile.completionPercentage === 100
+                              ? 'bg-green-500'
+                              : profile.completionPercentage >= 50
+                                ? 'bg-amber-500'
+                                : 'bg-red-500'
                           }`}
                           style={{ width: `${profile.completionPercentage}%` }}
                         />
                       </div>
-                      <span className="text-sm text-slate-400">{profile.completionPercentage}%</span>
+                      <span className="text-sm text-slate-400">
+                        {profile.completionPercentage}%
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -579,7 +773,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               ← Back to Profiles
             </button>
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${selectedProfile.entityType === 'company' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}>
+              <div
+                className={`p-3 rounded-xl ${selectedProfile.entityType === 'company' ? 'bg-blue-500/20' : 'bg-purple-500/20'}`}
+              >
                 {selectedProfile.entityType === 'company' ? (
                   <Building2 className="w-8 h-8 text-blue-400" />
                 ) : (
@@ -588,15 +784,21 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">{selectedProfile.name}</h2>
-                <p className="text-slate-400">{selectedProfile.id} • {selectedProfile.country}</p>
+                <p className="text-slate-400">
+                  {selectedProfile.id} • {selectedProfile.country}
+                </p>
               </div>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${riskStyle.bg} ${riskStyle.text}`}>
+            <span
+              className={`px-3 py-1.5 rounded-full text-sm font-medium ${riskStyle.bg} ${riskStyle.text}`}
+            >
               {selectedProfile.riskLevel.toUpperCase()} RISK
             </span>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusStyle.bg} ${statusStyle.text}`}
+            >
               <StatusIcon className="w-4 h-4" />
               {selectedProfile.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </span>
@@ -607,7 +809,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
         <div className="grid grid-cols-4 gap-4">
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Completion</p>
-            <p className="text-2xl font-bold text-white mt-1">{selectedProfile.completionPercentage}%</p>
+            <p className="text-2xl font-bold text-white mt-1">
+              {selectedProfile.completionPercentage}%
+            </p>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Documents</p>
@@ -619,27 +823,40 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Assigned To</p>
-            <p className="text-2xl font-bold text-white mt-1">{selectedProfile.assignedAnalyst || 'Unassigned'}</p>
+            <p className="text-2xl font-bold text-white mt-1">
+              {selectedProfile.assignedAnalyst || 'Unassigned'}
+            </p>
           </div>
         </div>
 
         {/* Flags Alert */}
         {flags.length > 0 && (
-          <div className={`p-4 rounded-lg border ${
-            flags.some(f => f.severity === 'critical') ? 'bg-red-500/10 border-red-500/30' :
-            flags.some(f => f.severity === 'warning') ? 'bg-amber-500/10 border-amber-500/30' :
-            'bg-blue-500/10 border-blue-500/30'
-          }`}>
+          <div
+            className={`p-4 rounded-lg border ${
+              flags.some(f => f.severity === 'critical')
+                ? 'bg-red-500/10 border-red-500/30'
+                : flags.some(f => f.severity === 'warning')
+                  ? 'bg-amber-500/10 border-amber-500/30'
+                  : 'bg-blue-500/10 border-blue-500/30'
+            }`}
+          >
             <div className="flex items-start gap-3">
-              <AlertTriangle className={`w-5 h-5 mt-0.5 ${
-                flags.some(f => f.severity === 'critical') ? 'text-red-400' :
-                flags.some(f => f.severity === 'warning') ? 'text-amber-400' : 'text-blue-400'
-              }`} />
+              <AlertTriangle
+                className={`w-5 h-5 mt-0.5 ${
+                  flags.some(f => f.severity === 'critical')
+                    ? 'text-red-400'
+                    : flags.some(f => f.severity === 'warning')
+                      ? 'text-amber-400'
+                      : 'text-blue-400'
+                }`}
+              />
               <div>
                 <p className="font-medium text-white">{flags.length} Active Flag(s)</p>
                 <ul className="mt-2 space-y-1">
                   {flags.map(flag => (
-                    <li key={flag.id} className="text-sm text-slate-300">• {flag.description}</li>
+                    <li key={flag.id} className="text-sm text-slate-300">
+                      • {flag.description}
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -657,7 +874,11 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               <FileText className="w-5 h-5 text-blue-400" />
               Documents ({documents.length})
             </h3>
-            {expandedSections.has('documents') ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+            {expandedSections.has('documents') ? (
+              <ChevronUp className="w-5 h-5 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-400" />
+            )}
           </button>
           {expandedSections.has('documents') && (
             <div className="p-4 pt-0 space-y-3">
@@ -667,7 +888,10 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                 documents.map(doc => {
                   const docStatusStyle = getStatusStyle(doc.status as KYCProfile['status']);
                   return (
-                    <div key={doc.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-slate-400" />
                         <div>
@@ -679,7 +903,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className={`px-2 py-0.5 rounded text-xs ${docStatusStyle.bg} ${docStatusStyle.text}`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs ${docStatusStyle.bg} ${docStatusStyle.text}`}
+                        >
                           {doc.status.replace(/\b\w/g, l => l.toUpperCase())}
                         </span>
                         <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors">
@@ -704,7 +930,11 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               <ScanLine className="w-5 h-5 text-purple-400" />
               Verifications ({verifications.length})
             </h3>
-            {expandedSections.has('verifications') ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+            {expandedSections.has('verifications') ? (
+              <ChevronUp className="w-5 h-5 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-slate-400" />
+            )}
           </button>
           {expandedSections.has('verifications') && (
             <div className="p-4 pt-0 space-y-3">
@@ -714,7 +944,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                   pending: 'text-slate-400 bg-slate-500/20',
                   passed: 'text-green-400 bg-green-500/20',
                   failed: 'text-red-400 bg-red-500/20',
-                  review_required: 'text-amber-400 bg-amber-500/20'
+                  review_required: 'text-amber-400 bg-amber-500/20',
                 };
 
                 return (
@@ -725,18 +955,24 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                           <VerificationIcon className="w-5 h-5 text-slate-400" />
                         </div>
                         <div>
-                          <p className="text-white font-medium capitalize">{verification.type.replace(/_/g, ' ')} Check</p>
+                          <p className="text-white font-medium capitalize">
+                            {verification.type.replace(/_/g, ' ')} Check
+                          </p>
                           <p className="text-sm text-slate-400">Source: {verification.source}</p>
                           {verification.details && (
                             <p className="text-sm text-amber-400 mt-1">{verification.details}</p>
                           )}
                           {verification.matchScore && (
-                            <p className="text-sm text-slate-400 mt-1">Match Score: {verification.matchScore}%</p>
+                            <p className="text-sm text-slate-400 mt-1">
+                              Match Score: {verification.matchScore}%
+                            </p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${verificationStatusColors[verification.status]}`}>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${verificationStatusColors[verification.status]}`}
+                        >
                           {verification.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                         <button className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors">
@@ -862,10 +1098,14 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                   <div>
                     <div className="flex items-center gap-3">
                       <h4 className="text-white font-medium">{alert.id}</h4>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${severityStyle.bg} ${severityStyle.text}`}>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${severityStyle.bg} ${severityStyle.text}`}
+                      >
                         {alert.severity.toUpperCase()}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${alertStatusStyle.bg} ${alertStatusStyle.text}`}>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${alertStatusStyle.bg} ${alertStatusStyle.text}`}
+                      >
                         {alert.status.replace(/_/g, ' ').toUpperCase()}
                       </span>
                     </div>
@@ -887,7 +1127,7 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                   </div>
                 </div>
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation();
                     toggleAlert(alert.id);
                   }}
@@ -901,30 +1141,40 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
                 </button>
               </div>
 
-              {expandedAlerts.has(alert.id) && alert.transactionDetails && alert.transactionDetails.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-700">
-                  <p className="text-sm text-slate-400 mb-2">Related Transactions:</p>
-                  <div className="space-y-2">
-                    {alert.transactionDetails.map(tx => (
-                      <div key={tx.id} className="flex items-center justify-between p-2 bg-slate-800/50 rounded">
-                        <div className="flex items-center gap-3">
-                          <span className={`w-2 h-2 rounded-full ${tx.type === 'credit' ? 'bg-green-400' : 'bg-red-400'}`} />
-                          <span className="text-sm text-white">{tx.counterparty}</span>
-                          <span className="text-xs text-slate-500">{tx.country}</span>
+              {expandedAlerts.has(alert.id) &&
+                alert.transactionDetails &&
+                alert.transactionDetails.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-700">
+                    <p className="text-sm text-slate-400 mb-2">Related Transactions:</p>
+                    <div className="space-y-2">
+                      {alert.transactionDetails.map(tx => (
+                        <div
+                          key={tx.id}
+                          className="flex items-center justify-between p-2 bg-slate-800/50 rounded"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`w-2 h-2 rounded-full ${tx.type === 'credit' ? 'bg-green-400' : 'bg-red-400'}`}
+                            />
+                            <span className="text-sm text-white">{tx.counterparty}</span>
+                            <span className="text-xs text-slate-500">{tx.country}</span>
+                          </div>
+                          <div className="text-right">
+                            <p
+                              className={`text-sm font-medium ${tx.type === 'credit' ? 'text-green-400' : 'text-red-400'}`}
+                            >
+                              {tx.type === 'credit' ? '+' : '-'}
+                              {tx.currency} {tx.amount.toLocaleString()}
+                            </p>
+                            {tx.flagReason && (
+                              <p className="text-xs text-amber-400">{tx.flagReason}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className={`text-sm font-medium ${tx.type === 'credit' ? 'text-green-400' : 'text-red-400'}`}>
-                            {tx.type === 'credit' ? '+' : '-'}{tx.currency} {tx.amount.toLocaleString()}
-                          </p>
-                          {tx.flagReason && (
-                            <p className="text-xs text-amber-400">{tx.flagReason}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           );
         })}
@@ -959,7 +1209,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               setStatusFilter('all');
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              activeView === 'kyc' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+              activeView === 'kyc'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
             <BadgeCheck className="w-4 h-4" />
@@ -974,7 +1226,9 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
               setStatusFilter('all');
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              activeView === 'aml' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+              activeView === 'aml'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
             <ShieldAlert className="w-4 h-4" />
@@ -983,11 +1237,11 @@ export const BankDueDiligence: React.FC<BankDueDiligenceProps> = () => {
         </div>
 
         {/* Content */}
-        {activeView === 'kyc' ? (
-          selectedProfile ? renderKYCDetail() : renderKYCList()
-        ) : (
-          renderAMLList()
-        )}
+        {activeView === 'kyc'
+          ? selectedProfile
+            ? renderKYCDetail()
+            : renderKYCList()
+          : renderAMLList()}
       </div>
     </div>
   );

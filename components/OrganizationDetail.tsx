@@ -21,7 +21,7 @@ import {
   Heart,
   Share2,
   Flag,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { DbOrganization } from '../types';
@@ -39,26 +39,73 @@ interface Review {
   created_at: string;
 }
 
-export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organizationId, onBack }) => {
+export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({
+  organizationId,
+  onBack,
+}) => {
   const [organization, setOrganization] = useState<DbOrganization | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'reviews' | 'certifications'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'products' | 'reviews' | 'certifications'
+  >('overview');
   const [isSaved, setIsSaved] = useState(false);
 
   const mockReviews: Review[] = [
-    { id: '1', user_name: 'John Mensah', rating: 5, comment: 'Excellent partner for cocoa exports. Very reliable and professional.', created_at: '2024-10-15' },
-    { id: '2', user_name: 'Amina Diallo', rating: 4, comment: 'Good communication and timely delivery. Would work with again.', created_at: '2024-09-28' },
-    { id: '3', user_name: 'Kwame Asante', rating: 5, comment: 'Best supplier in the region. Highly recommended for bulk orders.', created_at: '2024-09-10' },
+    {
+      id: '1',
+      user_name: 'John Mensah',
+      rating: 5,
+      comment: 'Excellent partner for cocoa exports. Very reliable and professional.',
+      created_at: '2024-10-15',
+    },
+    {
+      id: '2',
+      user_name: 'Amina Diallo',
+      rating: 4,
+      comment: 'Good communication and timely delivery. Would work with again.',
+      created_at: '2024-09-28',
+    },
+    {
+      id: '3',
+      user_name: 'Kwame Asante',
+      rating: 5,
+      comment: 'Best supplier in the region. Highly recommended for bulk orders.',
+      created_at: '2024-09-10',
+    },
   ];
 
   const mockProducts = [
-    { id: '1', name: 'Premium Cocoa Beans', price: '$2,500/ton', origin: 'Ghana', hsCode: '1801.00' },
-    { id: '2', name: 'Shea Butter (Refined)', price: '$1,800/ton', origin: 'Ghana', hsCode: '1515.90' },
-    { id: '3', name: 'Cashew Nuts (Raw)', price: '$3,200/ton', origin: 'Ivory Coast', hsCode: '0801.31' },
+    {
+      id: '1',
+      name: 'Premium Cocoa Beans',
+      price: '$2,500/ton',
+      origin: 'Ghana',
+      hsCode: '1801.00',
+    },
+    {
+      id: '2',
+      name: 'Shea Butter (Refined)',
+      price: '$1,800/ton',
+      origin: 'Ghana',
+      hsCode: '1515.90',
+    },
+    {
+      id: '3',
+      name: 'Cashew Nuts (Raw)',
+      price: '$3,200/ton',
+      origin: 'Ivory Coast',
+      hsCode: '0801.31',
+    },
   ];
 
   const mockCertifications = [
-    { id: '1', name: 'Fair Trade Certified', issuer: 'Fairtrade International', validUntil: '2025-12-31', status: 'active' },
+    {
+      id: '1',
+      name: 'Fair Trade Certified',
+      issuer: 'Fairtrade International',
+      validUntil: '2025-12-31',
+      status: 'active',
+    },
     { id: '2', name: 'ISO 9001:2015', issuer: 'SGS', validUntil: '2025-06-30', status: 'active' },
     { id: '3', name: 'HACCP', issuer: 'FDA Ghana', validUntil: '2024-12-31', status: 'expiring' },
   ];
@@ -90,8 +137,9 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
         rating: 4.8,
         reviews_count: 124,
         tags: ['Agro-Processing', 'Bulk Buyer', 'Fair Trade'],
-        description: 'Leading processor of high-quality cocoa beans seeking reliable regional suppliers. We have been in the cocoa business for over 25 years and work with farmers across West Africa.',
-        logo_initial: 'C'
+        description:
+          'Leading processor of high-quality cocoa beans seeking reliable regional suppliers. We have been in the cocoa business for over 25 years and work with farmers across West Africa.',
+        logo_initial: 'C',
       });
     } finally {
       setLoading(false);
@@ -140,7 +188,7 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
         {/* Cover Image */}
         <div className="h-32 bg-gradient-to-r from-trade-primary to-trade-secondary" />
-        
+
         <div className="p-6 -mt-12">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Logo */}
@@ -181,7 +229,7 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
                   >
                     <Heart className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       navigator.clipboard.writeText(window.location.href);
                       alert('Link copied to clipboard!');
@@ -198,8 +246,12 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
               <div className="flex items-center gap-6 mt-4">
                 <div className="flex items-center gap-1">
                   <Star className="w-5 h-5 text-amber-500 fill-current" />
-                  <span className="font-bold text-trade-primary dark:text-white">{organization.rating}</span>
-                  <span className="text-sm text-gray-500">({organization.reviews_count} reviews)</span>
+                  <span className="font-bold text-trade-primary dark:text-white">
+                    {organization.rating}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    ({organization.reviews_count} reviews)
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 text-sm text-gray-500">
                   <Clock className="w-4 h-4" />
@@ -281,16 +333,43 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
               {/* Key Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Total Trades', value: '156', icon: Package, color: 'text-blue-600 bg-blue-100' },
-                  { label: 'Success Rate', value: '98%', icon: TrendingUp, color: 'text-green-600 bg-green-100' },
-                  { label: 'Avg Response', value: '2h', icon: Clock, color: 'text-orange-600 bg-orange-100' },
-                  { label: 'Partners', value: '45', icon: Users, color: 'text-purple-600 bg-purple-100' },
+                  {
+                    label: 'Total Trades',
+                    value: '156',
+                    icon: Package,
+                    color: 'text-blue-600 bg-blue-100',
+                  },
+                  {
+                    label: 'Success Rate',
+                    value: '98%',
+                    icon: TrendingUp,
+                    color: 'text-green-600 bg-green-100',
+                  },
+                  {
+                    label: 'Avg Response',
+                    value: '2h',
+                    icon: Clock,
+                    color: 'text-orange-600 bg-orange-100',
+                  },
+                  {
+                    label: 'Partners',
+                    value: '45',
+                    icon: Users,
+                    color: 'text-purple-600 bg-purple-100',
+                  },
                 ].map(metric => (
-                  <div key={metric.label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4">
-                    <div className={`w-10 h-10 rounded-lg ${metric.color} flex items-center justify-center mb-3`}>
+                  <div
+                    key={metric.label}
+                    className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4"
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-lg ${metric.color} flex items-center justify-center mb-3`}
+                    >
                       <metric.icon className="w-5 h-5" />
                     </div>
-                    <p className="text-2xl font-bold text-trade-primary dark:text-white">{metric.value}</p>
+                    <p className="text-2xl font-bold text-trade-primary dark:text-white">
+                      {metric.value}
+                    </p>
                     <p className="text-xs text-gray-500">{metric.label}</p>
                   </div>
                 ))}
@@ -305,14 +384,28 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
               </h2>
               <div className="space-y-4">
                 {mockProducts.map(product => (
-                  <div key={product.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl"
+                  >
                     <div>
-                      <h3 className="font-bold text-trade-primary dark:text-white">{product.name}</h3>
-                      <p className="text-sm text-gray-500">HS Code: {product.hsCode} • Origin: {product.origin}</p>
+                      <h3 className="font-bold text-trade-primary dark:text-white">
+                        {product.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        HS Code: {product.hsCode} • Origin: {product.origin}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-trade-success">{product.price}</p>
-                      <button onClick={() => alert('Quote request sent! The supplier will contact you soon.')} className="text-xs text-trade-primary hover:underline">Request Quote</button>
+                      <button
+                        onClick={() =>
+                          alert('Quote request sent! The supplier will contact you soon.')
+                        }
+                        className="text-xs text-trade-primary hover:underline"
+                      >
+                        Request Quote
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -333,7 +426,9 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
                         <div className="w-8 h-8 rounded-full bg-trade-primary text-white flex items-center justify-center text-sm font-bold">
                           {review.user_name.charAt(0)}
                         </div>
-                        <span className="font-medium text-trade-primary dark:text-white">{review.user_name}</span>
+                        <span className="font-medium text-trade-primary dark:text-white">
+                          {review.user_name}
+                        </span>
                       </div>
                       <div className="flex items-center gap-1">
                         {[...Array(5)].map((_, i) => (
@@ -359,20 +454,29 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
               </h2>
               <div className="space-y-4">
                 {mockCertifications.map(cert => (
-                  <div key={cert.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl">
+                  <div
+                    key={cert.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/50 rounded-xl"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
                         <Award className="w-5 h-5 text-amber-600" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-trade-primary dark:text-white">{cert.name}</h3>
+                        <h3 className="font-bold text-trade-primary dark:text-white">
+                          {cert.name}
+                        </h3>
                         <p className="text-sm text-gray-500">Issued by: {cert.issuer}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                        cert.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                      }`}>
+                      <span
+                        className={`text-xs font-bold px-2 py-1 rounded-full ${
+                          cert.status === 'active'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-orange-100 text-orange-700'
+                        }`}
+                      >
                         {cert.status === 'active' ? 'Active' : 'Expiring Soon'}
                       </span>
                       <p className="text-xs text-gray-500 mt-1">Valid until: {cert.validUntil}</p>
@@ -388,7 +492,9 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
         <div className="space-y-6">
           {/* Contact Info */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Contact Information</h3>
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+              Contact Information
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 text-gray-400" />
@@ -396,7 +502,9 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 text-gray-400" />
-                <span className="text-gray-600 dark:text-gray-300">contact@cocoaprocessing.com</span>
+                <span className="text-gray-600 dark:text-gray-300">
+                  contact@cocoaprocessing.com
+                </span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Globe className="w-4 h-4 text-gray-400" />
@@ -410,7 +518,9 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
 
           {/* Trust & Safety */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Trust & Safety</h3>
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+              Trust & Safety
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Shield className="w-5 h-5 text-green-600" />
@@ -418,17 +528,21 @@ export const OrganizationDetail: React.FC<OrganizationDetailProps> = ({ organiza
               </div>
               <div className="flex items-center gap-3">
                 <Building className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">Business Registered</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Business Registered
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-green-600" />
-                <span className="text-sm text-gray-600 dark:text-gray-300">Trade License Valid</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  Trade License Valid
+                </span>
               </div>
             </div>
           </div>
 
           {/* Report */}
-          <button 
+          <button
             onClick={() => alert('Report submitted. Our team will review this organization.')}
             className="w-full flex items-center justify-center gap-2 p-3 text-sm text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
           >

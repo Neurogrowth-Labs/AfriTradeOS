@@ -74,39 +74,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const isSimulatedRef = useRef(false);
 
-  const fetchProfile = useCallback(async (session: any) => {
-    try {
-      const dbProfile = await mockDatabase.getUserProfile(session.user.id);
-      const meta = session.user.user_metadata || {};
+  const fetchProfile = useCallback(
+    async (session: any) => {
+      try {
+        const dbProfile = await mockDatabase.getUserProfile(session.user.id);
+        const meta = session.user.user_metadata || {};
 
-      if (dbProfile) {
-        const role = dbProfile.role || UserPersona.EXPORTER_SME;
-        const onboarding = buildOnboardingProfileState(dbProfile);
-        if (dbProfile.role) setUserRole(role);
-        setUserProfile({
-          userName: dbProfile.full_name || meta.full_name || '',
-          companyName: dbProfile.company_name || '',
-          email: dbProfile.email || session.user.email,
-          country: dbProfile.country || 'Ghana',
-          phone: dbProfile.phone || meta.phone || '',
-          id: dbProfile.id,
-          onboardingCompleted: onboarding.onboardingCompleted,
-          onboardingStep: onboarding.onboardingStep,
-          ...meta,
-        });
-        setIsOnboarded(onboarding.onboardingCompleted);
+        if (dbProfile) {
+          const role = dbProfile.role || UserPersona.EXPORTER_SME;
+          const onboarding = buildOnboardingProfileState(dbProfile);
+          if (dbProfile.role) setUserRole(role);
+          setUserProfile({
+            userName: dbProfile.full_name || meta.full_name || '',
+            companyName: dbProfile.company_name || '',
+            email: dbProfile.email || session.user.email,
+            country: dbProfile.country || 'Ghana',
+            phone: dbProfile.phone || meta.phone || '',
+            id: dbProfile.id,
+            onboardingCompleted: onboarding.onboardingCompleted,
+            onboardingStep: onboarding.onboardingStep,
+            ...meta,
+          });
+          setIsOnboarded(onboarding.onboardingCompleted);
 
-        if (onboarding.onboardingCompleted) {
-          const defaultRoute = getDefaultRouteForRole(role);
-          if (location.pathname === '/' || location.pathname === '/dashboard') {
-            navigate(defaultRoute);
+          if (onboarding.onboardingCompleted) {
+            const defaultRoute = getDefaultRouteForRole(role);
+            if (location.pathname === '/' || location.pathname === '/dashboard') {
+              navigate(defaultRoute);
+            }
+          } else if (location.pathname !== '/') {
+            navigate('/');
           }
-        } else if (location.pathname !== '/') {
-          navigate('/');
+        } else {
+          console.log('No completed onboarding profile found, redirecting to onboarding...');
+          setUserRole(UserPersona.EXPORTER_SME);
+          setUserProfile({
+            userName: meta.full_name || '',
+            email: session.user.email,
+            id: session.user.id,
+            onboardingCompleted: false,
+            onboardingStep: 1,
+          });
+          setIsOnboarded(false);
+          if (location.pathname !== '/') {
+            navigate('/');
+          }
         }
-      } else {
-        console.log("No completed onboarding profile found, redirecting to onboarding...");
-        setUserRole(UserPersona.EXPORTER_SME);
+      } catch (error) {
+        console.error('Profile fetch error:', error);
+        const meta = session.user.user_metadata || {};
         setUserProfile({
           userName: meta.full_name || '',
           email: session.user.email,
@@ -119,41 +135,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           navigate('/');
         }
       }
-    } catch (error) {
-      console.error("Profile fetch error:", error);
-      const meta = session.user.user_metadata || {};
-      setUserProfile({
-        userName: meta.full_name || '',
-        email: session.user.email,
-        id: session.user.id,
-        onboardingCompleted: false,
-        onboardingStep: 1,
+    },
+    [location.pathname, navigate]
+  );
+
+  const handleAuthProfileLoaded = useCallback(
+    (profile: any, role?: UserPersona) => {
+      if (role) setUserRole(role);
+      setUserProfile(profile);
+      const completed = isOnboardingComplete({
+        role: role || userRole,
+        full_name: profile?.userName,
+        email: profile?.email,
+        country: profile?.country,
+        company_name: profile?.companyName,
+        onboarding_completed: profile?.onboardingCompleted,
       });
-      setIsOnboarded(false);
-      if (location.pathname !== '/') {
+      setIsOnboarded(completed);
+      if (completed) {
+        navigate(getDefaultRouteForRole(role || userRole));
+      } else {
         navigate('/');
       }
-    }
-  }, [location.pathname, navigate]);
-
-  const handleAuthProfileLoaded = useCallback((profile: any, role?: UserPersona) => {
-    if (role) setUserRole(role);
-    setUserProfile(profile);
-    const completed = isOnboardingComplete({
-      role: role || userRole,
-      full_name: profile?.userName,
-      email: profile?.email,
-      country: profile?.country,
-      company_name: profile?.companyName,
-      onboarding_completed: profile?.onboardingCompleted,
-    });
-    setIsOnboarded(completed);
-    if (completed) {
-      navigate(getDefaultRouteForRole(role || userRole));
-    } else {
-      navigate('/');
-    }
-  }, [navigate, userRole]);
+    },
+    [navigate, userRole]
+  );
 
   const handleLogout = useCallback(async () => {
     try {
@@ -168,23 +174,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [navigate]);
 
-  const handleOnboardingComplete = useCallback((role: UserPersona, profile: any) => {
-    if (profile.id && profile.id.startsWith('mock_')) {
-      isSimulatedRef.current = true;
-    }
-    handleAuthProfileLoaded(
-      { ...profile, onboardingCompleted: true, onboardingStep: 3 },
-      role
-    );
-  }, [handleAuthProfileLoaded]);
+  const handleOnboardingComplete = useCallback(
+    (role: UserPersona, profile: any) => {
+      if (profile.id && profile.id.startsWith('mock_')) {
+        isSimulatedRef.current = true;
+      }
+      handleAuthProfileLoaded({ ...profile, onboardingCompleted: true, onboardingStep: 3 }, role);
+    },
+    [handleAuthProfileLoaded]
+  );
 
   // Check for Supabase Session
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
         if (error) {
-          console.warn("Session check error:", error.message);
+          console.warn('Session check error:', error.message);
           setIsOnboarded(false);
           setUserProfile(null);
           return;
@@ -198,7 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, session: any) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: string, session: any) => {
       if (event === 'PASSWORD_RECOVERY') {
         setShowPasswordReset(true);
       }

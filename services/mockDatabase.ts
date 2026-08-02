@@ -1,25 +1,28 @@
-
-import { 
-  DbUser, 
-  DbOrganization, 
-  DbTrade, 
-  DbFinanceRequest, 
+import {
+  DbUser,
+  DbOrganization,
+  DbTrade,
+  DbFinanceRequest,
   DbMarketIntelligence,
   DbAuditLog,
   DbKYCRequest,
-  DbAMLAlert
+  DbAMLAlert,
 } from '../types';
 import { supabase } from './supabase';
 import { isOnboardingComplete } from './onboardingService';
 
 const hasCompletedOnboarding = async (): Promise<boolean> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return false;
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, email, country, company_name, role, onboarding_completed, onboarding_step')
+      .select(
+        'id, full_name, email, country, company_name, role, onboarding_completed, onboarding_step'
+      )
       .eq('id', user.id)
       .maybeSingle();
 
@@ -31,36 +34,30 @@ const hasCompletedOnboarding = async (): Promise<boolean> => {
   }
 };
 
-
 // --- DATABASE CLIENT WRAPPER ---
 
 export const mockDatabase = {
-  
   // --- USER PROFILE ---
   getUserProfile: async (userId: string): Promise<DbUser | null> => {
     try {
-      console.log("getUserProfile - Fetching profile for userId:", userId);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
+      console.log('getUserProfile - Fetching profile for userId:', userId);
+
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+
       if (error) {
-        console.error("getUserProfile - Supabase error:", error.code, error.message);
-        
+        console.error('getUserProfile - Supabase error:', error.code, error.message);
+
         // If RLS recursion error, try to get basic profile without RLS
         if (error.code === '42P17') {
-          console.warn("RLS recursion detected - please run fix-rls-recursion.sql in Supabase");
+          console.warn('RLS recursion detected - please run fix-rls-recursion.sql in Supabase');
         }
         throw error;
       }
-      
-      console.log("getUserProfile - Success:", data);
+
+      console.log('getUserProfile - Success:', data);
       return data as DbUser;
     } catch (e: any) {
-      console.warn("Using fallback profile (DB unreachable or record missing)", e?.message || e);
+      console.warn('Using fallback profile (DB unreachable or record missing)', e?.message || e);
       return null;
     }
   },
@@ -73,11 +70,11 @@ export const mockDatabase = {
         .from('profiles')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', userId);
-      
+
       if (error) throw error;
       return true;
     } catch (e) {
-      console.error("Failed to update profile", e);
+      console.error('Failed to update profile', e);
       return false;
     }
   },
@@ -104,19 +101,18 @@ export const mockDatabase = {
         return [];
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      let query = supabase
-        .from('trades')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let query = supabase.from('trades').select('*').order('created_at', { ascending: false });
+
       if (user) {
         query = query.eq('exporter_id', user.id);
       }
 
       const { data, error } = await query;
-        
+
       if (error) throw error;
       return (data || []) as DbTrade[];
     } catch (e: unknown) {
@@ -124,44 +120,59 @@ export const mockDatabase = {
       if (e instanceof Error && (e.name === 'AbortError' || e.message?.includes('aborted'))) {
         return [];
       }
-      console.error("getTrades error:", e);
-      return []; 
+      console.error('getTrades error:', e);
+      return [];
     }
   },
 
   getFinanceRequests: async (userId: string): Promise<DbFinanceRequest[]> => {
     try {
-        if (!(await hasCompletedOnboarding())) {
-          return [];
-        }
-
-        const { data: { user } } = await supabase.auth.getUser();
-        let query = supabase.from('finance_requests').select('*').order('created_at', { ascending: false });
-        
-        if (user) {
-          query = query.eq('applicant_id', user.id);
-        }
-        
-        const { data, error } = await query;
-        if(error) throw error;
-        return (data || []) as DbFinanceRequest[];
-    } catch(e) {
+      if (!(await hasCompletedOnboarding())) {
         return [];
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      let query = supabase
+        .from('finance_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (user) {
+        query = query.eq('applicant_id', user.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as DbFinanceRequest[];
+    } catch (e) {
+      return [];
     }
   },
 
   // Calculate Finance Readiness Score based on user's profile and activity
-  calculateFinanceReadiness: async (): Promise<{ score: number; breakdown: { label: string; score: number; max: number }[] }> => {
+  calculateFinanceReadiness: async (): Promise<{
+    score: number;
+    breakdown: { label: string; score: number; max: number }[];
+  }> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return { score: 50, breakdown: [] };
 
       // Fetch user data
       const [profileRes, kycRes, docsRes, tradesRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase.from('kyc_requests').select('status').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+        supabase
+          .from('kyc_requests')
+          .select('status')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1),
         supabase.from('documents').select('status').eq('user_id', user.id),
-        supabase.from('trades').select('status, value').eq('exporter_id', user.id)
+        supabase.from('trades').select('status, value').eq('exporter_id', user.id),
       ]);
 
       const profile = profileRes.data;
@@ -222,9 +233,13 @@ export const mockDatabase = {
   },
 
   // Calculate Country Risk Exposure based on user's trades
-  calculateCountryRiskExposure: async (): Promise<{ country: string; risk: number; value: number; percentage: number }[]> => {
+  calculateCountryRiskExposure: async (): Promise<
+    { country: string; risk: number; value: number; percentage: number }[]
+  > => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return [];
 
       const { data: trades, error } = await supabase
@@ -239,11 +254,26 @@ export const mockDatabase = {
 
       // Country risk ratings (simplified - in production, use external API)
       const countryRiskRatings: Record<string, number> = {
-        'Nigeria': 65, 'Kenya': 45, 'Ghana': 35, 'South Africa': 30,
-        'Egypt': 55, 'Morocco': 40, 'Tanzania': 50, 'Ethiopia': 60,
-        'Ivory Coast': 45, 'Senegal': 40, 'Rwanda': 35, 'Uganda': 50,
-        'Cameroon': 55, 'DRC': 70, 'Zambia': 45, 'Zimbabwe': 65,
-        'Mozambique': 55, 'Angola': 60, 'Botswana': 25, 'Namibia': 30,
+        Nigeria: 65,
+        Kenya: 45,
+        Ghana: 35,
+        'South Africa': 30,
+        Egypt: 55,
+        Morocco: 40,
+        Tanzania: 50,
+        Ethiopia: 60,
+        'Ivory Coast': 45,
+        Senegal: 40,
+        Rwanda: 35,
+        Uganda: 50,
+        Cameroon: 55,
+        DRC: 70,
+        Zambia: 45,
+        Zimbabwe: 65,
+        Mozambique: 55,
+        Angola: 60,
+        Botswana: 25,
+        Namibia: 30,
       };
 
       // Aggregate by country
@@ -263,7 +293,7 @@ export const mockDatabase = {
           country,
           risk: countryRiskRatings[country] || 50,
           value,
-          percentage: totalValue > 0 ? Math.round((value / totalValue) * 100) : 0
+          percentage: totalValue > 0 ? Math.round((value / totalValue) * 100) : 0,
         }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
@@ -282,7 +312,7 @@ export const mockDatabase = {
         .select('*')
         .eq('is_active', true)
         .order('name');
-      
+
       if (error) throw error;
       return data || [];
     } catch (e) {
@@ -303,7 +333,9 @@ export const mockDatabase = {
         throw new Error('ONBOARDING_REQUIRED');
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
@@ -314,7 +346,7 @@ export const mockDatabase = {
           status: 'pending',
           risk_score: null,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -329,24 +361,28 @@ export const mockDatabase = {
 
   getMarketIntelligence: async (): Promise<DbMarketIntelligence[]> => {
     try {
-        const { data, error } = await supabase.from('market_intelligence').select('*');
-        if (error) throw error;
-        return (data || []) as DbMarketIntelligence[];
+      const { data, error } = await supabase.from('market_intelligence').select('*');
+      if (error) throw error;
+      return (data || []) as DbMarketIntelligence[];
     } catch (e) {
-        return [];
+      return [];
     }
   },
 
   getAuditLogs: async (): Promise<DbAuditLog[]> => {
     try {
-      const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(20);
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
       if (error) throw error;
-      
+
       // Map DB fields to UI expected fields if necessary (DB uses created_at, UI uses timestamp)
       return (data || []).map((log: any) => ({
         ...log,
         timestamp: new Date(log.created_at).toLocaleString(),
-        user: log.user_id ? 'User' : 'System' // In real app, join with profiles
+        user: log.user_id ? 'User' : 'System', // In real app, join with profiles
       }));
     } catch (e) {
       return [];
@@ -358,7 +394,7 @@ export const mockDatabase = {
       const { data, error } = await supabase.from('kyc_requests').select('*');
       if (error) throw error;
       return (data || []) as DbKYCRequest[];
-    } catch(e) {
+    } catch (e) {
       return [];
     }
   },
@@ -368,7 +404,7 @@ export const mockDatabase = {
       const { data, error } = await supabase.from('aml_alerts').select('*');
       if (error) throw error;
       return (data || []) as DbAMLAlert[];
-    } catch(e) {
+    } catch (e) {
       return [];
     }
   },
@@ -381,31 +417,32 @@ export const mockDatabase = {
         throw new Error('ONBOARDING_REQUIRED');
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log("createTrade - Current user:", user?.id || "NOT AUTHENTICATED (will use placeholder)");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      console.log(
+        'createTrade - Current user:',
+        user?.id || 'NOT AUTHENTICATED (will use placeholder)'
+      );
 
       const payload = {
         ...tradeData,
         exporter_id: user?.id || null, // Allow null for testing without auth
-        status: tradeData.status || 'draft'
+        status: tradeData.status || 'draft',
       };
-      console.log("createTrade - Payload:", payload);
+      console.log('createTrade - Payload:', payload);
 
-      const { data, error } = await supabase
-        .from('trades')
-        .insert([payload])
-        .select()
-        .single();
+      const { data, error } = await supabase.from('trades').insert([payload]).select().single();
 
       if (error) {
-        console.error("createTrade - Supabase error:", error);
+        console.error('createTrade - Supabase error:', error);
         throw error;
       }
-      
-      console.log("createTrade - Success:", data);
+
+      console.log('createTrade - Success:', data);
       return data as DbTrade;
     } catch (e: any) {
-      console.error("Create Trade Error:", e.message || e);
+      console.error('Create Trade Error:', e.message || e);
       return null;
     }
   },
@@ -426,7 +463,7 @@ export const mockDatabase = {
       if (error) throw error;
       return data as DbTrade;
     } catch (e) {
-      console.error("Update Trade Error:", e);
+      console.error('Update Trade Error:', e);
       return null;
     }
   },
@@ -437,16 +474,12 @@ export const mockDatabase = {
         return null;
       }
 
-      const { data, error } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('id', tradeId)
-        .single();
+      const { data, error } = await supabase.from('trades').select('*').eq('id', tradeId).single();
 
       if (error) throw error;
       return data as DbTrade;
     } catch (e) {
-      console.error("Get Trade Error:", e);
+      console.error('Get Trade Error:', e);
       return null;
     }
   },
@@ -457,15 +490,12 @@ export const mockDatabase = {
         throw new Error('ONBOARDING_REQUIRED');
       }
 
-      const { error } = await supabase
-        .from('trades')
-        .delete()
-        .eq('id', tradeId);
+      const { error } = await supabase.from('trades').delete().eq('id', tradeId);
 
       if (error) throw error;
       return true;
     } catch (e) {
-      console.error("Delete Trade Error:", e);
+      console.error('Delete Trade Error:', e);
       return false;
     }
   },
@@ -481,7 +511,9 @@ export const mockDatabase = {
     try {
       const [usersRes, tradesRes, orgsRes] = await Promise.all([
         supabase.from('profiles').select('id, country, role', { count: 'exact' }),
-        supabase.from('trades').select('id, origin_country, destination_country', { count: 'exact' }),
+        supabase
+          .from('trades')
+          .select('id, origin_country, destination_country', { count: 'exact' }),
         supabase.from('organizations').select('id', { count: 'exact' }),
       ]);
 
@@ -560,7 +592,9 @@ export const mockDatabase = {
 
   // --- FINANCE MODULE: FX Rates, Hedging, Summary ---
 
-  getFXRates: async (): Promise<{ pair: string; rate: number; change: number; changePercent: number }[]> => {
+  getFXRates: async (): Promise<
+    { pair: string; rate: number; change: number; changePercent: number }[]
+  > => {
     try {
       const { data, error } = await supabase
         .from('fx_rates')
@@ -598,7 +632,17 @@ export const mockDatabase = {
     }
   },
 
-  getHedgingSuggestions: async (): Promise<{ id: string; type: 'forward' | 'option' | 'swap'; pair: string; description: string; savings: string; risk: 'low' | 'medium' | 'high'; term: string }[]> => {
+  getHedgingSuggestions: async (): Promise<
+    {
+      id: string;
+      type: 'forward' | 'option' | 'swap';
+      pair: string;
+      description: string;
+      savings: string;
+      risk: 'low' | 'medium' | 'high';
+      term: string;
+    }[]
+  > => {
     try {
       const { data, error } = await supabase
         .from('hedging_suggestions')
@@ -629,8 +673,18 @@ export const mockDatabase = {
     hedgedAmount: number;
   }> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { approvedCredit: 0, avgInterestRate: 0, nextRepaymentDate: null, nextRepaymentAmount: 0, fxExposure: 0, hedgedAmount: 0 };
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user)
+        return {
+          approvedCredit: 0,
+          avgInterestRate: 0,
+          nextRepaymentDate: null,
+          nextRepaymentAmount: 0,
+          fxExposure: 0,
+          hedgedAmount: 0,
+        };
 
       // Try finance_summary table first
       const { data: summary } = await supabase
@@ -652,7 +706,10 @@ export const mockDatabase = {
 
       // Fallback: compute from finance_requests and trades
       const [finReqRes, tradesRes] = await Promise.all([
-        supabase.from('finance_requests').select('status, amount, product_type').eq('applicant_id', user.id),
+        supabase
+          .from('finance_requests')
+          .select('status, amount, product_type')
+          .eq('applicant_id', user.id),
         supabase.from('trades').select('value, currency, status').eq('exporter_id', user.id),
       ]);
 
@@ -660,16 +717,30 @@ export const mockDatabase = {
       const trades = tradesRes.data || [];
 
       const approved = finReqs.filter((f: any) => f.status === 'approved');
-      const approvedCredit = approved.reduce((sum: number, f: any) => sum + (Number(f.amount) || 0), 0);
+      const approvedCredit = approved.reduce(
+        (sum: number, f: any) => sum + (Number(f.amount) || 0),
+        0
+      );
 
       // Avg interest from financiers that user has approved apps with
-      const { data: financiers } = await supabase.from('financiers').select('interest_rate').eq('is_active', true);
-      const rates = (financiers || []).map((f: any) => Number(f.interest_rate)).filter((r: number) => r > 0);
-      const avgInterestRate = rates.length > 0 ? rates.reduce((a: number, b: number) => a + b, 0) / rates.length : 0;
+      const { data: financiers } = await supabase
+        .from('financiers')
+        .select('interest_rate')
+        .eq('is_active', true);
+      const rates = (financiers || [])
+        .map((f: any) => Number(f.interest_rate))
+        .filter((r: number) => r > 0);
+      const avgInterestRate =
+        rates.length > 0 ? rates.reduce((a: number, b: number) => a + b, 0) / rates.length : 0;
 
       // FX exposure from active trades with non-USD currencies
-      const activeTrades = trades.filter((t: any) => t.status !== 'completed' && t.status !== 'cancelled');
-      const fxExposure = activeTrades.reduce((sum: number, t: any) => sum + (Number(t.value) || 0), 0);
+      const activeTrades = trades.filter(
+        (t: any) => t.status !== 'completed' && t.status !== 'cancelled'
+      );
+      const fxExposure = activeTrades.reduce(
+        (sum: number, t: any) => sum + (Number(t.value) || 0),
+        0
+      );
 
       return {
         approvedCredit,
@@ -681,18 +752,29 @@ export const mockDatabase = {
       };
     } catch (e) {
       console.error('getFinanceSummary error:', e);
-      return { approvedCredit: 0, avgInterestRate: 0, nextRepaymentDate: null, nextRepaymentAmount: 0, fxExposure: 0, hedgedAmount: 0 };
+      return {
+        approvedCredit: 0,
+        avgInterestRate: 0,
+        nextRepaymentDate: null,
+        nextRepaymentAmount: 0,
+        fxExposure: 0,
+        hedgedAmount: 0,
+      };
     }
   },
 
-  createAuditLog: async (log: { action: string; user_id?: string; details?: string; ip?: string; status: string }): Promise<boolean> => {
+  createAuditLog: async (log: {
+    action: string;
+    user_id?: string;
+    details?: string;
+    ip?: string;
+    status: string;
+  }): Promise<boolean> => {
     try {
-      const { error } = await supabase
-        .from('audit_logs')
-        .insert({
-          ...log,
-          created_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from('audit_logs').insert({
+        ...log,
+        created_at: new Date().toISOString(),
+      });
       if (error) throw error;
       return true;
     } catch (e) {

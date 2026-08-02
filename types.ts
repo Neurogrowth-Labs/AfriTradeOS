@@ -1,4 +1,3 @@
-
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
   TRADE_LIFECYCLE = 'TRADE_LIFECYCLE', // New Workspace
@@ -50,7 +49,7 @@ export enum UserPersona {
   BANK = 'Bank / Insurer',
   GOVERNMENT = 'Government Agency',
   ANALYST = 'Trade Analyst',
-  ADMIN = 'Platform Admin'
+  ADMIN = 'Platform Admin',
 }
 
 // --- SUPABASE DATA MODEL MAPPING ---
@@ -92,7 +91,13 @@ export interface DbTrade {
   hs_code: string;
   value: number;
   currency: string;
-  status: 'draft' | 'pending_compliance' | 'pending_execution' | 'pending_settlement' | 'completed' | 'paused';
+  status:
+    | 'draft'
+    | 'pending_compliance'
+    | 'pending_execution'
+    | 'pending_settlement'
+    | 'completed'
+    | 'paused';
   incoterm?: string;
   compliance_status?: string;
   compliance_result?: any;

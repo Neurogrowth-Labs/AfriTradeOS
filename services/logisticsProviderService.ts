@@ -10,14 +10,14 @@ import { supabase } from './supabase';
  */
 function sanitizeSearchInput(input: string): string {
   return input
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/%/g, '\\%')    // Escape % wildcard
-    .replace(/_/g, '\\_')    // Escape _ wildcard
-    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
-    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/%/g, '\\%') // Escape % wildcard
+    .replace(/_/g, '\\_') // Escape _ wildcard
+    .replace(/,/g, '') // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '') // Remove parentheses
     .replace(/\)/g, '')
     .trim()
-    .slice(0, 100);          // Limit length to prevent DoS
+    .slice(0, 100); // Limit length to prevent DoS
 }
 
 // Types
@@ -89,7 +89,14 @@ export interface ActiveShipment {
   weight: string;
   value: number;
   currency: string;
-  status: 'booked' | 'picked_up' | 'in_transit' | 'at_border' | 'customs_hold' | 'cleared' | 'delivered';
+  status:
+    | 'booked'
+    | 'picked_up'
+    | 'in_transit'
+    | 'at_border'
+    | 'customs_hold'
+    | 'cleared'
+    | 'delivered';
   riskLevel: 'low' | 'medium' | 'high';
   progress: number;
   eta: string;
@@ -228,7 +235,7 @@ const MOCK_FLEET_VEHICLES: FleetVehicle[] = [
     insuranceExpiry: '2024-12-31',
     permitExpiry: '2024-08-20',
     mileage: 245000,
-    healthScore: 92
+    healthScore: 92,
   },
   {
     id: 'v2',
@@ -244,7 +251,7 @@ const MOCK_FLEET_VEHICLES: FleetVehicle[] = [
     insuranceExpiry: '2024-11-30',
     permitExpiry: '2024-09-15',
     mileage: 180000,
-    healthScore: 98
+    healthScore: 98,
   },
   {
     id: 'v3',
@@ -260,7 +267,7 @@ const MOCK_FLEET_VEHICLES: FleetVehicle[] = [
     insuranceExpiry: '2024-10-15',
     permitExpiry: '2024-07-01',
     mileage: 320000,
-    healthScore: 75
+    healthScore: 75,
   },
   {
     id: 'v4',
@@ -278,7 +285,7 @@ const MOCK_FLEET_VEHICLES: FleetVehicle[] = [
     insuranceExpiry: '2025-01-31',
     permitExpiry: '2024-06-30',
     mileage: 156000,
-    healthScore: 88
+    healthScore: 88,
   },
   {
     id: 'v5',
@@ -296,8 +303,8 @@ const MOCK_FLEET_VEHICLES: FleetVehicle[] = [
     insuranceExpiry: '2024-09-30',
     permitExpiry: '2024-11-15',
     mileage: 210000,
-    healthScore: 95
-  }
+    healthScore: 95,
+  },
 ];
 
 const MOCK_DRIVERS: FleetDriver[] = [
@@ -312,7 +319,7 @@ const MOCK_DRIVERS: FleetDriver[] = [
     behaviorScore: 94,
     totalTrips: 245,
     certifications: ['Hazmat', 'Cross-border', 'Defensive Driving'],
-    languages: ['English', 'Shona', 'Ndebele']
+    languages: ['English', 'Shona', 'Ndebele'],
   },
   {
     id: 'd2',
@@ -324,7 +331,7 @@ const MOCK_DRIVERS: FleetDriver[] = [
     behaviorScore: 98,
     totalTrips: 312,
     certifications: ['Tanker', 'Cross-border', 'First Aid'],
-    languages: ['English', 'Yoruba', 'French']
+    languages: ['English', 'Yoruba', 'French'],
   },
   {
     id: 'd3',
@@ -337,7 +344,7 @@ const MOCK_DRIVERS: FleetDriver[] = [
     behaviorScore: 91,
     totalTrips: 189,
     certifications: ['Heavy Load', 'Cross-border'],
-    languages: ['English', 'Twi', 'French']
+    languages: ['English', 'Twi', 'French'],
   },
   {
     id: 'd4',
@@ -350,7 +357,7 @@ const MOCK_DRIVERS: FleetDriver[] = [
     behaviorScore: 87,
     totalTrips: 156,
     certifications: ['Cross-border', 'Refrigerated Cargo'],
-    languages: ['Swahili', 'English']
+    languages: ['Swahili', 'English'],
   },
   {
     id: 'd5',
@@ -362,8 +369,8 @@ const MOCK_DRIVERS: FleetDriver[] = [
     behaviorScore: 96,
     totalTrips: 423,
     certifications: ['Hazmat', 'Tanker', 'Cross-border', 'ADR'],
-    languages: ['English', 'Zulu', 'Afrikaans']
-  }
+    languages: ['English', 'Zulu', 'Afrikaans'],
+  },
 ];
 
 const MOCK_SHIPMENTS: ActiveShipment[] = [
@@ -389,20 +396,53 @@ const MOCK_SHIPMENTS: ActiveShipment[] = [
     currentLocation: 'Beitbridge Border Post',
     coordinates: { lat: -22.2167, lng: 30.0167 },
     timeline: [
-      { milestone: 'Pickup', location: 'Harare', planned: 'Feb 14, 08:00', actual: 'Feb 14, 08:30', status: 'completed' },
-      { milestone: 'In Transit', location: 'Masvingo', planned: 'Feb 14, 14:00', actual: 'Feb 14, 15:00', status: 'completed' },
-      { milestone: 'Border Arrival', location: 'Beitbridge', planned: 'Feb 15, 06:00', actual: 'Feb 15, 07:30', status: 'completed' },
-      { milestone: 'Customs Clearance', location: 'Beitbridge', planned: 'Feb 15, 12:00', status: 'current' },
-      { milestone: 'Border Departure', location: 'Musina', planned: 'Feb 16, 08:00', status: 'upcoming' },
-      { milestone: 'Delivery', location: 'Johannesburg', planned: 'Feb 18, 10:00', status: 'upcoming' }
+      {
+        milestone: 'Pickup',
+        location: 'Harare',
+        planned: 'Feb 14, 08:00',
+        actual: 'Feb 14, 08:30',
+        status: 'completed',
+      },
+      {
+        milestone: 'In Transit',
+        location: 'Masvingo',
+        planned: 'Feb 14, 14:00',
+        actual: 'Feb 14, 15:00',
+        status: 'completed',
+      },
+      {
+        milestone: 'Border Arrival',
+        location: 'Beitbridge',
+        planned: 'Feb 15, 06:00',
+        actual: 'Feb 15, 07:30',
+        status: 'completed',
+      },
+      {
+        milestone: 'Customs Clearance',
+        location: 'Beitbridge',
+        planned: 'Feb 15, 12:00',
+        status: 'current',
+      },
+      {
+        milestone: 'Border Departure',
+        location: 'Musina',
+        planned: 'Feb 16, 08:00',
+        status: 'upcoming',
+      },
+      {
+        milestone: 'Delivery',
+        location: 'Johannesburg',
+        planned: 'Feb 18, 10:00',
+        status: 'upcoming',
+      },
     ],
     documents: [
       { name: 'Bill of Lading', type: 'customs', status: 'verified' },
       { name: 'Commercial Invoice', type: 'customs', status: 'verified' },
       { name: 'Certificate of Origin', type: 'customs', status: 'pending' },
-      { name: 'Packing List', type: 'customs', status: 'uploaded' }
+      { name: 'Packing List', type: 'customs', status: 'uploaded' },
     ],
-    profitability: { revenue: 8500, costs: 5200, margin: 38.8 }
+    profitability: { revenue: 8500, costs: 5200, margin: 38.8 },
   },
   {
     id: 'sh2',
@@ -426,17 +466,38 @@ const MOCK_SHIPMENTS: ActiveShipment[] = [
     currentLocation: 'Machakos County',
     coordinates: { lat: -1.5177, lng: 37.2634 },
     timeline: [
-      { milestone: 'Pickup', location: 'Nairobi', planned: 'Feb 15, 06:00', actual: 'Feb 15, 06:15', status: 'completed' },
-      { milestone: 'In Transit', location: 'Machakos', planned: 'Feb 15, 10:00', status: 'current' },
-      { milestone: 'Weighbridge', location: 'Mtito Andei', planned: 'Feb 15, 16:00', status: 'upcoming' },
-      { milestone: 'Port Arrival', location: 'Mombasa', planned: 'Feb 16, 08:00', status: 'upcoming' }
+      {
+        milestone: 'Pickup',
+        location: 'Nairobi',
+        planned: 'Feb 15, 06:00',
+        actual: 'Feb 15, 06:15',
+        status: 'completed',
+      },
+      {
+        milestone: 'In Transit',
+        location: 'Machakos',
+        planned: 'Feb 15, 10:00',
+        status: 'current',
+      },
+      {
+        milestone: 'Weighbridge',
+        location: 'Mtito Andei',
+        planned: 'Feb 15, 16:00',
+        status: 'upcoming',
+      },
+      {
+        milestone: 'Port Arrival',
+        location: 'Mombasa',
+        planned: 'Feb 16, 08:00',
+        status: 'upcoming',
+      },
     ],
     documents: [
       { name: 'Export Permit', type: 'customs', status: 'verified' },
       { name: 'Phytosanitary Certificate', type: 'compliance', status: 'verified' },
-      { name: 'Quality Certificate', type: 'quality', status: 'verified' }
+      { name: 'Quality Certificate', type: 'quality', status: 'verified' },
     ],
-    profitability: { revenue: 4500, costs: 2800, margin: 37.8 }
+    profitability: { revenue: 4500, costs: 2800, margin: 37.8 },
   },
   {
     id: 'sh3',
@@ -460,20 +521,42 @@ const MOCK_SHIPMENTS: ActiveShipment[] = [
     currentLocation: 'Aflao Border Post',
     coordinates: { lat: 6.1167, lng: 1.1833 },
     timeline: [
-      { milestone: 'Port Pickup', location: 'Tema', planned: 'Feb 14, 10:00', actual: 'Feb 14, 14:00', status: 'completed' },
-      { milestone: 'Border Arrival', location: 'Aflao', planned: 'Feb 15, 08:00', actual: 'Feb 15, 16:00', status: 'delayed' },
-      { milestone: 'Customs Clearance', location: 'Aflao', planned: 'Feb 16, 10:00', status: 'current' },
-      { milestone: 'Border Departure', location: 'Seme', planned: 'Feb 17, 08:00', status: 'upcoming' },
-      { milestone: 'Delivery', location: 'Lagos', planned: 'Feb 18, 14:00', status: 'upcoming' }
+      {
+        milestone: 'Port Pickup',
+        location: 'Tema',
+        planned: 'Feb 14, 10:00',
+        actual: 'Feb 14, 14:00',
+        status: 'completed',
+      },
+      {
+        milestone: 'Border Arrival',
+        location: 'Aflao',
+        planned: 'Feb 15, 08:00',
+        actual: 'Feb 15, 16:00',
+        status: 'delayed',
+      },
+      {
+        milestone: 'Customs Clearance',
+        location: 'Aflao',
+        planned: 'Feb 16, 10:00',
+        status: 'current',
+      },
+      {
+        milestone: 'Border Departure',
+        location: 'Seme',
+        planned: 'Feb 17, 08:00',
+        status: 'upcoming',
+      },
+      { milestone: 'Delivery', location: 'Lagos', planned: 'Feb 18, 14:00', status: 'upcoming' },
     ],
     documents: [
       { name: 'Bill of Lading', type: 'customs', status: 'verified' },
       { name: 'Commercial Invoice', type: 'customs', status: 'rejected' },
       { name: 'Import Permit', type: 'customs', status: 'pending' },
-      { name: 'ECOWAS Certificate', type: 'trade', status: 'pending' }
+      { name: 'ECOWAS Certificate', type: 'trade', status: 'pending' },
     ],
-    profitability: { revenue: 12000, costs: 7500, margin: 37.5 }
-  }
+    profitability: { revenue: 12000, costs: 7500, margin: 37.5 },
+  },
 ];
 
 const MOCK_TENDERS: LogisticsTender[] = [
@@ -491,8 +574,18 @@ const MOCK_TENDERS: LogisticsTender[] = [
     status: 'new',
     matchScore: 92,
     winProbability: 75,
-    requirements: ['ISO 9001', 'Fleet min 20 vehicles', '5 years experience', 'Cross-border permits'],
-    documents: ['Company Registration', 'Tax Clearance', 'Insurance Certificate', 'Fleet Inventory']
+    requirements: [
+      'ISO 9001',
+      'Fleet min 20 vehicles',
+      '5 years experience',
+      'Cross-border permits',
+    ],
+    documents: [
+      'Company Registration',
+      'Tax Clearance',
+      'Insurance Certificate',
+      'Fleet Inventory',
+    ],
   },
   {
     id: 't2',
@@ -509,7 +602,11 @@ const MOCK_TENDERS: LogisticsTender[] = [
     matchScore: 88,
     winProbability: 65,
     requirements: ['Refrigerated fleet', 'HACCP certification', 'Cold chain experience'],
-    documents: ['Food Safety Certification', 'Vehicle Inspection Reports', 'Driver Training Records']
+    documents: [
+      'Food Safety Certification',
+      'Vehicle Inspection Reports',
+      'Driver Training Records',
+    ],
   },
   {
     id: 't3',
@@ -526,7 +623,7 @@ const MOCK_TENDERS: LogisticsTender[] = [
     matchScore: 78,
     winProbability: 55,
     requirements: ['Heavy load permits', 'Escort vehicle capability', 'Insurance min $5M'],
-    documents: ['Abnormal Load Permits', 'Route Survey Reports', 'Safety Protocols']
+    documents: ['Abnormal Load Permits', 'Route Survey Reports', 'Safety Protocols'],
   },
   {
     id: 't4',
@@ -543,8 +640,8 @@ const MOCK_TENDERS: LogisticsTender[] = [
     matchScore: 95,
     winProbability: 80,
     requirements: ['GDP certification', 'Temperature monitoring', 'Security clearance'],
-    documents: ['GDP Certificate', 'Fleet Temperature Logs', 'Security Vetting']
-  }
+    documents: ['GDP Certificate', 'Fleet Temperature Logs', 'Security Vetting'],
+  },
 ];
 
 const MOCK_INVOICES: LogisticsInvoice[] = [
@@ -560,13 +657,18 @@ const MOCK_INVOICES: LogisticsInvoice[] = [
     issueDate: '2024-02-14',
     dueDate: '2024-03-14',
     items: [
-      { description: 'Road Freight: Harare - Johannesburg', quantity: 1, unitPrice: 6500, total: 6500 },
+      {
+        description: 'Road Freight: Harare - Johannesburg',
+        quantity: 1,
+        unitPrice: 6500,
+        total: 6500,
+      },
       { description: 'Border Clearance Fee', quantity: 1, unitPrice: 850, total: 850 },
       { description: 'Documentation & Admin', quantity: 1, unitPrice: 350, total: 350 },
-      { description: 'Insurance Premium', quantity: 1, unitPrice: 800, total: 800 }
+      { description: 'Insurance Premium', quantity: 1, unitPrice: 800, total: 800 },
     ],
     taxes: 0,
-    total: 8500
+    total: 8500,
   },
   {
     id: 'inv2',
@@ -584,10 +686,10 @@ const MOCK_INVOICES: LogisticsInvoice[] = [
       { description: 'Road Freight: Nairobi - Mombasa', quantity: 1, unitPrice: 3200, total: 3200 },
       { description: 'Port Handling', quantity: 1, unitPrice: 650, total: 650 },
       { description: 'Documentation', quantity: 1, unitPrice: 250, total: 250 },
-      { description: 'Cargo Insurance', quantity: 1, unitPrice: 400, total: 400 }
+      { description: 'Cargo Insurance', quantity: 1, unitPrice: 400, total: 400 },
     ],
     taxes: 0,
-    total: 4500
+    total: 4500,
   },
   {
     id: 'inv3',
@@ -604,10 +706,10 @@ const MOCK_INVOICES: LogisticsInvoice[] = [
       { description: 'Road Freight: Tema - Lagos', quantity: 1, unitPrice: 8500, total: 8500 },
       { description: 'Border Clearance (Ghana)', quantity: 1, unitPrice: 1200, total: 1200 },
       { description: 'Border Clearance (Nigeria)', quantity: 1, unitPrice: 1500, total: 1500 },
-      { description: 'Documentation & Compliance', quantity: 1, unitPrice: 800, total: 800 }
+      { description: 'Documentation & Compliance', quantity: 1, unitPrice: 800, total: 800 },
     ],
     taxes: 0,
-    total: 12000
+    total: 12000,
   },
   {
     id: 'inv4',
@@ -624,11 +726,11 @@ const MOCK_INVOICES: LogisticsInvoice[] = [
     items: [
       { description: 'Road Freight: Lusaka - Durban', quantity: 1, unitPrice: 5500, total: 5500 },
       { description: 'Transit Fees', quantity: 1, unitPrice: 450, total: 450 },
-      { description: 'Documentation', quantity: 1, unitPrice: 250, total: 250 }
+      { description: 'Documentation', quantity: 1, unitPrice: 250, total: 250 },
     ],
     taxes: 0,
-    total: 6200
-  }
+    total: 6200,
+  },
 ];
 
 const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
@@ -640,7 +742,7 @@ const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
     issueDate: '2023-07-01',
     expiryDate: '2024-06-30',
     issuingAuthority: 'SADC Transport Authority',
-    category: 'company'
+    category: 'company',
   },
   {
     id: 'doc2',
@@ -650,7 +752,7 @@ const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
     issueDate: '2024-01-01',
     expiryDate: '2024-12-31',
     issuingAuthority: 'Old Mutual Insurance',
-    category: 'company'
+    category: 'company',
   },
   {
     id: 'doc3',
@@ -660,7 +762,7 @@ const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
     issueDate: '2022-03-15',
     expiryDate: '2024-03-15',
     issuingAuthority: 'National Transport Authority',
-    category: 'company'
+    category: 'company',
   },
   {
     id: 'doc4',
@@ -670,7 +772,7 @@ const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
     issueDate: '2023-09-01',
     expiryDate: '2025-08-31',
     issuingAuthority: 'AfCFTA Secretariat',
-    category: 'company'
+    category: 'company',
   },
   {
     id: 'doc5',
@@ -681,7 +783,7 @@ const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
     expiryDate: '2025-01-14',
     issuingAuthority: 'SA Road Traffic',
     category: 'vehicle',
-    linkedEntity: 'v1'
+    linkedEntity: 'v1',
   },
   {
     id: 'doc6',
@@ -692,8 +794,8 @@ const MOCK_COMPLIANCE_DOCS: ComplianceDocument[] = [
     expiryDate: '2025-06-30',
     issuingAuthority: 'Zimbabwe Transport',
     category: 'driver',
-    linkedEntity: 'd1'
-  }
+    linkedEntity: 'd1',
+  },
 ];
 
 const MOCK_BORDER_ALERTS: BorderAlert[] = [
@@ -703,10 +805,11 @@ const MOCK_BORDER_ALERTS: BorderAlert[] = [
     country: 'Zimbabwe/South Africa',
     severity: 'high',
     type: 'congestion',
-    message: 'Heavy truck backlog due to system outage. Commercial vehicles experiencing 48+ hour delays.',
+    message:
+      'Heavy truck backlog due to system outage. Commercial vehicles experiencing 48+ hour delays.',
     avgWaitTime: '48h',
     updatedAt: '2024-02-15 08:30',
-    affectedShipments: 3
+    affectedShipments: 3,
   },
   {
     id: 'ba2',
@@ -717,7 +820,7 @@ const MOCK_BORDER_ALERTS: BorderAlert[] = [
     message: 'Customs processing delays due to high volume. Expect 12-24 hour wait times.',
     avgWaitTime: '18h',
     updatedAt: '2024-02-15 10:00',
-    affectedShipments: 1
+    affectedShipments: 1,
   },
   {
     id: 'ba3',
@@ -728,7 +831,7 @@ const MOCK_BORDER_ALERTS: BorderAlert[] = [
     message: 'Normal operations. One-stop border post functioning well.',
     avgWaitTime: '2h',
     updatedAt: '2024-02-15 09:15',
-    affectedShipments: 0
+    affectedShipments: 0,
   },
   {
     id: 'ba4',
@@ -739,8 +842,8 @@ const MOCK_BORDER_ALERTS: BorderAlert[] = [
     message: 'Protest action blocking commercial traffic. Seek alternative routes via Elubo.',
     avgWaitTime: 'Indefinite',
     updatedAt: '2024-02-15 07:00',
-    affectedShipments: 2
-  }
+    affectedShipments: 2,
+  },
 ];
 
 const MOCK_CLIENTS: Client[] = [
@@ -755,7 +858,7 @@ const MOCK_CLIENTS: Client[] = [
     preferredCargo: ['Agricultural Machinery', 'Farm Equipment'],
     preferredRoutes: ['Harare-Johannesburg', 'Harare-Durban'],
     creditScore: 92,
-    paymentTerms: 'Net 30'
+    paymentTerms: 'Net 30',
   },
   {
     id: 'c2',
@@ -768,7 +871,7 @@ const MOCK_CLIENTS: Client[] = [
     preferredCargo: ['Coffee', 'Tea', 'Agricultural Products'],
     preferredRoutes: ['Nairobi-Mombasa', 'Nairobi-Dar es Salaam'],
     creditScore: 98,
-    paymentTerms: 'Net 15'
+    paymentTerms: 'Net 15',
   },
   {
     id: 'c3',
@@ -781,7 +884,7 @@ const MOCK_CLIENTS: Client[] = [
     preferredCargo: ['Industrial Equipment', 'Machinery'],
     preferredRoutes: ['Tema-Lagos', 'Cotonou-Lagos'],
     creditScore: 75,
-    paymentTerms: 'Net 45'
+    paymentTerms: 'Net 45',
   },
   {
     id: 'c4',
@@ -794,8 +897,8 @@ const MOCK_CLIENTS: Client[] = [
     preferredCargo: ['General Cargo', 'Consumer Goods'],
     preferredRoutes: ['Lusaka-Durban', 'Lusaka-Johannesburg', 'Lusaka-Beira'],
     creditScore: 88,
-    paymentTerms: 'Net 30'
-  }
+    paymentTerms: 'Net 30',
+  },
 ];
 
 const MOCK_BACKHAUL: BackhaulOpportunity[] = [
@@ -809,7 +912,7 @@ const MOCK_BACKHAUL: BackhaulOpportunity[] = [
     value: 4500,
     currency: 'USD',
     client: 'SA Wholesale Distributors',
-    matchScore: 95
+    matchScore: 95,
   },
   {
     id: 'bh2',
@@ -821,7 +924,7 @@ const MOCK_BACKHAUL: BackhaulOpportunity[] = [
     value: 2800,
     currency: 'USD',
     client: 'Nairobi Fashion Hub',
-    matchScore: 88
+    matchScore: 88,
   },
   {
     id: 'bh3',
@@ -833,8 +936,8 @@ const MOCK_BACKHAUL: BackhaulOpportunity[] = [
     value: 5200,
     currency: 'USD',
     client: 'West Africa Foods Ltd',
-    matchScore: 82
-  }
+    matchScore: 82,
+  },
 ];
 
 // =============================================================================
@@ -842,7 +945,6 @@ const MOCK_BACKHAUL: BackhaulOpportunity[] = [
 // =============================================================================
 
 export const logisticsProviderService = {
-
   // ---- DASHBOARD KPIs ----
   getDashboardKPIs: async (): Promise<LogisticsKPIs> => {
     try {
@@ -863,27 +965,39 @@ export const logisticsProviderService = {
       // Calculate KPIs from data
       const activeShipments = shipments.length;
       const shipmentsInTransit = shipments.filter((s: any) => s.status === 'in_transit').length;
-      const shipmentsAtBorder = shipments.filter((s: any) => s.status === 'at_border' || s.status === 'customs_hold').length;
-      const shipmentsDelayed = shipments.filter((s: any) => s.riskLevel === 'high' || s.risk_level === 'high').length;
+      const shipmentsAtBorder = shipments.filter(
+        (s: any) => s.status === 'at_border' || s.status === 'customs_hold'
+      ).length;
+      const shipmentsDelayed = shipments.filter(
+        (s: any) => s.riskLevel === 'high' || s.risk_level === 'high'
+      ).length;
 
       const fleetTotal = fleet.length;
       const fleetActive = fleet.filter((v: any) => v.status === 'in_transit').length;
       const fleetUtilization = fleetTotal > 0 ? Math.round((fleetActive / fleetTotal) * 100) : 0;
 
       const pendingInvoices = invoices.filter((i: any) => i.status !== 'paid').length;
-      const pendingAmount = invoices.filter((i: any) => i.status !== 'paid').reduce((sum: number, i: any) => sum + (i.amount || 0), 0);
+      const pendingAmount = invoices
+        .filter((i: any) => i.status !== 'paid')
+        .reduce((sum: number, i: any) => sum + (i.amount || 0), 0);
 
-      const availableTenders = tenders.filter((t: any) => t.status === 'new' || t.status === 'open').length;
-      const borderDelays = alerts.filter((a: any) => a.severity === 'high' || a.severity === 'critical').length;
+      const availableTenders = tenders.filter(
+        (t: any) => t.status === 'new' || t.status === 'open'
+      ).length;
+      const borderDelays = alerts.filter(
+        (a: any) => a.severity === 'high' || a.severity === 'critical'
+      ).length;
 
       // Revenue calculation (sum from paid invoices in current period)
       const today = new Date().toISOString().split('T')[0];
-      const revenueToday = invoices
-        .filter((i: any) => i.status === 'paid' && i.paidDate?.startsWith(today))
-        .reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 15200;
-      const revenueMonth = invoices
-        .filter((i: any) => i.status === 'paid')
-        .reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 245000;
+      const revenueToday =
+        invoices
+          .filter((i: any) => i.status === 'paid' && i.paidDate?.startsWith(today))
+          .reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 15200;
+      const revenueMonth =
+        invoices
+          .filter((i: any) => i.status === 'paid')
+          .reduce((sum: number, i: any) => sum + (i.amount || 0), 0) || 245000;
 
       return {
         revenueToday,
@@ -904,7 +1018,7 @@ export const logisticsProviderService = {
         availableTenders,
         fuelCostToday: 2340,
         fuelCostMonth: 45600,
-        carbonEmissions: 12.5
+        carbonEmissions: 12.5,
       };
     } catch (e) {
       console.error('getDashboardKPIs error:', e);
@@ -915,20 +1029,27 @@ export const logisticsProviderService = {
         revenueTrend: 12.5,
         activeShipments: MOCK_SHIPMENTS.length,
         shipmentsInTransit: MOCK_SHIPMENTS.filter(s => s.status === 'in_transit').length,
-        shipmentsAtBorder: MOCK_SHIPMENTS.filter(s => s.status === 'at_border' || s.status === 'customs_hold').length,
+        shipmentsAtBorder: MOCK_SHIPMENTS.filter(
+          s => s.status === 'at_border' || s.status === 'customs_hold'
+        ).length,
         shipmentsDelayed: MOCK_SHIPMENTS.filter(s => s.riskLevel === 'high').length,
         fleetUtilization: 68,
         fleetTotal: MOCK_FLEET_VEHICLES.length,
         fleetActive: MOCK_FLEET_VEHICLES.filter(v => v.status === 'in_transit').length,
         customsRiskScore: 72,
-        borderDelays: MOCK_BORDER_ALERTS.filter(a => a.severity === 'high' || a.severity === 'critical').length,
+        borderDelays: MOCK_BORDER_ALERTS.filter(
+          a => a.severity === 'high' || a.severity === 'critical'
+        ).length,
         avgDelayHours: 24,
         pendingInvoices: MOCK_INVOICES.filter(i => i.status !== 'paid').length,
-        pendingAmount: MOCK_INVOICES.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.amount, 0),
+        pendingAmount: MOCK_INVOICES.filter(i => i.status !== 'paid').reduce(
+          (sum, i) => sum + i.amount,
+          0
+        ),
         availableTenders: MOCK_TENDERS.filter(t => t.status === 'new').length,
         fuelCostToday: 2340,
         fuelCostMonth: 45600,
-        carbonEmissions: 12.5
+        carbonEmissions: 12.5,
       };
     }
   },
@@ -1029,14 +1150,18 @@ export const logisticsProviderService = {
     }
   },
 
-  assignDriverToVehicle: async (vehicleId: string, driverId: string, driverName: string): Promise<boolean> => {
+  assignDriverToVehicle: async (
+    vehicleId: string,
+    driverId: string,
+    driverName: string
+  ): Promise<boolean> => {
     try {
       const { error: vehicleError } = await supabase
         .from('logistics_fleet_vehicles')
         .update({
           driver_id: driverId,
           driver: driverName,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', vehicleId);
 
@@ -1047,7 +1172,7 @@ export const logisticsProviderService = {
         .update({
           assigned_vehicle: vehicleId,
           status: 'on_duty',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', driverId);
 
@@ -1060,7 +1185,11 @@ export const logisticsProviderService = {
   },
 
   // ---- ACTIVE SHIPMENTS ----
-  getActiveShipments: async (filters?: { status?: string; client?: string; riskLevel?: string }): Promise<ActiveShipment[]> => {
+  getActiveShipments: async (filters?: {
+    status?: string;
+    client?: string;
+    riskLevel?: string;
+  }): Promise<ActiveShipment[]> => {
     try {
       let query = supabase
         .from('logistics_shipments')
@@ -1156,11 +1285,15 @@ export const logisticsProviderService = {
     }
   },
 
-  updateShipmentStatus: async (id: string, status: ActiveShipment['status'], notes?: string): Promise<boolean> => {
+  updateShipmentStatus: async (
+    id: string,
+    status: ActiveShipment['status'],
+    notes?: string
+  ): Promise<boolean> => {
     try {
       const updates: any = {
         status,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       if (status === 'delivered') {
@@ -1168,10 +1301,7 @@ export const logisticsProviderService = {
         updates.progress = 100;
       }
 
-      const { error } = await supabase
-        .from('logistics_shipments')
-        .update(updates)
-        .eq('id', id);
+      const { error } = await supabase.from('logistics_shipments').update(updates).eq('id', id);
 
       if (error) throw error;
 
@@ -1192,13 +1322,10 @@ export const logisticsProviderService = {
             actual: new Date().toISOString(),
             status: 'completed',
             notes,
-          }
+          },
         ];
 
-        await supabase
-          .from('logistics_shipments')
-          .update({ timeline: newTimeline })
-          .eq('id', id);
+        await supabase.from('logistics_shipments').update({ timeline: newTimeline }).eq('id', id);
       }
 
       return true;
@@ -1208,14 +1335,18 @@ export const logisticsProviderService = {
     }
   },
 
-  updateShipmentLocation: async (id: string, location: string, coordinates?: { lat: number; lng: number }): Promise<boolean> => {
+  updateShipmentLocation: async (
+    id: string,
+    location: string,
+    coordinates?: { lat: number; lng: number }
+  ): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('logistics_shipments')
         .update({
           current_location: location,
           coordinates,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', id);
 
@@ -1228,7 +1359,11 @@ export const logisticsProviderService = {
   },
 
   // ---- TENDERS ----
-  getTenders: async (filters?: { status?: string; issuerType?: string; search?: string }): Promise<LogisticsTender[]> => {
+  getTenders: async (filters?: {
+    status?: string;
+    issuerType?: string;
+    search?: string;
+  }): Promise<LogisticsTender[]> => {
     try {
       let query = supabase
         .from('logistics_tenders')
@@ -1243,7 +1378,9 @@ export const logisticsProviderService = {
       }
       if (filters?.search) {
         const search = sanitizeSearchInput(filters.search);
-        query = query.or(`title.ilike.%${search}%,corridor.ilike.%${search}%,issuer.ilike.%${search}%`);
+        query = query.or(
+          `title.ilike.%${search}%,corridor.ilike.%${search}%,issuer.ilike.%${search}%`
+        );
       }
 
       const { data, error } = await query.limit(50);
@@ -1278,15 +1415,13 @@ export const logisticsProviderService = {
   submitBid: async (tenderId: string, bidAmount: number, bidDetails?: any): Promise<boolean> => {
     try {
       // Create bid record
-      const { error: bidError } = await supabase
-        .from('logistics_tender_bids')
-        .insert({
-          tender_id: tenderId,
-          bid_amount: bidAmount,
-          details: bidDetails,
-          status: 'submitted',
-          submitted_at: new Date().toISOString(),
-        });
+      const { error: bidError } = await supabase.from('logistics_tender_bids').insert({
+        tender_id: tenderId,
+        bid_amount: bidAmount,
+        details: bidDetails,
+        status: 'submitted',
+        submitted_at: new Date().toISOString(),
+      });
 
       if (bidError) throw bidError;
 
@@ -1305,7 +1440,12 @@ export const logisticsProviderService = {
   },
 
   // ---- INVOICING ----
-  getInvoices: async (filters?: { status?: string; client?: string; dateFrom?: string; dateTo?: string }): Promise<LogisticsInvoice[]> => {
+  getInvoices: async (filters?: {
+    status?: string;
+    client?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<LogisticsInvoice[]> => {
     try {
       let query = supabase
         .from('logistics_invoices')
@@ -1400,10 +1540,7 @@ export const logisticsProviderService = {
         updates.paid_date = new Date().toISOString().split('T')[0];
       }
 
-      const { error } = await supabase
-        .from('logistics_invoices')
-        .update(updates)
-        .eq('id', id);
+      const { error } = await supabase.from('logistics_invoices').update(updates).eq('id', id);
 
       if (error) throw error;
       return true;
@@ -1414,7 +1551,11 @@ export const logisticsProviderService = {
   },
 
   // ---- COMPLIANCE DOCUMENTS ----
-  getComplianceDocs: async (filters?: { category?: string; status?: string; type?: string }): Promise<ComplianceDocument[]> => {
+  getComplianceDocs: async (filters?: {
+    category?: string;
+    status?: string;
+    type?: string;
+  }): Promise<ComplianceDocument[]> => {
     try {
       let query = supabase
         .from('logistics_compliance_documents')
@@ -1455,7 +1596,9 @@ export const logisticsProviderService = {
     }
   },
 
-  uploadComplianceDoc: async (doc: Partial<ComplianceDocument>): Promise<ComplianceDocument | null> => {
+  uploadComplianceDoc: async (
+    doc: Partial<ComplianceDocument>
+  ): Promise<ComplianceDocument | null> => {
     try {
       const { data, error } = await supabase
         .from('logistics_compliance_documents')
@@ -1482,7 +1625,10 @@ export const logisticsProviderService = {
   },
 
   // ---- BORDER ALERTS ----
-  getBorderAlerts: async (filters?: { severity?: string; type?: string }): Promise<BorderAlert[]> => {
+  getBorderAlerts: async (filters?: {
+    severity?: string;
+    type?: string;
+  }): Promise<BorderAlert[]> => {
     try {
       let query = supabase
         .from('logistics_border_alerts')
@@ -1520,7 +1666,12 @@ export const logisticsProviderService = {
   },
 
   // ---- CLIENTS & MARKETPLACE ----
-  getClients: async (filters?: { type?: string; country?: string; verified?: boolean; search?: string }): Promise<Client[]> => {
+  getClients: async (filters?: {
+    type?: string;
+    country?: string;
+    verified?: boolean;
+    search?: string;
+  }): Promise<Client[]> => {
     try {
       let query = supabase
         .from('logistics_clients')
@@ -1581,7 +1732,11 @@ export const logisticsProviderService = {
     }
   },
 
-  getBackhaulOpportunities: async (filters?: { origin?: string; destination?: string; cargoType?: string }): Promise<BackhaulOpportunity[]> => {
+  getBackhaulOpportunities: async (filters?: {
+    origin?: string;
+    destination?: string;
+    cargoType?: string;
+  }): Promise<BackhaulOpportunity[]> => {
     try {
       let query = supabase
         .from('logistics_backhaul_opportunities')
@@ -1629,9 +1784,7 @@ export const logisticsProviderService = {
       // For now, return a contextual recommendation
       const alerts = await logisticsProviderService.getBorderAlerts();
 
-      const relevantAlerts = alerts.filter(a =>
-        a.severity === 'high' || a.severity === 'critical'
-      );
+      const relevantAlerts = alerts.filter(a => a.severity === 'high' || a.severity === 'critical');
 
       if (relevantAlerts.length > 0) {
         const alert = relevantAlerts[0];
@@ -1645,7 +1798,9 @@ export const logisticsProviderService = {
     }
   },
 
-  getETAPrediction: async (shipmentId: string): Promise<{ eta: string; confidence: number; factors: string[] }> => {
+  getETAPrediction: async (
+    shipmentId: string
+  ): Promise<{ eta: string; confidence: number; factors: string[] }> => {
     try {
       const shipment = await logisticsProviderService.getShipmentById(shipmentId);
       const alerts = await logisticsProviderService.getBorderAlerts();
@@ -1669,19 +1824,25 @@ export const logisticsProviderService = {
       return {
         eta: baseEta,
         confidence,
-        factors
+        factors,
       };
     } catch (e) {
       console.error('getETAPrediction error:', e);
       return {
         eta: '2024-02-18 14:30',
         confidence: 78,
-        factors: ['Border congestion at Beitbridge', 'Weather conditions favorable', 'Driver rest requirements']
+        factors: [
+          'Border congestion at Beitbridge',
+          'Weather conditions favorable',
+          'Driver rest requirements',
+        ],
       };
     }
   },
 
-  getShipmentProfitability: async (shipmentId: string): Promise<{ revenue: number; costs: number; margin: number; recommendation: string }> => {
+  getShipmentProfitability: async (
+    shipmentId: string
+  ): Promise<{ revenue: number; costs: number; margin: number; recommendation: string }> => {
     try {
       const shipment = await logisticsProviderService.getShipmentById(shipmentId);
 
@@ -1693,7 +1854,7 @@ export const logisticsProviderService = {
           ...shipment.profitability,
           recommendation: topMatch
             ? `Consider accepting backhaul load from ${topMatch.origin} to ${topMatch.destination} (${topMatch.cargoType}, $${topMatch.value.toLocaleString()}) to maximize return trip profitability.`
-            : 'No immediate backhaul opportunities match your current route.'
+            : 'No immediate backhaul opportunities match your current route.',
         };
       }
 
@@ -1701,7 +1862,8 @@ export const logisticsProviderService = {
         revenue: 8500,
         costs: 5200,
         margin: 38.8,
-        recommendation: 'Consider accepting backhaul load from Johannesburg to Harare (Electronics, $4,500) to maximize return trip profitability.'
+        recommendation:
+          'Consider accepting backhaul load from Johannesburg to Harare (Electronics, $4,500) to maximize return trip profitability.',
       };
     } catch (e) {
       console.error('getShipmentProfitability error:', e);
@@ -1709,7 +1871,8 @@ export const logisticsProviderService = {
         revenue: 8500,
         costs: 5200,
         margin: 38.8,
-        recommendation: 'Consider accepting backhaul load from Johannesburg to Harare (Electronics, $4,500) to maximize return trip profitability.'
+        recommendation:
+          'Consider accepting backhaul load from Johannesburg to Harare (Electronics, $4,500) to maximize return trip profitability.',
       };
     }
   },
@@ -1718,21 +1881,33 @@ export const logisticsProviderService = {
   subscribeToShipments: (callback: (payload: any) => void) => {
     return supabase
       .channel('logistics_shipments_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_shipments' }, callback)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'logistics_shipments' },
+        callback
+      )
       .subscribe();
   },
 
   subscribeToBorderAlerts: (callback: (payload: any) => void) => {
     return supabase
       .channel('logistics_border_alerts_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logistics_border_alerts' }, callback)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'logistics_border_alerts' },
+        callback
+      )
       .subscribe();
   },
 
   subscribeToInvoices: (callback: (payload: any) => void) => {
     return supabase
       .channel('logistics_invoices_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'logistics_invoices' }, callback)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'logistics_invoices' },
+        callback
+      )
       .subscribe();
   },
 
@@ -1795,7 +1970,10 @@ export const logisticsProviderService = {
   },
 
   // ---- BACKHAUL OPERATIONS ----
-  acceptBackhaulOpportunity: async (opportunityId: string, vehicleId?: string): Promise<{ success: boolean; shipmentId?: string; error?: string }> => {
+  acceptBackhaulOpportunity: async (
+    opportunityId: string,
+    vehicleId?: string
+  ): Promise<{ success: boolean; shipmentId?: string; error?: string }> => {
     try {
       // Update backhaul status to matched
       const { error: updateError } = await supabase
@@ -1872,7 +2050,9 @@ export const logisticsProviderService = {
       if (updateError) throw updateError;
 
       // In production, this would trigger an email/SMS notification
-      console.log(`Payment reminder sent for invoice ${invoice.invoice_number} to ${invoice.client_name}`);
+      console.log(
+        `Payment reminder sent for invoice ${invoice.invoice_number} to ${invoice.client_name}`
+      );
 
       return { success: true };
     } catch (e: any) {
@@ -1882,7 +2062,10 @@ export const logisticsProviderService = {
   },
 
   // ---- DOCUMENT OPERATIONS ----
-  renewComplianceDocument: async (docId: string, newExpiryDate: string): Promise<{ success: boolean; error?: string }> => {
+  renewComplianceDocument: async (
+    docId: string,
+    newExpiryDate: string
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const { error } = await supabase
         .from('logistics_compliance_docs')
@@ -1901,7 +2084,10 @@ export const logisticsProviderService = {
     }
   },
 
-  generateShipmentDocuments: async (shipmentId: string, documentTypes: string[]): Promise<{ success: boolean; documents?: any[]; error?: string }> => {
+  generateShipmentDocuments: async (
+    shipmentId: string,
+    documentTypes: string[]
+  ): Promise<{ success: boolean; documents?: any[]; error?: string }> => {
     try {
       const { data: shipment, error: fetchError } = await supabase
         .from('logistics_shipments')
@@ -1940,7 +2126,9 @@ export const logisticsProviderService = {
   },
 
   // ---- DRIVER OPERATIONS ----
-  addDriver: async (driver: Partial<FleetDriver>): Promise<{ success: boolean; driver?: FleetDriver; error?: string }> => {
+  addDriver: async (
+    driver: Partial<FleetDriver>
+  ): Promise<{ success: boolean; driver?: FleetDriver; error?: string }> => {
     try {
       const { data, error } = await supabase
         .from('logistics_fleet_drivers')
@@ -1981,14 +2169,17 @@ export const logisticsProviderService = {
   },
 
   // ---- CLIENT OPERATIONS ----
-  sendQuoteToClient: async (clientId: string, quoteDetails: {
-    shipmentType: string;
-    origin: string;
-    destination: string;
-    estimatedPrice: number;
-    currency: string;
-    validUntil: string;
-  }): Promise<{ success: boolean; error?: string }> => {
+  sendQuoteToClient: async (
+    clientId: string,
+    quoteDetails: {
+      shipmentType: string;
+      origin: string;
+      destination: string;
+      estimatedPrice: number;
+      currency: string;
+      validUntil: string;
+    }
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       // In production, this would send an email/notification to the client
       console.log(`Quote sent to client ${clientId}:`, quoteDetails);
@@ -2002,7 +2193,9 @@ export const logisticsProviderService = {
   },
 
   // ---- HS CODE LOOKUP ----
-  lookupHSCode: async (hsCode: string): Promise<{
+  lookupHSCode: async (
+    hsCode: string
+  ): Promise<{
     code: string;
     description: string;
     dutyRate: string;
@@ -2046,19 +2239,22 @@ export const logisticsProviderService = {
   },
 
   // ---- SETTINGS ----
-  saveLogisticsSettings: async (settings: Record<string, any>): Promise<{ success: boolean; error?: string }> => {
+  saveLogisticsSettings: async (
+    settings: Record<string, any>
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Not authenticated');
 
       // Store settings in user_preferences or a dedicated logistics_settings table
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
+      const { error } = await supabase.from('user_preferences').upsert(
+        {
           user_id: userData.user.id,
           logistics_settings: settings,
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
+        },
+        { onConflict: 'user_id' }
+      );
 
       if (error) throw error;
       return { success: true };

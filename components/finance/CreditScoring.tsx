@@ -17,7 +17,7 @@ import {
   ChevronUp,
   Info,
   Target,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { CreditAssessment, FinancialRatio, RiskFactor } from './FinanceApplicationTypes';
 
@@ -33,7 +33,7 @@ const SCORE_THRESHOLDS = {
   excellent: 800,
   good: 700,
   fair: 600,
-  poor: 500
+  poor: 500,
 };
 
 export const CreditScoring: React.FC<CreditScoringProps> = ({
@@ -41,9 +41,11 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
   assessment,
   onRunAssessment,
   onUpdateAssessment,
-  isLoading = false
+  isLoading = false,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['score', 'ratios', 'risks']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(['score', 'ratios', 'risks'])
+  );
   const [running, setRunning] = useState(false);
 
   const toggleSection = (section: string) => {
@@ -92,13 +94,33 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
   const getRecommendationStyle = (rec: CreditAssessment['recommendation']) => {
     switch (rec) {
       case 'approve':
-        return { bg: 'bg-green-500/20', border: 'border-green-500/30', text: 'text-green-400', icon: CheckCircle2 };
+        return {
+          bg: 'bg-green-500/20',
+          border: 'border-green-500/30',
+          text: 'text-green-400',
+          icon: CheckCircle2,
+        };
       case 'approve_with_conditions':
-        return { bg: 'bg-blue-500/20', border: 'border-blue-500/30', text: 'text-blue-400', icon: Info };
+        return {
+          bg: 'bg-blue-500/20',
+          border: 'border-blue-500/30',
+          text: 'text-blue-400',
+          icon: Info,
+        };
       case 'refer':
-        return { bg: 'bg-amber-500/20', border: 'border-amber-500/30', text: 'text-amber-400', icon: AlertTriangle };
+        return {
+          bg: 'bg-amber-500/20',
+          border: 'border-amber-500/30',
+          text: 'text-amber-400',
+          icon: AlertTriangle,
+        };
       case 'decline':
-        return { bg: 'bg-red-500/20', border: 'border-red-500/30', text: 'text-red-400', icon: XCircle };
+        return {
+          bg: 'bg-red-500/20',
+          border: 'border-red-500/30',
+          text: 'text-red-400',
+          icon: XCircle,
+        };
     }
   };
 
@@ -126,11 +148,16 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
 
   const getRiskCategoryIcon = (category: RiskFactor['category']) => {
     switch (category) {
-      case 'country': return Globe;
-      case 'industry': return Building2;
-      case 'financial': return DollarSign;
-      case 'operational': return Activity;
-      case 'compliance': return Shield;
+      case 'country':
+        return Globe;
+      case 'industry':
+        return Building2;
+      case 'financial':
+        return DollarSign;
+      case 'operational':
+        return Activity;
+      case 'compliance':
+        return Shield;
     }
   };
 
@@ -220,8 +247,16 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                   />
                   <defs>
                     <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" className={`${getScoreGradient(assessment.creditScore).split(' ')[0].replace('from-', 'text-')}`} stopColor="currentColor" />
-                      <stop offset="100%" className={`${getScoreGradient(assessment.creditScore).split(' ')[1].replace('to-', 'text-')}`} stopColor="currentColor" />
+                      <stop
+                        offset="0%"
+                        className={`${getScoreGradient(assessment.creditScore).split(' ')[0].replace('from-', 'text-')}`}
+                        stopColor="currentColor"
+                      />
+                      <stop
+                        offset="100%"
+                        className={`${getScoreGradient(assessment.creditScore).split(' ')[1].replace('to-', 'text-')}`}
+                        stopColor="currentColor"
+                      />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -232,7 +267,9 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                   <span className="text-sm text-slate-400">/ 1000</span>
                 </div>
               </div>
-              <p className={`text-center mt-4 font-medium ${getScoreColor(assessment.creditScore)}`}>
+              <p
+                className={`text-center mt-4 font-medium ${getScoreColor(assessment.creditScore)}`}
+              >
                 {getScoreLabel(assessment.creditScore)}
               </p>
             </div>
@@ -245,7 +282,9 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                 <RecIcon className={`w-6 h-6 ${recStyle.text} mt-0.5`} />
                 <div>
                   <p className={`font-semibold ${recStyle.text}`}>
-                    {assessment.recommendation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {assessment.recommendation
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, l => l.toUpperCase())}
                   </p>
                   {assessment.conditions && assessment.conditions.length > 0 && (
                     <div className="mt-2">
@@ -267,7 +306,9 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
             <div className="grid grid-cols-2 gap-4 mt-4">
               <div className="p-3 bg-slate-800/50 rounded-lg">
                 <p className="text-xs text-slate-500">Assessment Date</p>
-                <p className="text-white">{new Date(assessment.assessmentDate).toLocaleDateString()}</p>
+                <p className="text-white">
+                  {new Date(assessment.assessmentDate).toLocaleDateString()}
+                </p>
               </div>
               <div className="p-3 bg-slate-800/50 rounded-lg">
                 <p className="text-xs text-slate-500">Assessed By</p>
@@ -302,7 +343,8 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white font-medium">{component.category}</span>
                   <span className="text-slate-400 text-sm">
-                    {component.score} / {component.maxScore} ({Math.round(component.weight * 100)}% weight)
+                    {component.score} / {component.maxScore} ({Math.round(component.weight * 100)}%
+                    weight)
                   </span>
                 </div>
                 <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -314,7 +356,10 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                 {component.factors.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
                     {component.factors.map((factor, fIdx) => (
-                      <span key={fIdx} className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded">
+                      <span
+                        key={fIdx}
+                        className="px-2 py-0.5 bg-slate-700 text-slate-300 text-xs rounded"
+                      >
                         {factor}
                       </span>
                     ))}
@@ -415,8 +460,12 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-white font-medium capitalize">{risk.category} Risk</span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getRiskSeverityStyle(risk.severity)}`}>
+                        <span className="text-white font-medium capitalize">
+                          {risk.category} Risk
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 text-xs rounded-full border ${getRiskSeverityStyle(risk.severity)}`}
+                        >
                           {risk.severity.toUpperCase()}
                         </span>
                       </div>
@@ -426,7 +475,10 @@ export const CreditScoring: React.FC<CreditScoringProps> = ({
                           <p className="text-xs text-slate-500 mb-1">Mitigants:</p>
                           <ul className="space-y-1">
                             {risk.mitigants.map((mitigant, mIdx) => (
-                              <li key={mIdx} className="text-xs text-slate-400 flex items-start gap-1">
+                              <li
+                                key={mIdx}
+                                className="text-xs text-slate-400 flex items-start gap-1"
+                              >
                                 <CheckCircle2 className="w-3 h-3 text-green-400 mt-0.5 flex-shrink-0" />
                                 {mitigant}
                               </li>

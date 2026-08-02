@@ -10,14 +10,14 @@ import { supabase } from './supabase';
  */
 function sanitizeSearchInput(input: string): string {
   return input
-    .replace(/\\/g, '\\\\')  // Escape backslashes first
-    .replace(/%/g, '\\%')    // Escape % wildcard
-    .replace(/_/g, '\\_')    // Escape _ wildcard
-    .replace(/,/g, '')       // Remove commas (breaks .or() syntax)
-    .replace(/\(/g, '')      // Remove parentheses
+    .replace(/\\/g, '\\\\') // Escape backslashes first
+    .replace(/%/g, '\\%') // Escape % wildcard
+    .replace(/_/g, '\\_') // Escape _ wildcard
+    .replace(/,/g, '') // Remove commas (breaks .or() syntax)
+    .replace(/\(/g, '') // Remove parentheses
     .replace(/\)/g, '')
     .trim()
-    .slice(0, 100);          // Limit length to prevent DoS
+    .slice(0, 100); // Limit length to prevent DoS
 }
 
 // =============================================================================
@@ -28,7 +28,15 @@ export interface CustomsDeclaration {
   id: string;
   declaration_number: string;
   declaration_type: 'import' | 'export' | 'transit' | 're_export' | 'temporary_import';
-  status: 'draft' | 'submitted' | 'under_review' | 'queried' | 'approved' | 'rejected' | 'cleared' | 'cancelled';
+  status:
+    | 'draft'
+    | 'submitted'
+    | 'under_review'
+    | 'queried'
+    | 'approved'
+    | 'rejected'
+    | 'cleared'
+    | 'cancelled';
   trader_id: string | null;
   trader_name: string;
   trader_tin: string | null;
@@ -119,7 +127,13 @@ export interface CustomsTrader {
   customs_code: string | null;
   registration_date: string | null;
   license_expiry: string | null;
-  trader_type: 'importer' | 'exporter' | 'broker' | 'freight_forwarder' | 'warehouse_operator' | null;
+  trader_type:
+    | 'importer'
+    | 'exporter'
+    | 'broker'
+    | 'freight_forwarder'
+    | 'warehouse_operator'
+    | null;
   risk_classification: 'trusted' | 'standard' | 'elevated' | 'high_risk' | 'blacklisted';
   compliance_score: number;
   total_declarations: number;
@@ -152,7 +166,16 @@ export interface CustomsShipment {
   current_country: string | null;
   latitude: number | null;
   longitude: number | null;
-  status: 'pre_arrival' | 'arrived' | 'under_inspection' | 'customs_hold' | 'cleared' | 'released' | 'in_transit' | 'delivered' | 'seized';
+  status:
+    | 'pre_arrival'
+    | 'arrived'
+    | 'under_inspection'
+    | 'customs_hold'
+    | 'cleared'
+    | 'released'
+    | 'in_transit'
+    | 'delivered'
+    | 'seized';
   eta: string | null;
   ata: string | null;
   inspection_required: boolean;
@@ -237,12 +260,11 @@ export interface CustomsDashboardKPIs {
 // =============================================================================
 
 export const customsService = {
-
   // ---- DASHBOARD KPIs ----
   getDashboardKPIs: async (): Promise<CustomsDashboardKPIs> => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
+
       const [declarationsRes, revenueRes, alertsRes, officersRes] = await Promise.all([
         supabase.from('customs_declarations').select('*').order('created_at', { ascending: false }),
         supabase.from('customs_revenue').select('*').eq('payment_date', today),
@@ -257,16 +279,24 @@ export const customsService = {
 
       // Calculate KPIs
       const totalDeclarations = declarations.length;
-      const pendingReview = declarations.filter((d: any) => d.status === 'submitted' || d.status === 'under_review').length;
-      const clearedToday = declarations.filter((d: any) => 
-        d.status === 'cleared' && d.cleared_at && d.cleared_at.startsWith(today)
+      const pendingReview = declarations.filter(
+        (d: any) => d.status === 'submitted' || d.status === 'under_review'
       ).length;
-      const revenueToday = revenue.reduce((sum: number, r: any) => sum + (r.total_collected || 0), 0);
-      const highRiskCount = declarations.filter((d: any) => d.risk_level === 'high' || d.risk_level === 'critical').length;
-      
+      const clearedToday = declarations.filter(
+        (d: any) => d.status === 'cleared' && d.cleared_at && d.cleared_at.startsWith(today)
+      ).length;
+      const revenueToday = revenue.reduce(
+        (sum: number, r: any) => sum + (r.total_collected || 0),
+        0
+      );
+      const highRiskCount = declarations.filter(
+        (d: any) => d.risk_level === 'high' || d.risk_level === 'critical'
+      ).length;
+
       // AfCFTA utilization
       const eligibleCount = declarations.filter((d: any) => d.afcfta_eligible).length;
-      const afcftaUtilization = totalDeclarations > 0 ? Math.round((eligibleCount / totalDeclarations) * 100) : 0;
+      const afcftaUtilization =
+        totalDeclarations > 0 ? Math.round((eligibleCount / totalDeclarations) * 100) : 0;
 
       // Avg clearance time (mock calculation)
       const avgClearanceHours = 24; // Would calculate from actual timestamps
@@ -276,7 +306,10 @@ export const customsService = {
       declarations.forEach((d: any) => {
         statusMap[d.status] = (statusMap[d.status] || 0) + 1;
       });
-      const declarationsByStatus = Object.entries(statusMap).map(([status, count]) => ({ status, count }));
+      const declarationsByStatus = Object.entries(statusMap).map(([status, count]) => ({
+        status,
+        count,
+      }));
 
       // Declarations by country
       const countryMap: Record<string, { imports: number; exports: number }> = {};
@@ -288,7 +321,7 @@ export const customsService = {
       });
       const declarationsByCountry = Object.entries(countryMap)
         .map(([country, data]) => ({ country, ...data }))
-        .sort((a, b) => (b.imports + b.exports) - (a.imports + a.exports))
+        .sort((a, b) => b.imports + b.exports - (a.imports + a.exports))
         .slice(0, 10);
 
       // Risk distribution
@@ -302,7 +335,12 @@ export const customsService = {
       const hsMap: Record<string, { description: string; count: number; value: number }> = {};
       declarations.forEach((d: any) => {
         const hs = d.hs_code?.substring(0, 4) || 'Unknown';
-        if (!hsMap[hs]) hsMap[hs] = { description: d.hs_code_description || d.product_description || '', count: 0, value: 0 };
+        if (!hsMap[hs])
+          hsMap[hs] = {
+            description: d.hs_code_description || d.product_description || '',
+            count: 0,
+            value: 0,
+          };
         hsMap[hs].count++;
         hsMap[hs].value += d.declared_value || 0;
       });
@@ -313,10 +351,22 @@ export const customsService = {
 
       // Revenue by type
       const revenueByType = [
-        { type: 'Import Duty', amount: revenue.reduce((sum: number, r: any) => sum + (r.duty_collected || 0), 0) },
-        { type: 'VAT', amount: revenue.reduce((sum: number, r: any) => sum + (r.vat_collected || 0), 0) },
-        { type: 'Excise', amount: revenue.reduce((sum: number, r: any) => sum + (r.excise_collected || 0), 0) },
-        { type: 'Penalties', amount: revenue.reduce((sum: number, r: any) => sum + (r.penalties_collected || 0), 0) },
+        {
+          type: 'Import Duty',
+          amount: revenue.reduce((sum: number, r: any) => sum + (r.duty_collected || 0), 0),
+        },
+        {
+          type: 'VAT',
+          amount: revenue.reduce((sum: number, r: any) => sum + (r.vat_collected || 0), 0),
+        },
+        {
+          type: 'Excise',
+          amount: revenue.reduce((sum: number, r: any) => sum + (r.excise_collected || 0), 0),
+        },
+        {
+          type: 'Penalties',
+          amount: revenue.reduce((sum: number, r: any) => sum + (r.penalties_collected || 0), 0),
+        },
       ];
 
       // Officer performance
@@ -345,10 +395,19 @@ export const customsService = {
     } catch (e) {
       console.error('getDashboardKPIs error:', e);
       return {
-        totalDeclarations: 0, pendingReview: 0, clearedToday: 0, revenueToday: 0,
-        avgClearanceHours: 0, highRiskCount: 0, afcftaUtilization: 0,
-        topCommodities: [], declarationsByStatus: [], declarationsByCountry: [],
-        riskDistribution: [], revenueByType: [], officerPerformance: [],
+        totalDeclarations: 0,
+        pendingReview: 0,
+        clearedToday: 0,
+        revenueToday: 0,
+        avgClearanceHours: 0,
+        highRiskCount: 0,
+        afcftaUtilization: 0,
+        topCommodities: [],
+        declarationsByStatus: [],
+        declarationsByCountry: [],
+        riskDistribution: [],
+        revenueByType: [],
+        officerPerformance: [],
       };
     }
   },
@@ -381,7 +440,9 @@ export const customsService = {
       }
       if (filters?.search) {
         const search = sanitizeSearchInput(filters.search);
-        query = query.or(`declaration_number.ilike.%${search}%,trader_name.ilike.%${search}%,hs_code.ilike.%${search}%`);
+        query = query.or(
+          `declaration_number.ilike.%${search}%,trader_name.ilike.%${search}%,hs_code.ilike.%${search}%`
+        );
       }
 
       const { data, error } = await query.limit(100);
@@ -426,8 +487,8 @@ export const customsService = {
   },
 
   updateDeclarationStatus: async (
-    id: string, 
-    status: string, 
+    id: string,
+    status: string,
     notes?: string,
     officerId?: string,
     officerName?: string
@@ -456,10 +517,7 @@ export const customsService = {
         updates.reviewed_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
-        .from('customs_declarations')
-        .update(updates)
-        .eq('id', id);
+      const { error } = await supabase.from('customs_declarations').update(updates).eq('id', id);
 
       if (error) throw error;
 
@@ -468,7 +526,14 @@ export const customsService = {
         declaration_id: id,
         officer_id: officerId,
         officer_name: officerName,
-        action: status === 'approved' ? 'approve' : status === 'rejected' ? 'reject' : status === 'queried' ? 'query' : 'review',
+        action:
+          status === 'approved'
+            ? 'approve'
+            : status === 'rejected'
+              ? 'reject'
+              : status === 'queried'
+                ? 'query'
+                : 'review',
         previous_status: current?.status,
         new_status: status,
         notes,
@@ -482,7 +547,10 @@ export const customsService = {
   },
 
   // ---- CERTIFICATES ----
-  getCertificates: async (filters?: { status?: string; type?: string }): Promise<CustomsCertificate[]> => {
+  getCertificates: async (filters?: {
+    status?: string;
+    type?: string;
+  }): Promise<CustomsCertificate[]> => {
     try {
       let query = supabase
         .from('customs_certificates')
@@ -505,7 +573,11 @@ export const customsService = {
     }
   },
 
-  verifyCertificate: async (id: string, status: 'verified' | 'rejected', verifiedBy: string): Promise<boolean> => {
+  verifyCertificate: async (
+    id: string,
+    status: 'verified' | 'rejected',
+    verifiedBy: string
+  ): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('customs_certificates')
@@ -526,7 +598,11 @@ export const customsService = {
   },
 
   // ---- TRADERS ----
-  getTraders: async (filters?: { riskClass?: string; aeoStatus?: string; search?: string }): Promise<CustomsTrader[]> => {
+  getTraders: async (filters?: {
+    riskClass?: string;
+    aeoStatus?: string;
+    search?: string;
+  }): Promise<CustomsTrader[]> => {
     try {
       let query = supabase
         .from('customs_traders')
@@ -619,7 +695,11 @@ export const customsService = {
   },
 
   // ---- ALERTS ----
-  getAlerts: async (filters?: { severity?: string; status?: string; type?: string }): Promise<CustomsAlert[]> => {
+  getAlerts: async (filters?: {
+    severity?: string;
+    status?: string;
+    type?: string;
+  }): Promise<CustomsAlert[]> => {
     try {
       let query = supabase
         .from('customs_alerts')
@@ -655,10 +735,7 @@ export const customsService = {
         updates.resolution_notes = notes;
       }
 
-      const { error } = await supabase
-        .from('customs_alerts')
-        .update(updates)
-        .eq('id', id);
+      const { error } = await supabase.from('customs_alerts').update(updates).eq('id', id);
 
       if (error) throw error;
       return true;
@@ -719,7 +796,9 @@ export const customsService = {
   },
 
   // ---- ANALYTICS ----
-  getTradeAnalytics: async (period: 'day' | 'week' | 'month' | 'year' = 'month'): Promise<{
+  getTradeAnalytics: async (
+    period: 'day' | 'week' | 'month' | 'year' = 'month'
+  ): Promise<{
     volumeByCountry: { country: string; imports: number; exports: number }[];
     volumeByHS: { hs_code: string; description: string; value: number }[];
     revenueTimeline: { date: string; duty: number; vat: number; total: number }[];
@@ -727,7 +806,8 @@ export const customsService = {
     riskTrends: { date: string; low: number; medium: number; high: number; critical: number }[];
   }> => {
     try {
-      const periodDays = period === 'day' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365;
+      const periodDays =
+        period === 'day' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365;
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - periodDays);
 
@@ -754,7 +834,7 @@ export const customsService = {
       });
       const volumeByCountry = Object.entries(countryMap)
         .map(([country, data]) => ({ country, ...data }))
-        .sort((a, b) => (b.imports + b.exports) - (a.imports + a.exports))
+        .sort((a, b) => b.imports + b.exports - (a.imports + a.exports))
         .slice(0, 10);
 
       // Volume by HS code
@@ -785,21 +865,27 @@ export const customsService = {
       // AfCFTA stats
       const eligible = decls.filter((d: any) => d.afcfta_eligible).length;
       const utilized = decls.filter((d: any) => d.preferential_rate_applied).length;
-      const savings = decls.reduce((sum: number, d: any) => sum + (d.tariff_preference_savings || 0), 0);
+      const savings = decls.reduce(
+        (sum: number, d: any) => sum + (d.tariff_preference_savings || 0),
+        0
+      );
       const afcftaStats = { eligible, utilized, savings };
 
       // Risk trends (simplified)
       const riskTrends = [{ date: 'Today', low: 0, medium: 0, high: 0, critical: 0 }];
       decls.forEach((d: any) => {
-        if (d.risk_level) riskTrends[0][d.risk_level as keyof typeof riskTrends[0]]++;
+        if (d.risk_level) riskTrends[0][d.risk_level as keyof (typeof riskTrends)[0]]++;
       });
 
       return { volumeByCountry, volumeByHS, revenueTimeline, afcftaStats, riskTrends };
     } catch (e) {
       console.error('getTradeAnalytics error:', e);
       return {
-        volumeByCountry: [], volumeByHS: [], revenueTimeline: [],
-        afcftaStats: { eligible: 0, utilized: 0, savings: 0 }, riskTrends: [],
+        volumeByCountry: [],
+        volumeByHS: [],
+        revenueTimeline: [],
+        afcftaStats: { eligible: 0, utilized: 0, savings: 0 },
+        riskTrends: [],
       };
     }
   },
@@ -823,14 +909,22 @@ export const customsService = {
   subscribeToDeclarations: (callback: (payload: any) => void) => {
     return supabase
       .channel('customs_declarations_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customs_declarations' }, callback)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customs_declarations' },
+        callback
+      )
       .subscribe();
   },
 
   subscribeToAlerts: (callback: (payload: any) => void) => {
     return supabase
       .channel('customs_alerts_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'customs_alerts' }, callback)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'customs_alerts' },
+        callback
+      )
       .subscribe();
   },
 };

@@ -21,11 +21,11 @@ export function isOnboardingComplete(profile: Partial<DbUser> | null | undefined
 
   return Boolean(
     profile.onboarding_completed &&
-      profile.full_name?.trim() &&
-      profile.email?.trim() &&
-      profile.country?.trim() &&
-      profile.company_name?.trim() &&
-      profile.role
+    profile.full_name?.trim() &&
+    profile.email?.trim() &&
+    profile.country?.trim() &&
+    profile.company_name?.trim() &&
+    profile.role
   );
 }
 

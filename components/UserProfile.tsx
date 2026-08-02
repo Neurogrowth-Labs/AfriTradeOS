@@ -2,38 +2,120 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  User, Building2, Shield, CreditCard, FileText, CheckCircle, AlertTriangle,
-  Globe, Smartphone, Mail, Zap, Users, Download, Loader2,
-  Key, Save, Plus, Upload, Eye, EyeOff, X, Settings, Lock, Link2,
-  Brain, Clock, Trash2, RefreshCw, Copy, Check,
-  Camera, Phone, Briefcase, Activity, Filter, Database,
-  CreditCard as CardIcon, Award, TrendingUp, Receipt,
-  Sparkles, Crown, Star
+  User,
+  Building2,
+  Shield,
+  CreditCard,
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Globe,
+  Smartphone,
+  Mail,
+  Zap,
+  Users,
+  Download,
+  Loader2,
+  Key,
+  Save,
+  Plus,
+  Upload,
+  Eye,
+  EyeOff,
+  X,
+  Settings,
+  Lock,
+  Link2,
+  Brain,
+  Clock,
+  Trash2,
+  RefreshCw,
+  Copy,
+  Check,
+  Camera,
+  Phone,
+  Briefcase,
+  Activity,
+  Filter,
+  Database,
+  CreditCard as CardIcon,
+  Award,
+  TrendingUp,
+  Receipt,
+  Sparkles,
+  Crown,
+  Star,
 } from 'lucide-react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
-import { UPGRADE_PLANS, loadPayPalScript, initPayPalButtons, UpgradePlan } from '../services/paypalService';
+import {
+  UPGRADE_PLANS,
+  loadPayPalScript,
+  initPayPalButtons,
+  UpgradePlan,
+} from '../services/paypalService';
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext';
 import {
-  getUserProfile, updateUserProfile, uploadProfilePhoto, verifyEmail,
-  getOrganization, updateOrganization, uploadOrganizationLogo,
-  getUserPreferences, updateUserPreferences,
-  getSecuritySettings, enableTwoFactor, disableTwoFactor, updatePassword, revokeSession, revokeAllSessions, connectSSO,
-  getIntegrations, connectIntegration, disconnectIntegration,
-  getAPIKeys, generateAPIKey, revokeAPIKey,
-  getAIDataSettings, updateAIDataSettings, exportUserData, requestDataDeletion,
-  getBillingInfo, downloadInvoice,
-  getAuditLogs, exportAuditLogs,
-  getTeamMembers, inviteTeamMember, removeTeamMember,
+  getUserProfile,
+  updateUserProfile,
+  uploadProfilePhoto,
+  verifyEmail,
+  getOrganization,
+  updateOrganization,
+  uploadOrganizationLogo,
+  getUserPreferences,
+  updateUserPreferences,
+  getSecuritySettings,
+  enableTwoFactor,
+  disableTwoFactor,
+  updatePassword,
+  revokeSession,
+  revokeAllSessions,
+  connectSSO,
+  getIntegrations,
+  connectIntegration,
+  disconnectIntegration,
+  getAPIKeys,
+  generateAPIKey,
+  revokeAPIKey,
+  getAIDataSettings,
+  updateAIDataSettings,
+  exportUserData,
+  requestDataDeletion,
+  getBillingInfo,
+  downloadInvoice,
+  getAuditLogs,
+  exportAuditLogs,
+  getTeamMembers,
+  inviteTeamMember,
+  removeTeamMember,
   getRoles,
-  getTradeAssociations, syncCurrencyRates,
+  getTradeAssociations,
+  syncCurrencyRates,
   upgradePlan,
-  UserProfile as UserProfileType, Organization, UserPreferences, SecuritySettings,
-  Integration, APIKey, AIDataSettings, BillingInfo, AuditLog, TeamMember, Role,
-  TradeAssociation
+  UserProfile as UserProfileType,
+  Organization,
+  UserPreferences,
+  SecuritySettings,
+  Integration,
+  APIKey,
+  AIDataSettings,
+  BillingInfo,
+  AuditLog,
+  TeamMember,
+  Role,
+  TradeAssociation,
 } from '../services/settingsService';
 
-type Tab = 'identity' | 'organization' | 'preferences' | 'security' | 'integrations' | 'ai' | 'billing' | 'audit';
+type Tab =
+  | 'identity'
+  | 'organization'
+  | 'preferences'
+  | 'security'
+  | 'integrations'
+  | 'ai'
+  | 'billing'
+  | 'audit';
 
 interface UserProfileProps {
   profileData?: any;
@@ -91,13 +173,24 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
   // Password form
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
-  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
 
   // Invite form
-  const [inviteForm, setInviteForm] = useState({ email: '', role: 'member' as 'admin' | 'member' | 'viewer', department: '' });
+  const [inviteForm, setInviteForm] = useState({
+    email: '',
+    role: 'member' as 'admin' | 'member' | 'viewer',
+    department: '',
+  });
 
   // API Key form
-  const [apiKeyForm, setApiKeyForm] = useState({ name: '', permissions: ['read:trades'] as string[] });
+  const [apiKeyForm, setApiKeyForm] = useState({
+    name: '',
+    permissions: ['read:trades'] as string[],
+  });
 
   // Audit log filters
   const [auditFilters, setAuditFilters] = useState<{
@@ -115,7 +208,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   // Fetch authenticated user ID on mount
   useEffect(() => {
     const getAuthUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user?.id) {
         setAuthUserId(user.id);
       }
@@ -148,7 +243,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         apiKeysData,
         aiSettingsData,
         billingData,
-        associationsData
+        associationsData,
       ] = await Promise.all([
         getUserProfile(userId),
         getUserPreferences(userId),
@@ -157,7 +252,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         getAPIKeys(userId),
         getAIDataSettings(userId),
         getBillingInfo(userId),
-        getTradeAssociations(userId)
+        getTradeAssociations(userId),
       ]);
 
       setProfile(profileData);
@@ -179,7 +274,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         // Fetch team members and roles
         const [membersData, rolesData] = await Promise.all([
           getTeamMembers(profileData.organizationId),
-          getRoles(profileData.organizationId)
+          getRoles(profileData.organizationId),
         ]);
         setTeamMembers(membersData);
         setRoles(rolesData);
@@ -196,7 +291,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
       const { logs, total } = await getAuditLogs(userId, {
         ...auditFilters,
         limit: 20,
-        offset: auditPage * 20
+        offset: auditPage * 20,
       });
       setAuditLogs(logs);
       setAuditTotal(total);
@@ -365,7 +460,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     try {
       await revokeAllSessions(userId);
       const currentSession = security?.activeSessions.find(s => s.isCurrent);
-      setSecurity({ ...security, activeSessions: currentSession ? [currentSession] : [] } as SecuritySettings);
+      setSecurity({
+        ...security,
+        activeSessions: currentSession ? [currentSession] : [],
+      } as SecuritySettings);
     } catch (error) {
       console.error('Error revoking sessions:', error);
     }
@@ -440,9 +538,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
   const handleDisconnectIntegration = async (integrationId: string) => {
     try {
       await disconnectIntegration(userId, integrationId);
-      setIntegrations(integrations.map(i =>
-        i.id === integrationId ? { ...i, status: 'disconnected' as const } : i
-      ));
+      setIntegrations(
+        integrations.map(i =>
+          i.id === integrationId ? { ...i, status: 'disconnected' as const } : i
+        )
+      );
     } catch (error) {
       console.error('Error disconnecting integration:', error);
     }
@@ -512,7 +612,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     { id: 'integrations' as Tab, label: 'Integrations', icon: Link2 },
     { id: 'ai' as Tab, label: 'AI & Data Control', icon: Brain },
     { id: 'billing' as Tab, label: 'Billing & Usage', icon: CreditCard },
-    { id: 'audit' as Tab, label: 'Audit Logs', icon: FileText }
+    { id: 'audit' as Tab, label: 'Audit Logs', icon: FileText },
   ];
 
   // ============================================================================
@@ -528,7 +628,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           <div className="relative">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
               {profile?.profilePhotoUrl ? (
-                <img src={profile.profilePhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+                <img
+                  src={profile.profilePhotoUrl}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 profile?.fullName?.charAt(0) || 'U'
               )}
@@ -548,7 +652,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">{profile?.fullName || 'Your Name'}</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              {profile?.fullName || 'Your Name'}
+            </p>
             <p className="text-xs text-gray-500">{profile?.email}</p>
             <button
               onClick={() => fileInputRef.current?.click()}
@@ -587,7 +693,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 disabled={isSaving}
                 className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 Save Changes
               </button>
             </div>
@@ -602,7 +712,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             <input
               type="text"
               value={editingProfile ? profileForm.fullName || '' : profile?.fullName || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+              onChange={e => setProfileForm({ ...profileForm, fullName: e.target.value })}
               disabled={!editingProfile}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             />
@@ -615,7 +725,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             <input
               type="text"
               value={editingProfile ? profileForm.title || '' : profile?.title || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, title: e.target.value })}
+              onChange={e => setProfileForm({ ...profileForm, title: e.target.value })}
               disabled={!editingProfile}
               placeholder="e.g., Trade Manager"
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
@@ -661,7 +771,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             <input
               type="tel"
               value={editingProfile ? profileForm.phone || '' : profile?.phone || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+              onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
               disabled={!editingProfile}
               placeholder="+233 20 123 4567"
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
@@ -674,7 +784,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             </label>
             <select
               value={editingProfile ? profileForm.country || '' : profile?.country || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })}
+              onChange={e => setProfileForm({ ...profileForm, country: e.target.value })}
               disabled={!editingProfile}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             >
@@ -695,7 +805,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             </label>
             <select
               value={editingProfile ? profileForm.timezone || '' : profile?.timezone || ''}
-              onChange={(e) => setProfileForm({ ...profileForm, timezone: e.target.value })}
+              onChange={e => setProfileForm({ ...profileForm, timezone: e.target.value })}
               disabled={!editingProfile}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             >
@@ -748,7 +858,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 disabled={isSaving}
                 className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 Save Organization
               </button>
             </div>
@@ -759,7 +873,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           <div className="relative">
             <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-gray-200 to-gray-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center overflow-hidden">
               {organization?.logoUrl ? (
-                <img src={organization.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                <img
+                  src={organization.logoUrl}
+                  alt="Logo"
+                  className="w-full h-full object-contain"
+                />
               ) : (
                 <Building2 className="w-8 h-8 text-gray-500 dark:text-gray-400" />
               )}
@@ -779,7 +897,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">{organization?.name || 'Your Organization'}</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              {organization?.name || 'Your Organization'}
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               {organization?.verificationStatus === 'verified' ? (
                 <span className="text-green-600 flex items-center gap-1">
@@ -787,7 +907,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 </span>
               ) : (
                 <span className="text-yellow-600 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> {organization?.verificationStatus || 'Pending'} Verification
+                  <AlertTriangle className="w-3 h-3" />{' '}
+                  {organization?.verificationStatus || 'Pending'} Verification
                 </span>
               )}
             </p>
@@ -796,22 +917,30 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Organization Name</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Organization Name
+            </label>
             <input
               type="text"
               value={editingOrg ? orgForm.name || '' : organization?.name || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, name: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, name: e.target.value })}
               disabled={!editingOrg}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Registration Number</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Registration Number
+            </label>
             <input
               type="text"
-              value={editingOrg ? orgForm.registrationNumber || '' : organization?.registrationNumber || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, registrationNumber: e.target.value })}
+              value={
+                editingOrg
+                  ? orgForm.registrationNumber || ''
+                  : organization?.registrationNumber || ''
+              }
+              onChange={e => setOrgForm({ ...orgForm, registrationNumber: e.target.value })}
               disabled={!editingOrg}
               placeholder="GH-BUS-2024-001234"
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
@@ -819,11 +948,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Tax/VAT Number</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Tax/VAT Number
+            </label>
             <input
               type="text"
               value={editingOrg ? orgForm.taxVatNumber || '' : organization?.taxVatNumber || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, taxVatNumber: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, taxVatNumber: e.target.value })}
               disabled={!editingOrg}
               placeholder="TIN-123456789"
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
@@ -831,46 +962,60 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Default Currency</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Default Currency
+            </label>
             <select
-              value={editingOrg ? orgForm.defaultCurrency || 'USD' : organization?.defaultCurrency || 'USD'}
-              onChange={(e) => setOrgForm({ ...orgForm, defaultCurrency: e.target.value })}
+              value={
+                editingOrg
+                  ? orgForm.defaultCurrency || 'USD'
+                  : organization?.defaultCurrency || 'USD'
+              }
+              onChange={e => setOrgForm({ ...orgForm, defaultCurrency: e.target.value })}
               disabled={!editingOrg}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             >
               {CURRENCIES.map(c => (
-                <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
+                <option key={c.code} value={c.code}>
+                  {c.code} - {c.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Address</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Address
+            </label>
             <input
               type="text"
               value={editingOrg ? orgForm.address || '' : organization?.address || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, address: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, address: e.target.value })}
               disabled={!editingOrg}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">City</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              City
+            </label>
             <input
               type="text"
               value={editingOrg ? orgForm.city || '' : organization?.city || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, city: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, city: e.target.value })}
               disabled={!editingOrg}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Country</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Country
+            </label>
             <select
               value={editingOrg ? orgForm.country || '' : organization?.country || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, country: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, country: e.target.value })}
               disabled={!editingOrg}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             >
@@ -882,11 +1027,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Website</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Website
+            </label>
             <input
               type="url"
               value={editingOrg ? orgForm.website || '' : organization?.website || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, website: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, website: e.target.value })}
               disabled={!editingOrg}
               placeholder="https://example.com"
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
@@ -894,10 +1041,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Timezone</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Timezone
+            </label>
             <select
               value={editingOrg ? orgForm.timezone || '' : organization?.timezone || ''}
-              onChange={(e) => setOrgForm({ ...orgForm, timezone: e.target.value })}
+              onChange={e => setOrgForm({ ...orgForm, timezone: e.target.value })}
               disabled={!editingOrg}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm disabled:opacity-60"
             >
@@ -941,18 +1090,26 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  member.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                  member.status === 'invited' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' :
-                  'bg-red-100 dark:bg-red-900/30 text-red-600'
-                }`}>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    member.status === 'active'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                      : member.status === 'invited'
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                  }`}
+                >
                   {member.status}
                 </span>
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  member.role === 'owner' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' :
-                  member.role === 'admin' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
-                  'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
-                }`}>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    member.role === 'owner'
+                      ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600'
+                      : member.role === 'admin'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600'
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400'
+                  }`}
+                >
                   {member.role}
                 </span>
                 {member.role !== 'owner' && (
@@ -971,7 +1128,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
       {/* Trade Associations */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Regional Trade Associations</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          Regional Trade Associations
+        </h3>
         <div className="space-y-3">
           {associations.map(assoc => (
             <div
@@ -983,16 +1142,22 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                   <Award className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{assoc.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {assoc.name}
+                  </p>
                   <p className="text-xs text-gray-500">{assoc.region}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  assoc.membershipStatus === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                  assoc.membershipStatus === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600' :
-                  'bg-red-100 dark:bg-red-900/30 text-red-600'
-                }`}>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    assoc.membershipStatus === 'active'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                      : assoc.membershipStatus === 'pending'
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                  }`}
+                >
                   {assoc.membershipStatus}
                 </span>
                 {assoc.membershipStatus !== 'active' && (
@@ -1011,37 +1176,48 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Invite Team Member</h3>
-              <button onClick={() => setShowInviteModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Invite Team Member
+              </h3>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+              >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Email Address</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Email Address
+                </label>
                 <input
                   type="email"
                   value={inviteForm.email}
-                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })}
                   placeholder="colleague@company.com"
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Department</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Department
+                </label>
                 <input
                   type="text"
                   value={inviteForm.department}
-                  onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+                  onChange={e => setInviteForm({ ...inviteForm, department: e.target.value })}
                   placeholder="e.g., Operations"
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Assign Role</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Assign Role
+                </label>
                 <select
                   value={inviteForm.role}
-                  onChange={(e) => setInviteForm({ ...inviteForm, role: e.target.value as any })}
+                  onChange={e => setInviteForm({ ...inviteForm, role: e.target.value as any })}
                   className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                 >
                   <option value="admin">Admin - Full access except owner actions</option>
@@ -1054,7 +1230,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 disabled={!inviteForm.email || isSaving}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
                 Send Invite
               </button>
             </div>
@@ -1068,27 +1248,38 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     <div className="space-y-6">
       {/* Notification Settings */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Notification Settings</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          Notification Settings
+        </h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Mail className="w-5 h-5 text-gray-500" />
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Email Notifications</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Email Notifications
+                </p>
                 <p className="text-xs text-gray-500">Receive updates via email</p>
               </div>
             </div>
             <button
-              onClick={() => handleSavePreferences({
-                notifications: { ...preferences?.notifications, email: !preferences?.notifications?.email }
-              } as any)}
+              onClick={() =>
+                handleSavePreferences({
+                  notifications: {
+                    ...preferences?.notifications,
+                    email: !preferences?.notifications?.email,
+                  },
+                } as any)
+              }
               className={`w-12 h-6 rounded-full transition-colors ${
                 preferences?.notifications?.email ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                preferences?.notifications?.email ? 'translate-x-6' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  preferences?.notifications?.email ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
 
@@ -1101,21 +1292,30 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               </div>
             </div>
             <button
-              onClick={() => handleSavePreferences({
-                notifications: { ...preferences?.notifications, sms: !preferences?.notifications?.sms }
-              } as any)}
+              onClick={() =>
+                handleSavePreferences({
+                  notifications: {
+                    ...preferences?.notifications,
+                    sms: !preferences?.notifications?.sms,
+                  },
+                } as any)
+              }
               className={`w-12 h-6 rounded-full transition-colors ${
                 preferences?.notifications?.sms ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                preferences?.notifications?.sms ? 'translate-x-6' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  preferences?.notifications?.sms ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
 
           <div className="border-t border-gray-200 dark:border-slate-700 pt-4 mt-4">
-            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3">Notification Types</p>
+            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-3">
+              Notification Types
+            </p>
             <div className="grid grid-cols-2 gap-3">
               {[
                 { key: 'tradeUpdates', label: 'Trade Updates' },
@@ -1123,15 +1323,20 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 { key: 'marketOpportunities', label: 'Market Opportunities' },
                 { key: 'financeReminders', label: 'Finance Reminders' },
                 { key: 'contractRenewals', label: 'Contract Renewals' },
-                { key: 'shipmentTracking', label: 'Shipment Tracking' }
+                { key: 'shipmentTracking', label: 'Shipment Tracking' },
               ].map(item => (
                 <label key={item.key} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={(preferences?.notifications as any)?.[item.key] ?? true}
-                    onChange={(e) => handleSavePreferences({
-                      notifications: { ...preferences?.notifications, [item.key]: e.target.checked }
-                    } as any)}
+                    onChange={e =>
+                      handleSavePreferences({
+                        notifications: {
+                          ...preferences?.notifications,
+                          [item.key]: e.target.checked,
+                        },
+                      } as any)
+                    }
                     className="w-4 h-4 rounded border-gray-300"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">{item.label}</span>
@@ -1147,10 +1352,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Localization</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Language</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Language
+            </label>
             <select
               value={preferences?.language || 'en'}
-              onChange={(e) => handleSavePreferences({ language: e.target.value })}
+              onChange={e => handleSavePreferences({ language: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               <option value="en">English</option>
@@ -1162,23 +1369,29 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Currency Display</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Currency Display
+            </label>
             <select
               value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+              onChange={e => setCurrency(e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               {CURRENCIES.map(c => (
-                <option key={c.code} value={c.code}>{c.code} - {c.symbol}</option>
+                <option key={c.code} value={c.code}>
+                  {c.code} - {c.symbol}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Date Format</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Date Format
+            </label>
             <select
               value={preferences?.dateFormat || 'DD/MM/YYYY'}
-              onChange={(e) => handleSavePreferences({ dateFormat: e.target.value })}
+              onChange={e => handleSavePreferences({ dateFormat: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -1194,12 +1407,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Privacy Controls</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Profile Visibility</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Profile Visibility
+            </label>
             <select
               value={preferences?.privacy?.profileVisibility || 'connections'}
-              onChange={(e) => handleSavePreferences({
-                privacy: { ...preferences?.privacy, profileVisibility: e.target.value as any }
-              })}
+              onChange={e =>
+                handleSavePreferences({
+                  privacy: { ...preferences?.privacy, profileVisibility: e.target.value as any },
+                })
+              }
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               <option value="public">Public - Visible to all platform users</option>
@@ -1210,20 +1427,31 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
           <div className="flex items-center justify-between py-3 border-t border-gray-200 dark:border-slate-700">
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Trade History Sharing</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                Trade History Sharing
+              </p>
               <p className="text-xs text-gray-500">Allow partners to view past trade record</p>
             </div>
             <button
-              onClick={() => handleSavePreferences({
-                privacy: { ...preferences?.privacy, tradeHistorySharing: !preferences?.privacy?.tradeHistorySharing }
-              })}
+              onClick={() =>
+                handleSavePreferences({
+                  privacy: {
+                    ...preferences?.privacy,
+                    tradeHistorySharing: !preferences?.privacy?.tradeHistorySharing,
+                  },
+                })
+              }
               className={`w-12 h-6 rounded-full transition-colors ${
-                preferences?.privacy?.tradeHistorySharing ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
+                preferences?.privacy?.tradeHistorySharing
+                  ? 'bg-blue-600'
+                  : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                preferences?.privacy?.tradeHistorySharing ? 'translate-x-6' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  preferences?.privacy?.tradeHistorySharing ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
 
@@ -1233,16 +1461,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               <p className="text-xs text-gray-500">Allow AI to analyze your trade patterns</p>
             </div>
             <button
-              onClick={() => handleSavePreferences({
-                privacy: { ...preferences?.privacy, aiAnalytics: !preferences?.privacy?.aiAnalytics }
-              })}
+              onClick={() =>
+                handleSavePreferences({
+                  privacy: {
+                    ...preferences?.privacy,
+                    aiAnalytics: !preferences?.privacy?.aiAnalytics,
+                  },
+                })
+              }
               className={`w-12 h-6 rounded-full transition-colors ${
                 preferences?.privacy?.aiAnalytics ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                preferences?.privacy?.aiAnalytics ? 'translate-x-6' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  preferences?.privacy?.aiAnalytics ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
         </div>
@@ -1253,12 +1488,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Display Settings</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Theme</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Theme
+            </label>
             <select
               value={preferences?.ui?.theme || 'light'}
-              onChange={(e) => handleSavePreferences({
-                ui: { ...preferences?.ui, theme: e.target.value as any }
-              })}
+              onChange={e =>
+                handleSavePreferences({
+                  ui: { ...preferences?.ui, theme: e.target.value as any },
+                })
+              }
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               <option value="light">Light</option>
@@ -1268,12 +1507,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Dashboard Layout</label>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Dashboard Layout
+            </label>
             <select
               value={preferences?.ui?.dashboardLayout || 'default'}
-              onChange={(e) => handleSavePreferences({
-                ui: { ...preferences?.ui, dashboardLayout: e.target.value as any }
-              })}
+              onChange={e =>
+                handleSavePreferences({
+                  ui: { ...preferences?.ui, dashboardLayout: e.target.value as any },
+                })
+              }
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               <option value="default">Default</option>
@@ -1294,7 +1537,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              Last changed: {security?.lastPasswordChange ? new Date(security.lastPasswordChange).toLocaleDateString() : 'Never'}
+              Last changed:{' '}
+              {security?.lastPasswordChange
+                ? new Date(security.lastPasswordChange).toLocaleDateString()
+                : 'Never'}
             </p>
             <p className="text-xs text-gray-500 mt-1">Strong passwords help protect your account</p>
           </div>
@@ -1311,7 +1557,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Two-Factor Authentication</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+              Two-Factor Authentication
+            </h3>
             <p className="text-xs text-gray-500 mt-1">Add an extra layer of security</p>
           </div>
           <button
@@ -1354,16 +1602,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               className="flex items-center justify-between p-3 border border-gray-200 dark:border-slate-700 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${session.isCurrent ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
-                  <Activity className={`w-4 h-4 ${session.isCurrent ? 'text-green-600' : 'text-gray-500'}`} />
+                <div
+                  className={`p-2 rounded-lg ${session.isCurrent ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}
+                >
+                  <Activity
+                    className={`w-4 h-4 ${session.isCurrent ? 'text-green-600' : 'text-gray-500'}`}
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">
                     {session.deviceInfo}
-                    {session.isCurrent && <span className="ml-2 text-xs text-green-600">(Current)</span>}
+                    {session.isCurrent && (
+                      <span className="ml-2 text-xs text-green-600">(Current)</span>
+                    )}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {session.ipAddress} • {session.location} • {new Date(session.lastActiveAt).toLocaleString()}
+                    {session.ipAddress} • {session.location} •{' '}
+                    {new Date(session.lastActiveAt).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1382,7 +1637,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
       {/* SSO Connections */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Single Sign-On (SSO)</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          Single Sign-On (SSO)
+        </h3>
         <div className="space-y-3">
           {security?.ssoProviders.map(provider => (
             <div
@@ -1396,7 +1653,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                   {provider.provider === 'saml' && <Lock className="w-4 h-4" />}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize">{provider.provider}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white capitalize">
+                    {provider.provider}
+                  </p>
                   {provider.email && <p className="text-xs text-gray-500">{provider.email}</p>}
                 </div>
               </div>
@@ -1421,10 +1680,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">KYC Verification</span>
-              <span className={`text-xs font-bold px-2 py-1 rounded ${
-                profile?.emailVerified ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
-              }`}>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                KYC Verification
+              </span>
+              <span
+                className={`text-xs font-bold px-2 py-1 rounded ${
+                  profile?.emailVerified
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                }`}
+              >
                 {profile?.emailVerified ? 'Verified' : 'Pending'}
               </span>
             </div>
@@ -1433,10 +1698,16 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
           <div className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">KYB Verification</span>
-              <span className={`text-xs font-bold px-2 py-1 rounded ${
-                organization?.verificationStatus === 'verified' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
-              }`}>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                KYB Verification
+              </span>
+              <span
+                className={`text-xs font-bold px-2 py-1 rounded ${
+                  organization?.verificationStatus === 'verified'
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                    : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                }`}
+              >
                 {organization?.verificationStatus || 'Pending'}
               </span>
             </div>
@@ -1455,7 +1726,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Change Password</h3>
-              <button onClick={() => setShowPasswordModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded">
+              <button
+                onClick={() => setShowPasswordModal(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+              >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -1466,30 +1740,40 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             )}
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Current Password</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Current Password
+                </label>
                 <div className="relative">
                   <input
                     type={showPasswords.current ? 'text' : 'password'}
                     value={passwordForm.current}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                    onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
                     className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                    onClick={() =>
+                      setShowPasswords({ ...showPasswords, current: !showPasswords.current })
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPasswords.current ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                    {showPasswords.current ? (
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    )}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">New Password</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  New Password
+                </label>
                 <div className="relative">
                   <input
                     type={showPasswords.new ? 'text' : 'password'}
                     value={passwordForm.new}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    onChange={e => setPasswordForm({ ...passwordForm, new: e.target.value })}
                     className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                   <button
@@ -1497,34 +1781,52 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                     onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPasswords.new ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                    {showPasswords.new ? (
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    )}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Confirm New Password</label>
+                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  Confirm New Password
+                </label>
                 <div className="relative">
                   <input
                     type={showPasswords.confirm ? 'text' : 'password'}
                     value={passwordForm.confirm}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
                     className="w-full px-3 py-2 pr-10 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                    onClick={() =>
+                      setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })
+                    }
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                   >
-                    {showPasswords.confirm ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                    {showPasswords.confirm ? (
+                      <EyeOff className="w-4 h-4 text-gray-400" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-gray-400" />
+                    )}
                   </button>
                 </div>
               </div>
               <button
                 onClick={handlePasswordChange}
-                disabled={!passwordForm.current || !passwordForm.new || !passwordForm.confirm || isSaving}
+                disabled={
+                  !passwordForm.current || !passwordForm.new || !passwordForm.confirm || isSaving
+                }
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
                 Update Password
               </button>
             </div>
@@ -1555,15 +1857,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
             >
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${
-                  integration.status === 'connected' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'
-                }`}>
-                  <Link2 className={`w-5 h-5 ${
-                    integration.status === 'connected' ? 'text-green-600' : 'text-gray-500'
-                  }`} />
+                <div
+                  className={`p-2 rounded-lg ${
+                    integration.status === 'connected'
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : 'bg-gray-100 dark:bg-slate-700'
+                  }`}
+                >
+                  <Link2
+                    className={`w-5 h-5 ${
+                      integration.status === 'connected' ? 'text-green-600' : 'text-gray-500'
+                    }`}
+                  />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{integration.name}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {integration.name}
+                  </p>
                   <p className="text-xs text-gray-500">{integration.description}</p>
                   {integration.lastSyncAt && (
                     <p className="text-xs text-gray-400 mt-1">
@@ -1573,11 +1883,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  integration.status === 'connected' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                  integration.status === 'error' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                  'bg-gray-100 dark:bg-slate-700 text-gray-600'
-                }`}>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    integration.status === 'connected'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                      : integration.status === 'error'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-600'
+                  }`}
+                >
                   {integration.status}
                 </span>
                 {integration.status === 'connected' ? (
@@ -1588,9 +1902,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                     Disconnect
                   </button>
                 ) : (
-                  <button className="text-sm text-blue-600 hover:underline">
-                    Connect
-                  </button>
+                  <button className="text-sm text-blue-600 hover:underline">Connect</button>
                 )}
               </div>
             </div>
@@ -1624,7 +1936,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             >
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{key.name}</p>
-                <p className="text-xs font-mono text-gray-500 mt-1">{key.keyPrefix}...{key.keyHash.slice(-6)}</p>
+                <p className="text-xs font-mono text-gray-500 mt-1">
+                  {key.keyPrefix}...{key.keyHash.slice(-6)}
+                </p>
                 <p className="text-xs text-gray-400 mt-1">
                   Created {new Date(key.createdAt).toLocaleDateString()} • {key.usageCount} calls
                 </p>
@@ -1659,7 +1973,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             disabled={isSaving}
             className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
           >
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4" />
+            )}
             Sync Rates
           </button>
         </div>
@@ -1671,10 +1989,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           <div className="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Generate API Key</h3>
-              <button onClick={() => {
-                setShowAPIKeyModal(false);
-                setGeneratedApiKey(null);
-              }} className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded">
+              <button
+                onClick={() => {
+                  setShowAPIKeyModal(false);
+                  setGeneratedApiKey(null);
+                }}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-slate-700 rounded"
+              >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -1683,7 +2004,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               <div className="space-y-4">
                 <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-                    Your API key has been generated. Copy it now - you won't be able to see it again.
+                    Your API key has been generated. Copy it now - you won't be able to see it
+                    again.
                   </p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 text-xs bg-white dark:bg-slate-700 px-3 py-2 rounded border font-mono overflow-x-auto">
@@ -1713,35 +2035,47 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Key Name</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                    Key Name
+                  </label>
                   <input
                     type="text"
                     value={apiKeyForm.name}
-                    onChange={(e) => setApiKeyForm({ ...apiKeyForm, name: e.target.value })}
+                    onChange={e => setApiKeyForm({ ...apiKeyForm, name: e.target.value })}
                     placeholder="e.g., Production API Key"
                     className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Permissions</label>
+                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                    Permissions
+                  </label>
                   <div className="space-y-2">
-                    {['read:trades', 'write:trades', 'read:documents', 'write:documents'].map(perm => (
-                      <label key={perm} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={apiKeyForm.permissions.includes(perm)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setApiKeyForm({ ...apiKeyForm, permissions: [...apiKeyForm.permissions, perm] });
-                            } else {
-                              setApiKeyForm({ ...apiKeyForm, permissions: apiKeyForm.permissions.filter(p => p !== perm) });
-                            }
-                          }}
-                          className="w-4 h-4 rounded border-gray-300"
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">{perm}</span>
-                      </label>
-                    ))}
+                    {['read:trades', 'write:trades', 'read:documents', 'write:documents'].map(
+                      perm => (
+                        <label key={perm} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={apiKeyForm.permissions.includes(perm)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setApiKeyForm({
+                                  ...apiKeyForm,
+                                  permissions: [...apiKeyForm.permissions, perm],
+                                });
+                              } else {
+                                setApiKeyForm({
+                                  ...apiKeyForm,
+                                  permissions: apiKeyForm.permissions.filter(p => p !== perm),
+                                });
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-gray-300"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">{perm}</span>
+                        </label>
+                      )
+                    )}
                   </div>
                 </div>
                 <button
@@ -1749,7 +2083,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                   disabled={!apiKeyForm.name || isSaving}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Key className="w-4 h-4" />
+                  )}
                   Generate Key
                 </button>
               </div>
@@ -1764,28 +2102,53 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
     <div className="space-y-6">
       {/* AI Settings */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">AI & Analytics Settings</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          AI & Analytics Settings
+        </h3>
         <div className="space-y-4">
           {[
-            { key: 'enableAIInsights', label: 'Enable AI Insights', description: 'Get AI-powered trade recommendations' },
-            { key: 'enablePredictions', label: 'Enable Predictions', description: 'Receive predictive analytics for your trades' },
-            { key: 'personalizedRecommendations', label: 'Personalized Recommendations', description: 'Get recommendations based on your trade history' },
-            { key: 'anonymizedAnalytics', label: 'Anonymized Analytics', description: 'Contribute to platform-wide insights anonymously' }
+            {
+              key: 'enableAIInsights',
+              label: 'Enable AI Insights',
+              description: 'Get AI-powered trade recommendations',
+            },
+            {
+              key: 'enablePredictions',
+              label: 'Enable Predictions',
+              description: 'Receive predictive analytics for your trades',
+            },
+            {
+              key: 'personalizedRecommendations',
+              label: 'Personalized Recommendations',
+              description: 'Get recommendations based on your trade history',
+            },
+            {
+              key: 'anonymizedAnalytics',
+              label: 'Anonymized Analytics',
+              description: 'Contribute to platform-wide insights anonymously',
+            },
           ].map(item => (
-            <div key={item.key} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700 last:border-0">
+            <div
+              key={item.key}
+              className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700 last:border-0"
+            >
               <div>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.label}</p>
                 <p className="text-xs text-gray-500">{item.description}</p>
               </div>
               <button
-                onClick={() => updateAIDataSettings(userId, { [item.key]: !(aiSettings as any)?.[item.key] })}
+                onClick={() =>
+                  updateAIDataSettings(userId, { [item.key]: !(aiSettings as any)?.[item.key] })
+                }
                 className={`w-12 h-6 rounded-full transition-colors ${
                   (aiSettings as any)?.[item.key] ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
                 }`}
               >
-                <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                  (aiSettings as any)?.[item.key] ? 'translate-x-6' : 'translate-x-0.5'
-                }`} />
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    (aiSettings as any)?.[item.key] ? 'translate-x-6' : 'translate-x-0.5'
+                  }`}
+                />
               </button>
             </div>
           ))}
@@ -1798,43 +2161,63 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <div className="space-y-4">
           <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700">
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Data Sharing Consent</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                Data Sharing Consent
+              </p>
               <p className="text-xs text-gray-500">Allow sharing anonymized data for research</p>
             </div>
             <button
-              onClick={() => updateAIDataSettings(userId, { dataSharingConsent: !aiSettings?.dataSharingConsent })}
+              onClick={() =>
+                updateAIDataSettings(userId, {
+                  dataSharingConsent: !aiSettings?.dataSharingConsent,
+                })
+              }
               className={`w-12 h-6 rounded-full transition-colors ${
                 aiSettings?.dataSharingConsent ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                aiSettings?.dataSharingConsent ? 'translate-x-6' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  aiSettings?.dataSharingConsent ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
 
           <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-slate-700">
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Model Training Opt-in</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                Model Training Opt-in
+              </p>
               <p className="text-xs text-gray-500">Help improve AI models with your data</p>
             </div>
             <button
-              onClick={() => updateAIDataSettings(userId, { modelTrainingOptIn: !aiSettings?.modelTrainingOptIn })}
+              onClick={() =>
+                updateAIDataSettings(userId, {
+                  modelTrainingOptIn: !aiSettings?.modelTrainingOptIn,
+                })
+              }
               className={`w-12 h-6 rounded-full transition-colors ${
                 aiSettings?.modelTrainingOptIn ? 'bg-blue-600' : 'bg-gray-300 dark:bg-slate-600'
               }`}
             >
-              <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                aiSettings?.modelTrainingOptIn ? 'translate-x-6' : 'translate-x-0.5'
-              }`} />
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  aiSettings?.modelTrainingOptIn ? 'translate-x-6' : 'translate-x-0.5'
+                }`}
+              />
             </button>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">Data Retention Period</label>
+            <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+              Data Retention Period
+            </label>
             <select
               value={aiSettings?.dataRetentionDays || 365}
-              onChange={(e) => updateAIDataSettings(userId, { dataRetentionDays: parseInt(e.target.value) })}
+              onChange={e =>
+                updateAIDataSettings(userId, { dataRetentionDays: parseInt(e.target.value) })
+              }
               className="w-full px-3 py-2 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
             >
               <option value={90}>90 days</option>
@@ -1852,7 +2235,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
             <div>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">Export Your Data</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                Export Your Data
+              </p>
               <p className="text-xs text-gray-500">Download a copy of all your data</p>
             </div>
             <button
@@ -1860,15 +2245,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               disabled={isSaving}
               className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
               Export Data
             </button>
           </div>
 
           <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
             <div>
-              <p className="text-sm font-semibold text-red-700 dark:text-red-300">Delete Account Data</p>
-              <p className="text-xs text-red-600 dark:text-red-400">Permanently delete all your data</p>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                Delete Account Data
+              </p>
+              <p className="text-xs text-red-600 dark:text-red-400">
+                Permanently delete all your data
+              </p>
             </div>
             <button
               onClick={() => setShowDeleteDataModal(true)}
@@ -1889,9 +2282,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8 text-red-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Account Data?</h3>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                Delete Account Data?
+              </h3>
               <p className="text-sm text-gray-500 mt-2">
-                This action cannot be undone. All your trades, documents, and account data will be permanently deleted within 30 days.
+                This action cannot be undone. All your trades, documents, and account data will be
+                permanently deleted within 30 days.
               </p>
             </div>
             <div className="flex gap-3">
@@ -1906,7 +2302,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 disabled={isSaving}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2"
               >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
                 Delete Data
               </button>
             </div>
@@ -1927,12 +2327,21 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
           <div className="text-right">
             <p className="text-sm opacity-80">Billing Cycle</p>
-            <p className="text-lg font-semibold capitalize">{billingInfo?.billingCycle || 'Monthly'}</p>
+            <p className="text-lg font-semibold capitalize">
+              {billingInfo?.billingCycle || 'Monthly'}
+            </p>
           </div>
         </div>
         <div className="flex items-center justify-between">
           <p className="text-sm opacity-80">
-            Current period: {billingInfo?.currentPeriodStart ? new Date(billingInfo.currentPeriodStart).toLocaleDateString() : 'N/A'} - {billingInfo?.currentPeriodEnd ? new Date(billingInfo.currentPeriodEnd).toLocaleDateString() : 'N/A'}
+            Current period:{' '}
+            {billingInfo?.currentPeriodStart
+              ? new Date(billingInfo.currentPeriodStart).toLocaleDateString()
+              : 'N/A'}{' '}
+            -{' '}
+            {billingInfo?.currentPeriodEnd
+              ? new Date(billingInfo.currentPeriodEnd).toLocaleDateString()
+              : 'N/A'}
           </p>
           <button
             onClick={() => {
@@ -1956,27 +2365,62 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Usage Metrics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { label: 'Trades Created', used: billingInfo?.usageMetrics.tradesCreated || 0, limit: billingInfo?.usageMetrics.tradesLimit || 10, icon: TrendingUp },
-            { label: 'Documents', used: billingInfo?.usageMetrics.documentsUploaded || 0, limit: billingInfo?.usageMetrics.documentsLimit || 50, icon: FileText },
-            { label: 'API Calls', used: billingInfo?.usageMetrics.apiCalls || 0, limit: billingInfo?.usageMetrics.apiCallsLimit || 1000, icon: Zap },
-            { label: 'Storage (MB)', used: billingInfo?.usageMetrics.storageUsedMB || 0, limit: billingInfo?.usageMetrics.storageLimitMB || 100, icon: Database },
-            { label: 'Team Members', used: billingInfo?.usageMetrics.teamMembers || 1, limit: billingInfo?.usageMetrics.teamMembersLimit || 1, icon: Users }
+            {
+              label: 'Trades Created',
+              used: billingInfo?.usageMetrics.tradesCreated || 0,
+              limit: billingInfo?.usageMetrics.tradesLimit || 10,
+              icon: TrendingUp,
+            },
+            {
+              label: 'Documents',
+              used: billingInfo?.usageMetrics.documentsUploaded || 0,
+              limit: billingInfo?.usageMetrics.documentsLimit || 50,
+              icon: FileText,
+            },
+            {
+              label: 'API Calls',
+              used: billingInfo?.usageMetrics.apiCalls || 0,
+              limit: billingInfo?.usageMetrics.apiCallsLimit || 1000,
+              icon: Zap,
+            },
+            {
+              label: 'Storage (MB)',
+              used: billingInfo?.usageMetrics.storageUsedMB || 0,
+              limit: billingInfo?.usageMetrics.storageLimitMB || 100,
+              icon: Database,
+            },
+            {
+              label: 'Team Members',
+              used: billingInfo?.usageMetrics.teamMembers || 1,
+              limit: billingInfo?.usageMetrics.teamMembersLimit || 1,
+              icon: Users,
+            },
           ].map(metric => {
             const percentage = Math.min((metric.used / metric.limit) * 100, 100);
             return (
-              <div key={metric.label} className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg">
+              <div
+                key={metric.label}
+                className="p-4 border border-gray-200 dark:border-slate-700 rounded-lg"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <metric.icon className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{metric.label}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {metric.label}
+                    </span>
                   </div>
-                  <span className="text-xs text-gray-500">{metric.used} / {metric.limit}</span>
+                  <span className="text-xs text-gray-500">
+                    {metric.used} / {metric.limit}
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${
-                      percentage >= 90 ? 'bg-red-500' :
-                      percentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                      percentage >= 90
+                        ? 'bg-red-500'
+                        : percentage >= 70
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
                     }`}
                     style={{ width: `${percentage}%` }}
                   />
@@ -2011,7 +2455,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                     {method.brand} ending in {method.last4}
                   </p>
                   {method.expiryMonth && method.expiryYear && (
-                    <p className="text-xs text-gray-500">Expires {method.expiryMonth}/{method.expiryYear}</p>
+                    <p className="text-xs text-gray-500">
+                      Expires {method.expiryMonth}/{method.expiryYear}
+                    </p>
                   )}
                 </div>
               </div>
@@ -2037,19 +2483,27 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
               <div className="flex items-center gap-3">
                 <Receipt className="w-5 h-5 text-gray-500" />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{invoice.invoiceNumber}</p>
-                  <p className="text-xs text-gray-500">{new Date(invoice.issuedAt).toLocaleDateString()}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {invoice.invoiceNumber}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(invoice.issuedAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
                   {formatCurrency(invoice.amount)}
                 </span>
-                <span className={`text-xs font-bold px-2 py-1 rounded ${
-                  invoice.status === 'paid' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' :
-                  invoice.status === 'overdue' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' :
-                  'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
-                }`}>
+                <span
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    invoice.status === 'paid'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                      : invoice.status === 'overdue'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                        : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600'
+                  }`}
+                >
                   {invoice.status}
                 </span>
                 <button
@@ -2077,7 +2531,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
           <select
             value={auditFilters.entityType || ''}
-            onChange={(e) => setAuditFilters({ ...auditFilters, entityType: e.target.value || undefined })}
+            onChange={e =>
+              setAuditFilters({ ...auditFilters, entityType: e.target.value || undefined })
+            }
             className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
           >
             <option value="">All Types</option>
@@ -2090,7 +2546,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </select>
           <select
             value={auditFilters.status || ''}
-            onChange={(e) => setAuditFilters({ ...auditFilters, status: e.target.value as any || undefined })}
+            onChange={e =>
+              setAuditFilters({ ...auditFilters, status: (e.target.value as any) || undefined })
+            }
             className="px-3 py-1.5 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm"
           >
             <option value="">All Statuses</option>
@@ -2114,35 +2572,58 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-slate-700/50">
               <tr>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Date/Time</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Action</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Entity</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">IP Address</th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  Date/Time
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  Action
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  Entity
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  IP Address
+                </th>
+                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody>
               {auditLogs.map(log => (
-                <tr key={log.id} className="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                <tr
+                  key={log.id}
+                  className="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30"
+                >
                   <td className="py-3 px-4 text-sm text-gray-900 dark:text-white">
                     {new Date(log.createdAt).toLocaleString()}
                   </td>
                   <td className="py-3 px-4">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{log.action}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {log.action}
+                    </span>
                   </td>
                   <td className="py-3 px-4">
                     <span className="text-xs font-bold px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 rounded">
                       {log.entityType}
                     </span>
-                    {log.entityId && <span className="text-xs text-gray-500 ml-2">#{log.entityId.slice(0, 8)}</span>}
+                    {log.entityId && (
+                      <span className="text-xs text-gray-500 ml-2">
+                        #{log.entityId.slice(0, 8)}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 font-mono">
                     {log.ipAddress || '-'}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${
-                      log.status === 'success' ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 dark:bg-red-900/30 text-red-600'
-                    }`}>
+                    <span
+                      className={`text-xs font-bold px-2 py-1 rounded ${
+                        log.status === 'success'
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
+                          : 'bg-red-100 dark:bg-red-900/30 text-red-600'
+                      }`}
+                    >
                       {log.status}
                     </span>
                   </td>
@@ -2163,7 +2644,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
         {auditTotal > 20 && (
           <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-slate-700">
             <p className="text-sm text-gray-500">
-              Showing {auditPage * 20 + 1} - {Math.min((auditPage + 1) * 20, auditTotal)} of {auditTotal}
+              Showing {auditPage * 20 + 1} - {Math.min((auditPage + 1) * 20, auditTotal)} of{' '}
+              {auditTotal}
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -2217,7 +2699,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Settings & Profile</h2>
-            <p className="text-xs text-gray-500">Manage your account, organization, and preferences</p>
+            <p className="text-xs text-gray-500">
+              Manage your account, organization, and preferences
+            </p>
           </div>
         </div>
 
@@ -2274,7 +2758,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                 </div>
                 <h2 className="text-2xl font-bold">Upgrade Your Plan</h2>
               </div>
-              <p className="text-blue-100 text-sm">Unlock powerful features to accelerate your trade operations</p>
+              <p className="text-blue-100 text-sm">
+                Unlock powerful features to accelerate your trade operations
+              </p>
             </div>
 
             {/* Modal Body */}
@@ -2284,9 +2770,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                   <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-10 h-10 text-green-600" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Payment Successful!
+                  </h3>
                   <p className="text-gray-500 dark:text-gray-400 mb-2">
-                    Welcome to <span className="font-semibold text-blue-600">{billingInfo?.planName || selectedPlan?.name}</span>!
+                    Welcome to{' '}
+                    <span className="font-semibold text-blue-600">
+                      {billingInfo?.planName || selectedPlan?.name}
+                    </span>
+                    !
                   </p>
                   <p className="text-gray-500 dark:text-gray-400 mb-6">
                     Your account has been upgraded and all premium features are now active.
@@ -2300,7 +2792,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                     </h4>
                     <ul className="space-y-2">
                       {selectedPlan?.features.slice(0, 5).map((feature, idx) => (
-                        <li key={idx} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                        <li
+                          key={idx}
+                          className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                        >
                           <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                           {feature}
                         </li>
@@ -2350,13 +2845,20 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                           )}
                         </div>
                         <div className="mb-3">
-                          <span className="text-3xl font-bold text-gray-900 dark:text-white">${plan.price}</span>
+                          <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                            ${plan.price}
+                          </span>
                           <span className="text-gray-500 dark:text-gray-400">/month</span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{plan.description}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                          {plan.description}
+                        </p>
                         <ul className="space-y-2">
                           {plan.features.slice(0, 4).map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <li
+                              key={idx}
+                              className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                            >
                               <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                               {feature}
                             </li>
@@ -2382,11 +2884,15 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                   <div className="border-t border-gray-200 dark:border-slate-700 pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white">Payment Summary</h4>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">
+                          Payment Summary
+                        </h4>
                         <p className="text-sm text-gray-500">Pay securely with PayPal</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">${selectedPlan?.price.toFixed(2)}</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          ${selectedPlan?.price.toFixed(2)}
+                        </p>
                         <p className="text-xs text-gray-500">Billed monthly</p>
                       </div>
                     </div>
@@ -2420,22 +2926,35 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
 
                                 if (upgradeResult.success) {
                                   // Update local billing state
-                                  setBillingInfo(prev => prev ? {
-                                    ...prev,
-                                    planType: upgradeResult.newPlanType as 'free' | 'starter' | 'professional' | 'enterprise',
-                                    planName: upgradeResult.newPlanName,
-                                    currentPeriodStart: upgradeResult.periodStart,
-                                    currentPeriodEnd: upgradeResult.periodEnd,
-                                    subscriptionStatus: 'active'
-                                  } : null);
+                                  setBillingInfo(prev =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          planType: upgradeResult.newPlanType as
+                                            | 'free'
+                                            | 'starter'
+                                            | 'professional'
+                                            | 'enterprise',
+                                          planName: upgradeResult.newPlanName,
+                                          currentPeriodStart: upgradeResult.periodStart,
+                                          currentPeriodEnd: upgradeResult.periodEnd,
+                                          subscriptionStatus: 'active',
+                                        }
+                                      : null
+                                  );
                                   setPaymentSuccess(true);
                                 } else {
-                                  setPaymentError(upgradeResult.error || 'Failed to activate plan. Please contact support.');
+                                  setPaymentError(
+                                    upgradeResult.error ||
+                                      'Failed to activate plan. Please contact support.'
+                                  );
                                 }
                                 setPaypalLoading(false);
                               },
-                              (error) => {
-                                setPaymentError(error.message || 'Payment failed. Please try again.');
+                              error => {
+                                setPaymentError(
+                                  error.message || 'Payment failed. Please try again.'
+                                );
                                 setPaypalLoading(false);
                                 setPaypalReady(false);
                               }
@@ -2444,7 +2963,10 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                             setPaypalLoading(false);
                             setPaypalReady(true);
                           } catch (error) {
-                            const errMsg = error instanceof Error ? error.message : 'Failed to load PayPal. Please try again.';
+                            const errMsg =
+                              error instanceof Error
+                                ? error.message
+                                : 'Failed to load PayPal. Please try again.';
                             setPaymentError(errMsg);
                             setPaypalLoading(false);
                           }
@@ -2452,7 +2974,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                         className="w-full py-4 bg-[#0070ba] hover:bg-[#005ea6] text-white rounded-lg font-semibold flex items-center justify-center gap-3 transition-colors"
                       >
                         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.65A.859.859 0 0 1 5.8 2h6.797c2.322 0 4.02.652 5.045 1.936.965 1.208 1.203 2.834.708 4.834l-.008.03c-.534 2.21-1.472 3.857-2.787 4.894-1.315 1.037-3.058 1.563-5.18 1.563H8.14a.859.859 0 0 0-.847.725l-1.217 7.355z"/>
+                          <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944 2.65A.859.859 0 0 1 5.8 2h6.797c2.322 0 4.02.652 5.045 1.936.965 1.208 1.203 2.834.708 4.834l-.008.03c-.534 2.21-1.472 3.857-2.787 4.894-1.315 1.037-3.058 1.563-5.18 1.563H8.14a.859.859 0 0 0-.847.725l-1.217 7.355z" />
                         </svg>
                         Pay with PayPal - ${selectedPlan?.price.toFixed(2)}
                       </button>
@@ -2480,8 +3002,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({ profileData, userRole 
                     )}
 
                     <p className="text-xs text-center text-gray-400 mt-4">
-                      By upgrading, you agree to our Terms of Service and Privacy Policy.
-                      You can cancel anytime from your account settings.
+                      By upgrading, you agree to our Terms of Service and Privacy Policy. You can
+                      cancel anytime from your account settings.
                     </p>
                   </div>
                 </>

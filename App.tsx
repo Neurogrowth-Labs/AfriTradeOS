@@ -22,7 +22,7 @@ import {
   CheckCheck,
   Trash2,
   ExternalLink,
-  LogOut
+  LogOut,
 } from 'lucide-react';
 import { AppView, UserPersona } from './types';
 import { useCurrency, CURRENCIES } from './contexts/CurrencyContext';
@@ -33,41 +33,109 @@ import { supabase } from './services/supabase';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
 
 // --- Lazy-loaded route components (code splitting) ---
-const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
-const TradeLifecycle = lazy(() => import('./components/TradeLifecycle').then(m => ({ default: m.TradeLifecycle })));
-const MarketIntel = lazy(() => import('./components/MarketIntel').then(m => ({ default: m.MarketIntel })));
-const Compliance = lazy(() => import('./components/Compliance').then(m => ({ default: m.Compliance })));
-const Logistics = lazy(() => import('./components/Logistics').then(m => ({ default: m.Logistics })));
-const LiveAssistant = lazy(() => import('./components/LiveAssistant').then(m => ({ default: m.LiveAssistant })));
-const MarketingStudio = lazy(() => import('./components/MarketingStudio').then(m => ({ default: m.MarketingStudio })));
-const TradeFinance = lazy(() => import('./components/TradeFinance').then(m => ({ default: m.TradeFinance })));
-const Marketplace = lazy(() => import('./components/Marketplace').then(m => ({ default: m.Marketplace })));
-const UserProfile = lazy(() => import('./components/UserProfile').then(m => ({ default: m.UserProfile })));
+const Dashboard = lazy(() =>
+  import('./components/Dashboard').then(m => ({ default: m.Dashboard }))
+);
+const TradeLifecycle = lazy(() =>
+  import('./components/TradeLifecycle').then(m => ({ default: m.TradeLifecycle }))
+);
+const MarketIntel = lazy(() =>
+  import('./components/MarketIntel').then(m => ({ default: m.MarketIntel }))
+);
+const Compliance = lazy(() =>
+  import('./components/Compliance').then(m => ({ default: m.Compliance }))
+);
+const Logistics = lazy(() =>
+  import('./components/Logistics').then(m => ({ default: m.Logistics }))
+);
+const LiveAssistant = lazy(() =>
+  import('./components/LiveAssistant').then(m => ({ default: m.LiveAssistant }))
+);
+const MarketingStudio = lazy(() =>
+  import('./components/MarketingStudio').then(m => ({ default: m.MarketingStudio }))
+);
+const TradeFinance = lazy(() =>
+  import('./components/TradeFinance').then(m => ({ default: m.TradeFinance }))
+);
+const Marketplace = lazy(() =>
+  import('./components/Marketplace').then(m => ({ default: m.Marketplace }))
+);
+const UserProfile = lazy(() =>
+  import('./components/UserProfile').then(m => ({ default: m.UserProfile }))
+);
 const CoPilot = lazy(() => import('./components/CoPilot').then(m => ({ default: m.CoPilot })));
-const Onboarding = lazy(() => import('./components/Onboarding').then(m => ({ default: m.Onboarding })));
-const AdminDashboard = lazy(() => import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const RegulatorDashboard = lazy(() => import('./components/RegulatorDashboard').then(m => ({ default: m.RegulatorDashboard })));
-const SystemDiagnostic = lazy(() => import('./components/SystemDiagnostic').then(m => ({ default: m.SystemDiagnostic })));
-const KYCVerification = lazy(() => import('./components/KYCVerification').then(m => ({ default: m.KYCVerification })));
-const TenderManagement = lazy(() => import('./components/TenderManagement').then(m => ({ default: m.TenderManagement })));
-const SmartContracts = lazy(() => import('./components/SmartContracts').then(m => ({ default: m.SmartContracts })));
-const AnalyticsHub = lazy(() => import('./components/AnalyticsHub').then(m => ({ default: m.AnalyticsHub })));
-const AnalystMarketResearch = lazy(() => import('./components/AnalystMarketResearch').then(m => ({ default: m.AnalystMarketResearch })));
-const AnalystTradeTrends = lazy(() => import('./components/AnalystTradeTrends').then(m => ({ default: m.AnalystTradeTrends })));
-const AnalystRegulatoryData = lazy(() => import('./components/AnalystRegulatoryData').then(m => ({ default: m.AnalystRegulatoryData })));
-const AnalystLogisticsData = lazy(() => import('./components/AnalystLogisticsData').then(m => ({ default: m.AnalystLogisticsData })));
-const AnalystFinanceMetrics = lazy(() => import('./components/AnalystFinanceMetrics').then(m => ({ default: m.AnalystFinanceMetrics })));
-const AnalystMarketPlayers = lazy(() => import('./components/AnalystMarketPlayers').then(m => ({ default: m.AnalystMarketPlayers })));
-const AnalystTenderAnalysis = lazy(() => import('./components/AnalystTenderAnalysis').then(m => ({ default: m.AnalystTenderAnalysis })));
-const GovAgencyDashboard = lazy(() => import('./components/GovAgencyDashboard').then(m => ({ default: m.GovAgencyDashboard })));
-const GovPolicyCompliance = lazy(() => import('./components/GovPolicyCompliance').then(m => ({ default: m.GovPolicyCompliance })));
-const GovTradeAgreements = lazy(() => import('./components/GovTradeAgreements').then(m => ({ default: m.GovTradeAgreements })));
-const GovTradeStatistics = lazy(() => import('./components/GovTradeStatistics').then(m => ({ default: m.GovTradeStatistics })));
-const GovTradeFlows = lazy(() => import('./components/GovTradeFlows').then(m => ({ default: m.GovTradeFlows })));
-const GovEntityVerification = lazy(() => import('./components/GovEntityVerification').then(m => ({ default: m.GovEntityVerification })));
-const GovBusinessRegistry = lazy(() => import('./components/GovBusinessRegistry').then(m => ({ default: m.GovBusinessRegistry })));
-const CustomsAuthorityPanel = lazy(() => import('./components/CustomsAuthorityPanel').then(m => ({ default: m.CustomsAuthorityPanel })));
-const LogisticsProviderPanel = lazy(() => import('./components/LogisticsProviderPanel').then(m => ({ default: m.LogisticsProviderPanel })));
+const Onboarding = lazy(() =>
+  import('./components/Onboarding').then(m => ({ default: m.Onboarding }))
+);
+const AdminDashboard = lazy(() =>
+  import('./components/AdminDashboard').then(m => ({ default: m.AdminDashboard }))
+);
+const RegulatorDashboard = lazy(() =>
+  import('./components/RegulatorDashboard').then(m => ({ default: m.RegulatorDashboard }))
+);
+const SystemDiagnostic = lazy(() =>
+  import('./components/SystemDiagnostic').then(m => ({ default: m.SystemDiagnostic }))
+);
+const KYCVerification = lazy(() =>
+  import('./components/KYCVerification').then(m => ({ default: m.KYCVerification }))
+);
+const TenderManagement = lazy(() =>
+  import('./components/TenderManagement').then(m => ({ default: m.TenderManagement }))
+);
+const SmartContracts = lazy(() =>
+  import('./components/SmartContracts').then(m => ({ default: m.SmartContracts }))
+);
+const AnalyticsHub = lazy(() =>
+  import('./components/AnalyticsHub').then(m => ({ default: m.AnalyticsHub }))
+);
+const AnalystMarketResearch = lazy(() =>
+  import('./components/AnalystMarketResearch').then(m => ({ default: m.AnalystMarketResearch }))
+);
+const AnalystTradeTrends = lazy(() =>
+  import('./components/AnalystTradeTrends').then(m => ({ default: m.AnalystTradeTrends }))
+);
+const AnalystRegulatoryData = lazy(() =>
+  import('./components/AnalystRegulatoryData').then(m => ({ default: m.AnalystRegulatoryData }))
+);
+const AnalystLogisticsData = lazy(() =>
+  import('./components/AnalystLogisticsData').then(m => ({ default: m.AnalystLogisticsData }))
+);
+const AnalystFinanceMetrics = lazy(() =>
+  import('./components/AnalystFinanceMetrics').then(m => ({ default: m.AnalystFinanceMetrics }))
+);
+const AnalystMarketPlayers = lazy(() =>
+  import('./components/AnalystMarketPlayers').then(m => ({ default: m.AnalystMarketPlayers }))
+);
+const AnalystTenderAnalysis = lazy(() =>
+  import('./components/AnalystTenderAnalysis').then(m => ({ default: m.AnalystTenderAnalysis }))
+);
+const GovAgencyDashboard = lazy(() =>
+  import('./components/GovAgencyDashboard').then(m => ({ default: m.GovAgencyDashboard }))
+);
+const GovPolicyCompliance = lazy(() =>
+  import('./components/GovPolicyCompliance').then(m => ({ default: m.GovPolicyCompliance }))
+);
+const GovTradeAgreements = lazy(() =>
+  import('./components/GovTradeAgreements').then(m => ({ default: m.GovTradeAgreements }))
+);
+const GovTradeStatistics = lazy(() =>
+  import('./components/GovTradeStatistics').then(m => ({ default: m.GovTradeStatistics }))
+);
+const GovTradeFlows = lazy(() =>
+  import('./components/GovTradeFlows').then(m => ({ default: m.GovTradeFlows }))
+);
+const GovEntityVerification = lazy(() =>
+  import('./components/GovEntityVerification').then(m => ({ default: m.GovEntityVerification }))
+);
+const GovBusinessRegistry = lazy(() =>
+  import('./components/GovBusinessRegistry').then(m => ({ default: m.GovBusinessRegistry }))
+);
+const CustomsAuthorityPanel = lazy(() =>
+  import('./components/CustomsAuthorityPanel').then(m => ({ default: m.CustomsAuthorityPanel }))
+);
+const LogisticsProviderPanel = lazy(() =>
+  import('./components/LogisticsProviderPanel').then(m => ({ default: m.LogisticsProviderPanel }))
+);
 const ImporterPanel = lazy(() => import('./components/ImporterPanel'));
 const BankFinanceDashboard = lazy(() => import('./components/BankFinanceDashboard'));
 const BankFinanceApplications = lazy(() => import('./components/BankFinanceApplications'));
@@ -86,19 +154,19 @@ const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError('Password must be at least 6 characters');
       return;
     }
     setLoading(true);
     setError(null);
-    
+
     try {
       const { error } = await supabase.auth.updateUser({ password: password });
       if (error) throw error;
       setSuccess(true);
       setTimeout(onClose, 2000);
     } catch (err: any) {
-      setError(err.message || "Failed to update password");
+      setError(err.message || 'Failed to update password');
     } finally {
       setLoading(false);
     }
@@ -129,18 +197,20 @@ const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
               </div>
             )}
             <div>
-              <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-gray-500 mb-2">New Password</label>
-              <input 
+              <label className="block type-caption font-semibold uppercase tracking-[0.08em] text-gray-500 mb-2">
+                New Password
+              </label>
+              <input
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="input-premium w-full text-gray-900 dark:text-white"
                 placeholder="••••••••"
               />
             </div>
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="btn-primary w-full flex items-center justify-center gap-2"
             >
@@ -222,8 +292,24 @@ const LoadingFallback = () => (
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthLoading, isOnboarded, userRole, userProfile, showPasswordReset, setShowPasswordReset, handleLogout, handleOnboardingComplete } = useAuth();
-  const { notifications, notificationsLoading, unreadCount, markAsRead, markAllAsRead, clearAllNotifications } = useNotifications();
+  const {
+    isAuthLoading,
+    isOnboarded,
+    userRole,
+    userProfile,
+    showPasswordReset,
+    setShowPasswordReset,
+    handleLogout,
+    handleOnboardingComplete,
+  } = useAuth();
+  const {
+    notifications,
+    notificationsLoading,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearAllNotifications,
+  } = useNotifications();
 
   // Initialize sidebar based on screen size
   const [sidebarOpen, setSidebarOpen] = useState(() => {
@@ -315,7 +401,7 @@ export default function App() {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -350,84 +436,135 @@ export default function App() {
     // Trade Analyst gets dedicated analyst-specific components
     if (userRole === UserPersona.ANALYST) {
       switch (currentView) {
-        case AppView.DASHBOARD: return <AnalyticsHub />;
-        case AppView.MARKET_INTEL: return <AnalystMarketResearch />;
-        case AppView.TRADE_LIFECYCLE: return <AnalystTradeTrends />;
-        case AppView.COMPLIANCE: return <AnalystRegulatoryData />;
-        case AppView.LOGISTICS: return <AnalystLogisticsData />;
-        case AppView.TRADE_FINANCE: return <AnalystFinanceMetrics />;
-        case AppView.MARKETPLACE: return <AnalystMarketPlayers />;
-        case AppView.TENDERS: return <AnalystTenderAnalysis />;
-        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
-        default: return <AnalyticsHub />;
+        case AppView.DASHBOARD:
+          return <AnalyticsHub />;
+        case AppView.MARKET_INTEL:
+          return <AnalystMarketResearch />;
+        case AppView.TRADE_LIFECYCLE:
+          return <AnalystTradeTrends />;
+        case AppView.COMPLIANCE:
+          return <AnalystRegulatoryData />;
+        case AppView.LOGISTICS:
+          return <AnalystLogisticsData />;
+        case AppView.TRADE_FINANCE:
+          return <AnalystFinanceMetrics />;
+        case AppView.MARKETPLACE:
+          return <AnalystMarketPlayers />;
+        case AppView.TENDERS:
+          return <AnalystTenderAnalysis />;
+        case AppView.PROFILE:
+          return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default:
+          return <AnalyticsHub />;
       }
     }
 
     // Government Agency gets dedicated government-specific components
     if (userRole === UserPersona.GOVERNMENT) {
       switch (currentView) {
-        case AppView.REGULATOR: return <GovAgencyDashboard />;
-        case AppView.COMPLIANCE: return <GovPolicyCompliance />;
-        case AppView.CONTRACTS: return <GovTradeAgreements />;
-        case AppView.MARKET_INTEL: return <GovTradeStatistics />;
-        case AppView.LOGISTICS: return <GovTradeFlows />;
-        case AppView.KYC_VERIFICATION: return <GovEntityVerification />;
-        case AppView.MARKETPLACE: return <GovBusinessRegistry />;
-        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
-        default: return <GovAgencyDashboard />;
+        case AppView.REGULATOR:
+          return <GovAgencyDashboard />;
+        case AppView.COMPLIANCE:
+          return <GovPolicyCompliance />;
+        case AppView.CONTRACTS:
+          return <GovTradeAgreements />;
+        case AppView.MARKET_INTEL:
+          return <GovTradeStatistics />;
+        case AppView.LOGISTICS:
+          return <GovTradeFlows />;
+        case AppView.KYC_VERIFICATION:
+          return <GovEntityVerification />;
+        case AppView.MARKETPLACE:
+          return <GovBusinessRegistry />;
+        case AppView.PROFILE:
+          return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default:
+          return <GovAgencyDashboard />;
       }
     }
 
     // Logistics Provider gets dedicated logistics provider panel
     if (userRole === UserPersona.LOGISTICS) {
       switch (currentView) {
-        case AppView.LOGISTICS_PROVIDER: return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
-        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
-        default: return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
+        case AppView.LOGISTICS_PROVIDER:
+          return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
+        case AppView.PROFILE:
+          return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default:
+          return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
       }
     }
 
     if (userRole === UserPersona.IMPORTER) {
       switch (currentView) {
-        case AppView.IMPORTER_PANEL: return <ImporterPanel userRole={userRole} navigateTo={setCurrentView} />;
-        case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
-        default: return <ImporterPanel userRole={userRole} navigateTo={setCurrentView} />;
+        case AppView.IMPORTER_PANEL:
+          return <ImporterPanel userRole={userRole} navigateTo={setCurrentView} />;
+        case AppView.PROFILE:
+          return <UserProfile profileData={userProfile} userRole={userRole} />;
+        default:
+          return <ImporterPanel userRole={userRole} navigateTo={setCurrentView} />;
       }
     }
 
     // Bank / Insurer gets dedicated bank-specific components
     if (userRole === UserPersona.BANK) {
       switch (currentView) {
-        case AppView.BANK_DASHBOARD: return <BankFinanceDashboard />;
-        case AppView.BANK_APPLICATIONS: return <BankFinanceApplications />;
-        case AppView.BANK_DUE_DILIGENCE: return <BankDueDiligence />;
-        case AppView.BANK_RISK_CLIENTS: return <BankRiskClients />;
-        case AppView.BANK_SETTINGS: return <BankAccountSettings />;
-        case AppView.BANK_TRADE_TOOLS: return <BankTradeTools />;
-        default: return <BankFinanceDashboard />;
+        case AppView.BANK_DASHBOARD:
+          return <BankFinanceDashboard />;
+        case AppView.BANK_APPLICATIONS:
+          return <BankFinanceApplications />;
+        case AppView.BANK_DUE_DILIGENCE:
+          return <BankDueDiligence />;
+        case AppView.BANK_RISK_CLIENTS:
+          return <BankRiskClients />;
+        case AppView.BANK_SETTINGS:
+          return <BankAccountSettings />;
+        case AppView.BANK_TRADE_TOOLS:
+          return <BankTradeTools />;
+        default:
+          return <BankFinanceDashboard />;
       }
     }
 
     switch (currentView) {
-      case AppView.DASHBOARD: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
-      case AppView.TRADE_LIFECYCLE: return <TradeLifecycle />;
-      case AppView.TRADE_FINANCE: return <TradeFinance />;
-      case AppView.MARKET_INTEL: return <MarketIntel />;
-      case AppView.COMPLIANCE: return <Compliance />;
-      case AppView.LOGISTICS: return <Logistics />;
-      case AppView.MARKETPLACE: return <Marketplace />;
-      case AppView.LIVE_ASSISTANT: return <LiveAssistant />;
-      case AppView.MARKETING: return <MarketingStudio />;
-      case AppView.PROFILE: return <UserProfile profileData={userProfile} userRole={userRole} />;
-      case AppView.ADMIN: return <AdminDashboard />;
-      case AppView.REGULATOR: return <RegulatorDashboard />;
-      case AppView.DIAGNOSTIC: return <SystemDiagnostic />;
-      case AppView.KYC_VERIFICATION: return <KYCVerification />;
-      case AppView.TENDERS: return <TenderManagement />;
-      case AppView.CONTRACTS: return <SmartContracts />;
-      case AppView.CUSTOMS: return <CustomsAuthorityPanel />;
-      case AppView.LOGISTICS_PROVIDER: return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
-      default: return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
+      case AppView.DASHBOARD:
+        return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
+      case AppView.TRADE_LIFECYCLE:
+        return <TradeLifecycle />;
+      case AppView.TRADE_FINANCE:
+        return <TradeFinance />;
+      case AppView.MARKET_INTEL:
+        return <MarketIntel />;
+      case AppView.COMPLIANCE:
+        return <Compliance />;
+      case AppView.LOGISTICS:
+        return <Logistics />;
+      case AppView.MARKETPLACE:
+        return <Marketplace />;
+      case AppView.LIVE_ASSISTANT:
+        return <LiveAssistant />;
+      case AppView.MARKETING:
+        return <MarketingStudio />;
+      case AppView.PROFILE:
+        return <UserProfile profileData={userProfile} userRole={userRole} />;
+      case AppView.ADMIN:
+        return <AdminDashboard />;
+      case AppView.REGULATOR:
+        return <RegulatorDashboard />;
+      case AppView.DIAGNOSTIC:
+        return <SystemDiagnostic />;
+      case AppView.KYC_VERIFICATION:
+        return <KYCVerification />;
+      case AppView.TENDERS:
+        return <TenderManagement />;
+      case AppView.CONTRACTS:
+        return <SmartContracts />;
+      case AppView.CUSTOMS:
+        return <CustomsAuthorityPanel />;
+      case AppView.LOGISTICS_PROVIDER:
+        return <LogisticsProviderPanel userRole={userRole} navigateTo={setCurrentView} />;
+      default:
+        return <Dashboard userRole={userRole} navigateTo={setCurrentView} />;
     }
   };
 
@@ -449,23 +586,25 @@ export default function App() {
   );
 
   if (isAuthLoading) {
-      return (
-        <div className="flex h-screen items-center justify-center bg-trade-bg dark:bg-slate-950">
-          <Loader2 className="w-8 h-8 animate-spin text-trade-accent" />
-        </div>
-      );
+    return (
+      <div className="flex h-screen items-center justify-center bg-trade-bg dark:bg-slate-950">
+        <Loader2 className="w-8 h-8 animate-spin text-trade-accent" />
+      </div>
+    );
   }
 
   if (!isOnboarded) {
-      return (
-        <Suspense fallback={<LoadingFallback />}>
-          <Onboarding onComplete={handleOnboardingComplete} />
-        </Suspense>
-      );
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <Onboarding onComplete={handleOnboardingComplete} />
+      </Suspense>
+    );
   }
 
   return (
-    <div className={`${isDark ? 'dark-gold-platform' : 'light-gold-platform'} flex h-screen overflow-hidden transition-colors duration-300 font-sans ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}>
+    <div
+      className={`${isDark ? 'dark-gold-platform' : 'light-gold-platform'} flex h-screen overflow-hidden transition-colors duration-300 font-sans ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}
+    >
       {/* Password Reset Overlay */}
       {showPasswordReset && <PasswordResetModal onClose={() => setShowPasswordReset(false)} />}
 
@@ -483,12 +622,23 @@ export default function App() {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className={`p-5 border-b ${isDark ? 'border-[#C9A24D]/20' : 'border-gray-200'} flex items-center justify-between`}>
+        <div
+          className={`p-5 border-b ${isDark ? 'border-[#C9A24D]/20' : 'border-gray-200'} flex items-center justify-between`}
+        >
           <div className="flex items-center gap-2">
-            <img src="/afritradeos.jpeg" alt="AfriTradeOS" className="w-7 h-7 rounded-lg object-cover shadow-lg" />
-            <span className={`type-header ${isDark ? 'text-white' : 'text-gray-900'}`}>AfriTradeOS</span>
+            <img
+              src="/afritradeos.jpeg"
+              alt="AfriTradeOS"
+              className="w-7 h-7 rounded-lg object-cover shadow-lg"
+            />
+            <span className={`type-header ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              AfriTradeOS
+            </span>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-[#C9A24D]/20 shadow-none">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="btn-icon lg:hidden text-slate-400 hover:text-white bg-white/5 border-[#C9A24D]/20 shadow-none"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -500,7 +650,7 @@ export default function App() {
               <div className="px-4 py-1.5">
                 <div className="h-3 w-16 bg-slate-700 rounded" />
               </div>
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} className="flex items-center gap-3 px-4 py-2.5">
                   <div className="w-4 h-4 bg-slate-700 rounded" />
                   <div className="h-3 w-24 bg-slate-700 rounded" />
@@ -509,7 +659,7 @@ export default function App() {
               <div className="px-4 py-1.5 mt-4">
                 <div className="h-3 w-20 bg-slate-700 rounded" />
               </div>
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map(i => (
                 <div key={i} className="flex items-center gap-3 px-4 py-2.5">
                   <div className="w-4 h-4 bg-slate-700 rounded" />
                   <div className="h-3 w-20 bg-slate-700 rounded" />
@@ -519,18 +669,22 @@ export default function App() {
           ) : (
             getMenuForRole(userRole).map((section, sectionIdx) => (
               <div key={section.title}>
-                <div className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-gray-400'} uppercase tracking-wider font-heading`}>
+                <div
+                  className={`px-4 py-1.5 ${sectionIdx > 0 ? 'mt-4' : ''} text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-gray-400'} uppercase tracking-wider font-heading`}
+                >
                   {section.title}
                 </div>
-                {section.items.map((item) => (
+                {section.items.map(item => (
                   <NavItem key={item.view} view={item.view} icon={item.icon} label={item.label} />
                 ))}
               </div>
             ))
           )}
         </nav>
-        
-        <div className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-[#C9A24D]/20 bg-[#070707]' : 'border-gray-200 bg-white'}`}>
+
+        <div
+          className={`absolute bottom-0 left-0 right-0 p-3 border-t ${isDark ? 'border-[#C9A24D]/20 bg-[#070707]' : 'border-gray-200 bg-white'}`}
+        >
           <div
             className={`flex items-center gap-2 mb-2 cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'} p-2 rounded-lg transition-colors`}
             onClick={() => {
@@ -541,17 +695,33 @@ export default function App() {
               }
             }}
           >
-            <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.userName || 'User')}&background=C9A24D&color=fff`} alt="User" className="w-7 h-7 rounded-full ring-2 ring-trade-accent" />
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.userName || 'User')}&background=C9A24D&color=fff`}
+              alt="User"
+              className="w-7 h-7 rounded-full ring-2 ring-trade-accent"
+            />
             <div className="overflow-hidden">
-              <p className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-gray-800'} truncate`}>{userProfile?.userName || 'User'}</p>
-              <p className={`type-caption ${isDark ? 'text-slate-400' : 'text-gray-500'} truncate`}>{userRole}</p>
+              <p
+                className={`text-sm font-medium ${isDark ? 'text-slate-200' : 'text-gray-800'} truncate`}
+              >
+                {userProfile?.userName || 'User'}
+              </p>
+              <p className={`type-caption ${isDark ? 'text-slate-400' : 'text-gray-500'} truncate`}>
+                {userRole}
+              </p>
             </div>
           </div>
           {/* Role badge and Logout button */}
           <div className="flex items-center gap-2">
-            <div className={`flex-1 flex items-center gap-2 px-3 py-1.5 ${isDark ? 'bg-[#15110A] border-[#C9A24D]/25' : 'bg-gray-50 border-gray-200'} rounded-lg border`}>
-                <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
-                <span className={`text-[10px] font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>{userRole}</span>
+            <div
+              className={`flex-1 flex items-center gap-2 px-3 py-1.5 ${isDark ? 'bg-[#15110A] border-[#C9A24D]/25' : 'bg-gray-50 border-gray-200'} rounded-lg border`}
+            >
+              <UserCircle className="w-3.5 h-3.5 text-trade-accent" />
+              <span
+                className={`text-[10px] font-medium ${isDark ? 'text-slate-300' : 'text-gray-600'}`}
+              >
+                {userRole}
+              </span>
             </div>
             <button
               onClick={handleLogout}
@@ -566,55 +736,89 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-screen overflow-hidden">
-        <header className={`sticky top-0 z-30 h-14 ${isDark ? 'bg-gradient-to-r from-[#1A1505] via-[#15110A] to-[#1A1505] border-[#C9A24D]/20' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-4 lg:px-6 shadow-lg`}>
+        <header
+          className={`sticky top-0 z-30 h-14 ${isDark ? 'bg-gradient-to-r from-[#1A1505] via-[#15110A] to-[#1A1505] border-[#C9A24D]/20' : 'bg-white border-gray-200'} border-b flex items-center justify-between px-4 lg:px-6 shadow-lg`}
+        >
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-trade-primary dark:text-gray-400">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden text-trade-primary dark:text-gray-400"
+            >
               <Menu className="w-5 h-5" />
             </button>
             <h1 className={`type-header ${isDark ? 'text-[#F7E7B1]' : 'text-gray-900'}`}>
-              {userRole === UserPersona.ANALYST ? (
-                currentView === AppView.DASHBOARD ? 'Analytics Hub' :
-                currentView === AppView.MARKET_INTEL ? 'Market Research' :
-                currentView === AppView.TRADE_LIFECYCLE ? 'Trade Trends' :
-                currentView === AppView.COMPLIANCE ? 'Regulatory Data' :
-                currentView === AppView.LOGISTICS ? 'Logistics Data' :
-                currentView === AppView.TRADE_FINANCE ? 'Finance Metrics' :
-                currentView === AppView.MARKETPLACE ? 'Market Players' :
-                currentView === AppView.TENDERS ? 'Tender Analysis' :
-                'Profile & Settings'
-              ) : userRole === UserPersona.GOVERNMENT ? (
-                currentView === AppView.REGULATOR ? 'Agency Command Center' :
-                currentView === AppView.COMPLIANCE ? 'Policy & Compliance' :
-                currentView === AppView.CONTRACTS ? 'Trade Agreements' :
-                currentView === AppView.MARKET_INTEL ? 'Trade Statistics' :
-                currentView === AppView.LOGISTICS ? 'Trade Flows' :
-                currentView === AppView.KYC_VERIFICATION ? 'Entity Verification' :
-                currentView === AppView.MARKETPLACE ? 'Business Registry' :
-                t('settings')
-              ) : userRole === UserPersona.LOGISTICS ? (
-                currentView === AppView.LOGISTICS_PROVIDER ? 'Logistics Command Center' :
-                currentView === AppView.PROFILE ? t('settings') :
-                'Logistics Command Center'
-              ) : (
-                currentView === AppView.DASHBOARD ? t('commandCenter') : 
-                currentView === AppView.TRADE_LIFECYCLE ? 'Trade Workspace' :
-                currentView === AppView.TRADE_FINANCE ? 'Trade Finance' :
-                currentView === AppView.MARKET_INTEL ? 'Market Intelligence' :
-                currentView === AppView.COMPLIANCE ? 'Compliance Engine' :
-                currentView === AppView.LOGISTICS ? 'Logistics' :
-                currentView === AppView.MARKETPLACE ? 'Partner Network' :
-                currentView === AppView.LIVE_ASSISTANT ? 'Live Assistant' : 
-                currentView === AppView.MARKETING ? 'Marketing Studio' : 
-                currentView === AppView.ADMIN ? 'Admin Console' :
-                currentView === AppView.REGULATOR ? 'Regulator Oversight' :
-                currentView === AppView.DIAGNOSTIC ? 'System Diagnostic' :
-                currentView === AppView.TENDERS ? 'Tenders & RFQ' :
-                currentView === AppView.CONTRACTS ? 'Smart Contracts' :
-                'Profile & Settings'
-              )}
+              {userRole === UserPersona.ANALYST
+                ? currentView === AppView.DASHBOARD
+                  ? 'Analytics Hub'
+                  : currentView === AppView.MARKET_INTEL
+                    ? 'Market Research'
+                    : currentView === AppView.TRADE_LIFECYCLE
+                      ? 'Trade Trends'
+                      : currentView === AppView.COMPLIANCE
+                        ? 'Regulatory Data'
+                        : currentView === AppView.LOGISTICS
+                          ? 'Logistics Data'
+                          : currentView === AppView.TRADE_FINANCE
+                            ? 'Finance Metrics'
+                            : currentView === AppView.MARKETPLACE
+                              ? 'Market Players'
+                              : currentView === AppView.TENDERS
+                                ? 'Tender Analysis'
+                                : 'Profile & Settings'
+                : userRole === UserPersona.GOVERNMENT
+                  ? currentView === AppView.REGULATOR
+                    ? 'Agency Command Center'
+                    : currentView === AppView.COMPLIANCE
+                      ? 'Policy & Compliance'
+                      : currentView === AppView.CONTRACTS
+                        ? 'Trade Agreements'
+                        : currentView === AppView.MARKET_INTEL
+                          ? 'Trade Statistics'
+                          : currentView === AppView.LOGISTICS
+                            ? 'Trade Flows'
+                            : currentView === AppView.KYC_VERIFICATION
+                              ? 'Entity Verification'
+                              : currentView === AppView.MARKETPLACE
+                                ? 'Business Registry'
+                                : t('settings')
+                  : userRole === UserPersona.LOGISTICS
+                    ? currentView === AppView.LOGISTICS_PROVIDER
+                      ? 'Logistics Command Center'
+                      : currentView === AppView.PROFILE
+                        ? t('settings')
+                        : 'Logistics Command Center'
+                    : currentView === AppView.DASHBOARD
+                      ? t('commandCenter')
+                      : currentView === AppView.TRADE_LIFECYCLE
+                        ? 'Trade Workspace'
+                        : currentView === AppView.TRADE_FINANCE
+                          ? 'Trade Finance'
+                          : currentView === AppView.MARKET_INTEL
+                            ? 'Market Intelligence'
+                            : currentView === AppView.COMPLIANCE
+                              ? 'Compliance Engine'
+                              : currentView === AppView.LOGISTICS
+                                ? 'Logistics'
+                                : currentView === AppView.MARKETPLACE
+                                  ? 'Partner Network'
+                                  : currentView === AppView.LIVE_ASSISTANT
+                                    ? 'Live Assistant'
+                                    : currentView === AppView.MARKETING
+                                      ? 'Marketing Studio'
+                                      : currentView === AppView.ADMIN
+                                        ? 'Admin Console'
+                                        : currentView === AppView.REGULATOR
+                                          ? 'Regulator Oversight'
+                                          : currentView === AppView.DIAGNOSTIC
+                                            ? 'System Diagnostic'
+                                            : currentView === AppView.TENDERS
+                                              ? 'Tenders & RFQ'
+                                              : currentView === AppView.CONTRACTS
+                                                ? 'Smart Contracts'
+                                                : 'Profile & Settings'}
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30">
               <Wifi className="w-3 h-3" />
@@ -633,20 +837,31 @@ export default function App() {
               {showLanguageDropdown && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectLanguage')}</span>
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                      {t('selectLanguage')}
+                    </span>
                   </div>
                   {LANGUAGES.map(item => (
                     <button
                       key={item.code}
-                      onClick={() => { setLanguage(item.code); setShowLanguageDropdown(false); }}
+                      onClick={() => {
+                        setLanguage(item.code);
+                        setShowLanguageDropdown(false);
+                      }}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${language === item.code ? 'bg-trade-accent/10' : ''}`}
                     >
                       <Globe className="w-4 h-4 text-trade-accent" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white">{item.label}</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">{item.nativeLabel}</p>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">
+                          {item.label}
+                        </p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          {item.nativeLabel}
+                        </p>
                       </div>
-                      {language === item.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                      {language === item.code && (
+                        <CheckCircle className="w-4 h-4 text-trade-accent" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -665,43 +880,67 @@ export default function App() {
               {showCurrencyDropdown && (
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="px-3 py-2 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{t('selectCurrency')}</span>
+                    <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                      {t('selectCurrency')}
+                    </span>
                   </div>
                   <div className="max-h-72 overflow-y-auto">
                     <div className="px-2 py-1.5">
-                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">African Currencies</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">
+                        African Currencies
+                      </span>
                     </div>
-                    {CURRENCIES.filter(c => ['NGN', 'KES', 'ZAR', 'EGP', 'GHS', 'XOF', 'MAD'].includes(c.code)).map(c => (
+                    {CURRENCIES.filter(c =>
+                      ['NGN', 'KES', 'ZAR', 'EGP', 'GHS', 'XOF', 'MAD'].includes(c.code)
+                    ).map(c => (
                       <button
                         key={c.code}
-                        onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
+                        onClick={() => {
+                          setCurrency(c.code);
+                          setShowCurrencyDropdown(false);
+                        }}
                         className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
                       >
                         <span className="text-base">{c.flag}</span>
                         <div className="flex-1">
-                          <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">
+                            {c.code}
+                          </p>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
                         </div>
                         <span className="text-xs text-gray-400">{c.symbol}</span>
-                        {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                        {currency === c.code && (
+                          <CheckCircle className="w-4 h-4 text-trade-accent" />
+                        )}
                       </button>
                     ))}
                     <div className="px-2 py-1.5 border-t border-gray-100 dark:border-slate-700">
-                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">International</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase px-2">
+                        International
+                      </span>
                     </div>
-                    {CURRENCIES.filter(c => ['USD', 'EUR', 'GBP', 'CNY', 'INR'].includes(c.code)).map(c => (
+                    {CURRENCIES.filter(c =>
+                      ['USD', 'EUR', 'GBP', 'CNY', 'INR'].includes(c.code)
+                    ).map(c => (
                       <button
                         key={c.code}
-                        onClick={() => { setCurrency(c.code); setShowCurrencyDropdown(false); }}
+                        onClick={() => {
+                          setCurrency(c.code);
+                          setShowCurrencyDropdown(false);
+                        }}
                         className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${currency === c.code ? 'bg-trade-accent/10' : ''}`}
                       >
                         <span className="text-base">{c.flag}</span>
                         <div className="flex-1">
-                          <p className="text-xs font-bold text-gray-900 dark:text-white">{c.code}</p>
+                          <p className="text-xs font-bold text-gray-900 dark:text-white">
+                            {c.code}
+                          </p>
                           <p className="text-[10px] text-gray-500 dark:text-gray-400">{c.name}</p>
                         </div>
                         <span className="text-xs text-gray-400">{c.symbol}</span>
-                        {currency === c.code && <CheckCircle className="w-4 h-4 text-trade-accent" />}
+                        {currency === c.code && (
+                          <CheckCircle className="w-4 h-4 text-trade-accent" />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -709,16 +948,16 @@ export default function App() {
               )}
             </div>
 
-            <button 
+            <button
               onClick={toggleTheme}
               className={`btn-icon p-0 ${isDark ? 'text-[#C9A24D] hover:text-[#F7E7B1]' : 'text-[#8B7025] hover:text-[#6b5a2e]'}`}
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
             {/* Notifications Dropdown */}
             <div className="relative" ref={notificationRef}>
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="btn-icon relative p-0 text-[#C9A24D] hover:text-[#F7E7B1]"
               >
@@ -737,7 +976,9 @@ export default function App() {
                   <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-700/50">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-trade-accent" />
-                      <span className="type-body font-semibold text-gray-900 dark:text-white">{t('notifications')}</span>
+                      <span className="type-body font-semibold text-gray-900 dark:text-white">
+                        {t('notifications')}
+                      </span>
                       {unreadCount > 0 && (
                         <span className="px-1.5 py-0.5 bg-trade-accent text-white text-[10px] font-bold rounded-full">
                           {unreadCount} new
@@ -746,7 +987,7 @@ export default function App() {
                     </div>
                     <div className="flex items-center gap-1">
                       {unreadCount > 0 && (
-                        <button 
+                        <button
                           onClick={markAllAsRead}
                           className="btn-icon p-0 text-gray-500 hover:text-trade-accent hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
                           title={t('markAllRead')}
@@ -754,7 +995,7 @@ export default function App() {
                           <CheckCheck className="w-4 h-4" />
                         </button>
                       )}
-                      <button 
+                      <button
                         onClick={clearAllNotifications}
                         className="btn-icon p-0 text-gray-500 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-slate-600 shadow-none"
                         title={t('clearAll')}
@@ -777,7 +1018,7 @@ export default function App() {
                       </div>
                     ) : (
                       notifications.map(notification => (
-                        <div 
+                        <div
                           key={notification.id}
                           onClick={() => {
                             if (!notification.is_read) markAsRead(notification.id);
@@ -791,16 +1032,24 @@ export default function App() {
                           }`}
                         >
                           <div className="flex gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              !notification.is_read ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-gray-100 dark:bg-slate-700'
-                            }`}>
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                !notification.is_read
+                                  ? 'bg-blue-100 dark:bg-blue-900/30'
+                                  : 'bg-gray-100 dark:bg-slate-700'
+                              }`}
+                            >
                               {getNotificationIcon(notification.type)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
-                                <p className={`text-sm font-medium truncate ${
-                                  !notification.is_read ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-slate-300'
-                                }`}>
+                                <p
+                                  className={`text-sm font-medium truncate ${
+                                    !notification.is_read
+                                      ? 'text-gray-900 dark:text-white'
+                                      : 'text-gray-700 dark:text-slate-300'
+                                  }`}
+                                >
                                   {notification.title}
                                 </p>
                                 <span className="text-[10px] text-gray-400 dark:text-slate-500 whitespace-nowrap flex-shrink-0">
@@ -829,7 +1078,7 @@ export default function App() {
                   {/* Footer */}
                   {notifications.length > 0 && (
                     <div className="px-4 py-2 border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
-                      <button 
+                      <button
                         onClick={() => {
                           setShowNotifications(false);
                           // Could navigate to a dedicated notifications page
@@ -847,11 +1096,11 @@ export default function App() {
         </header>
 
         {/* Content Area */}
-        <div className={`flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}>
+        <div
+          className={`flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}
+        >
           <div className="mx-auto w-full max-w-7xl">
-            <Suspense fallback={<LoadingFallback />}>
-              {renderView()}
-            </Suspense>
+            <Suspense fallback={<LoadingFallback />}>{renderView()}</Suspense>
           </div>
         </div>
 

@@ -4,7 +4,12 @@ export interface FinanceApplication {
   id: string;
   applicantName: string;
   companyName: string;
-  applicationType: 'letter_of_credit' | 'trade_finance' | 'export_credit' | 'working_capital' | 'invoice_financing';
+  applicationType:
+    | 'letter_of_credit'
+    | 'trade_finance'
+    | 'export_credit'
+    | 'working_capital'
+    | 'invoice_financing';
   amount: number;
   currency: string;
   status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'disbursed';
@@ -21,7 +26,15 @@ export interface FinanceApplication {
 export interface ApplicationDocument {
   id: string;
   name: string;
-  type: 'invoice' | 'bill_of_lading' | 'certificate_of_origin' | 'insurance' | 'customs_declaration' | 'contract' | 'financial_statement' | 'other';
+  type:
+    | 'invoice'
+    | 'bill_of_lading'
+    | 'certificate_of_origin'
+    | 'insurance'
+    | 'customs_declaration'
+    | 'contract'
+    | 'financial_statement'
+    | 'other';
   status: 'pending' | 'uploaded' | 'verified' | 'rejected';
   uploadedDate?: string;
   extractedData?: ExtractedDocumentData;
@@ -55,7 +68,13 @@ export interface TradeDetails {
 }
 
 export interface WorkflowStage {
-  currentStage: 'application' | 'document_collection' | 'verification' | 'credit_assessment' | 'approval' | 'disbursement';
+  currentStage:
+    | 'application'
+    | 'document_collection'
+    | 'verification'
+    | 'credit_assessment'
+    | 'approval'
+    | 'disbursement';
   completedStages: string[];
   pendingActions: WorkflowAction[];
   timeline: WorkflowEvent[];
@@ -63,7 +82,13 @@ export interface WorkflowStage {
 
 export interface WorkflowAction {
   id: string;
-  type: 'upload_document' | 'verify_document' | 'credit_check' | 'manager_approval' | 'compliance_review' | 'disbursement';
+  type:
+    | 'upload_document'
+    | 'verify_document'
+    | 'credit_check'
+    | 'manager_approval'
+    | 'compliance_review'
+    | 'disbursement';
   description: string;
   assignedTo?: string;
   dueDate?: string;
@@ -123,17 +148,17 @@ export interface ApplicationFormData {
   contactPerson: string;
   email: string;
   phone: string;
-  
+
   // Application Details
   applicationType: FinanceApplication['applicationType'];
   amount: number;
   currency: string;
   tenor: number;
   purpose: string;
-  
+
   // Trade Details (for trade finance)
   tradeDetails?: Partial<TradeDetails>;
-  
+
   // Supporting Information
   annualRevenue?: number;
   yearsInBusiness?: number;

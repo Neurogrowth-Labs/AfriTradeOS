@@ -25,7 +25,7 @@ const BLOCKED_SUBSTRINGS = [
   '\r',
   '\0',
   '%00',
-  '$(', 
+  '$(',
   '${',
   '||',
   '&&',
@@ -34,9 +34,7 @@ const BLOCKED_SUBSTRINGS = [
 const BLOCKED_KEYWORDS =
   /\b(sleep|curl|wget|bash|sh|cmd|powershell|exec|eval|system|popen|proc_open|passthru|shell_exec|ping|nc|node|python|php|perl|ruby|java)\b/i;
 
-export type SearchValidationResult =
-  | { ok: true; value: string }
-  | { ok: false; error: string };
+export type SearchValidationResult = { ok: true; value: string } | { ok: false; error: string };
 
 function decodeSafely(value: string): string {
   try {

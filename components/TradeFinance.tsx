@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   Area,
-  AreaChart
+  AreaChart,
 } from 'recharts';
-import { 
-  Landmark, 
-  ShieldAlert, 
-  TrendingUp, 
-  FileCheck, 
-  ArrowRight, 
+import {
+  Landmark,
+  ShieldAlert,
+  TrendingUp,
+  FileCheck,
+  ArrowRight,
   Clock,
   CheckCircle,
   Loader2,
@@ -30,10 +30,13 @@ import {
   TrendingDown,
   Info,
   RefreshCw,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { mockDatabase } from '../services/mockDatabase';
-import { enterpriseExporterService, FXRate as SupabaseFXRate } from '../services/enterpriseExporterService';
+import {
+  enterpriseExporterService,
+  FXRate as SupabaseFXRate,
+} from '../services/enterpriseExporterService';
 import { DbFinanceRequest } from '../types';
 
 // FX Rate data types
@@ -93,32 +96,167 @@ interface Financier {
 }
 
 const FALLBACK_FUNDING_OPTIONS: Financier[] = [
-  { id: 'opt_1', name: 'Ecobank', type: 'Bank', product: 'Letter of Credit', interest_rate: 2.5, term: '90 Days', min_score: 70, logo_initial: 'E' },
-  { id: 'opt_2', name: 'Afreximbank', type: 'DFI', product: 'Trade Guarantee', interest_rate: 1.8, term: '180 Days', min_score: 80, logo_initial: 'A' },
-  { id: 'opt_3', name: 'Allianz', type: 'Insurer', product: 'Credit Insurance', interest_rate: 0.9, term: 'Annual', min_score: 60, logo_initial: 'AL' },
-  { id: 'opt_4', name: 'Stanbic IBTC', type: 'Bank', product: 'Invoice Factoring', interest_rate: 3.2, term: '60 Days', min_score: 65, logo_initial: 'S' },
-  { id: 'opt_5', name: 'DBSA', type: 'DFI', product: 'Import Guarantee', interest_rate: 2.0, term: '120 Days', min_score: 75, logo_initial: 'D' },
-  { id: 'opt_6', name: 'ATI', type: 'Insurer', product: 'Supplier Credit Insurance', interest_rate: 1.2, term: 'Annual', min_score: 55, logo_initial: 'AT' },
+  {
+    id: 'opt_1',
+    name: 'Ecobank',
+    type: 'Bank',
+    product: 'Letter of Credit',
+    interest_rate: 2.5,
+    term: '90 Days',
+    min_score: 70,
+    logo_initial: 'E',
+  },
+  {
+    id: 'opt_2',
+    name: 'Afreximbank',
+    type: 'DFI',
+    product: 'Trade Guarantee',
+    interest_rate: 1.8,
+    term: '180 Days',
+    min_score: 80,
+    logo_initial: 'A',
+  },
+  {
+    id: 'opt_3',
+    name: 'Allianz',
+    type: 'Insurer',
+    product: 'Credit Insurance',
+    interest_rate: 0.9,
+    term: 'Annual',
+    min_score: 60,
+    logo_initial: 'AL',
+  },
+  {
+    id: 'opt_4',
+    name: 'Stanbic IBTC',
+    type: 'Bank',
+    product: 'Invoice Factoring',
+    interest_rate: 3.2,
+    term: '60 Days',
+    min_score: 65,
+    logo_initial: 'S',
+  },
+  {
+    id: 'opt_5',
+    name: 'DBSA',
+    type: 'DFI',
+    product: 'Import Guarantee',
+    interest_rate: 2.0,
+    term: '120 Days',
+    min_score: 75,
+    logo_initial: 'D',
+  },
+  {
+    id: 'opt_6',
+    name: 'ATI',
+    type: 'Insurer',
+    product: 'Supplier Credit Insurance',
+    interest_rate: 1.2,
+    term: 'Annual',
+    min_score: 55,
+    logo_initial: 'AT',
+  },
 ];
 
 // Fallback FX rates (used when DB is empty)
 const FALLBACK_FX_RATES: FXRate[] = [
-  { pair: 'USD/NGN', rate: 1550.25, change: -12.50, changePercent: -0.80, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 1530 + Math.sin(i * 0.3) * 40 + Math.random() * 20 })) },
-  { pair: 'USD/KES', rate: 129.45, change: 0.85, changePercent: 0.66, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 127 + Math.sin(i * 0.2) * 3 + Math.random() * 2 })) },
-  { pair: 'USD/ZAR', rate: 18.72, change: -0.15, changePercent: -0.80, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 18.2 + Math.sin(i * 0.25) * 0.8 + Math.random() * 0.3 })) },
-  { pair: 'USD/GHS', rate: 15.80, change: 0.22, changePercent: 1.41, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 15.3 + Math.sin(i * 0.15) * 0.6 + Math.random() * 0.2 })) },
-  { pair: 'USD/EGP', rate: 50.85, change: -0.35, changePercent: -0.68, history: Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: 49.5 + Math.sin(i * 0.18) * 1.5 + Math.random() * 0.5 })) },
+  {
+    pair: 'USD/NGN',
+    rate: 1550.25,
+    change: -12.5,
+    changePercent: -0.8,
+    history: Array.from({ length: 30 }, (_, i) => ({
+      time: `Day ${i + 1}`,
+      rate: 1530 + Math.sin(i * 0.3) * 40 + Math.random() * 20,
+    })),
+  },
+  {
+    pair: 'USD/KES',
+    rate: 129.45,
+    change: 0.85,
+    changePercent: 0.66,
+    history: Array.from({ length: 30 }, (_, i) => ({
+      time: `Day ${i + 1}`,
+      rate: 127 + Math.sin(i * 0.2) * 3 + Math.random() * 2,
+    })),
+  },
+  {
+    pair: 'USD/ZAR',
+    rate: 18.72,
+    change: -0.15,
+    changePercent: -0.8,
+    history: Array.from({ length: 30 }, (_, i) => ({
+      time: `Day ${i + 1}`,
+      rate: 18.2 + Math.sin(i * 0.25) * 0.8 + Math.random() * 0.3,
+    })),
+  },
+  {
+    pair: 'USD/GHS',
+    rate: 15.8,
+    change: 0.22,
+    changePercent: 1.41,
+    history: Array.from({ length: 30 }, (_, i) => ({
+      time: `Day ${i + 1}`,
+      rate: 15.3 + Math.sin(i * 0.15) * 0.6 + Math.random() * 0.2,
+    })),
+  },
+  {
+    pair: 'USD/EGP',
+    rate: 50.85,
+    change: -0.35,
+    changePercent: -0.68,
+    history: Array.from({ length: 30 }, (_, i) => ({
+      time: `Day ${i + 1}`,
+      rate: 49.5 + Math.sin(i * 0.18) * 1.5 + Math.random() * 0.5,
+    })),
+  },
 ];
 
 const FALLBACK_HEDGING: HedgingSuggestion[] = [
-  { id: 'h1', type: 'forward', pair: 'USD/NGN', description: 'Lock in current rate of 1,550.25 for 90 days to protect against Naira depreciation', savings: '$4,200', risk: 'low', term: '90 days' },
-  { id: 'h2', type: 'option', pair: 'USD/KES', description: 'Buy a put option at 130 KES strike for downside protection with upside flexibility', savings: '$1,800', risk: 'medium', term: '60 days' },
-  { id: 'h3', type: 'swap', pair: 'USD/ZAR', description: 'Currency swap arrangement for recurring ZAR payments, reducing transaction costs', savings: '$3,500', risk: 'low', term: '180 days' },
-  { id: 'h4', type: 'forward', pair: 'USD/GHS', description: 'Forward contract to hedge Cedi exposure on pending cocoa export payments', savings: '$2,100', risk: 'medium', term: '120 days' },
+  {
+    id: 'h1',
+    type: 'forward',
+    pair: 'USD/NGN',
+    description:
+      'Lock in current rate of 1,550.25 for 90 days to protect against Naira depreciation',
+    savings: '$4,200',
+    risk: 'low',
+    term: '90 days',
+  },
+  {
+    id: 'h2',
+    type: 'option',
+    pair: 'USD/KES',
+    description:
+      'Buy a put option at 130 KES strike for downside protection with upside flexibility',
+    savings: '$1,800',
+    risk: 'medium',
+    term: '60 days',
+  },
+  {
+    id: 'h3',
+    type: 'swap',
+    pair: 'USD/ZAR',
+    description: 'Currency swap arrangement for recurring ZAR payments, reducing transaction costs',
+    savings: '$3,500',
+    risk: 'low',
+    term: '180 days',
+  },
+  {
+    id: 'h4',
+    type: 'forward',
+    pair: 'USD/GHS',
+    description: 'Forward contract to hedge Cedi exposure on pending cocoa export payments',
+    savings: '$2,100',
+    risk: 'medium',
+    term: '120 days',
+  },
 ];
 
 export const TradeFinance: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'options' | 'applications' | 'fx_rates' | 'calculator' | 'hedging'>('options');
+  const [activeTab, setActiveTab] = useState<
+    'options' | 'applications' | 'fx_rates' | 'calculator' | 'hedging'
+  >('options');
   const [applications, setApplications] = useState<DbFinanceRequest[]>([]);
   const [financiers, setFinanciers] = useState<Financier[]>([]);
   const [loading, setLoading] = useState(false);
@@ -137,8 +275,15 @@ export const TradeFinance: React.FC = () => {
   // FX & Calculator state
   const [fxRates, setFxRates] = useState<FXRate[]>(FALLBACK_FX_RATES);
   const [selectedFXPair, setSelectedFXPair] = useState<FXRate>(FALLBACK_FX_RATES[0]);
-  const [hedgingSuggestions, setHedgingSuggestions] = useState<HedgingSuggestion[]>(FALLBACK_HEDGING);
-  const [calcForm, setCalcForm] = useState({ cifValue: 10000, hsCode: '0709.93', origin: 'Ghana', destination: 'Kenya', isAfcfta: true });
+  const [hedgingSuggestions, setHedgingSuggestions] =
+    useState<HedgingSuggestion[]>(FALLBACK_HEDGING);
+  const [calcForm, setCalcForm] = useState({
+    cifValue: 10000,
+    hsCode: '0709.93',
+    origin: 'Ghana',
+    destination: 'Kenya',
+    isAfcfta: true,
+  });
   const [calcResult, setCalcResult] = useState<TariffResult | null>(null);
   const [showHedgeModal, setShowHedgeModal] = useState(false);
   const [selectedHedge, setSelectedHedge] = useState<HedgingSuggestion | null>(null);
@@ -158,13 +303,25 @@ export const TradeFinance: React.FC = () => {
   // Calculate tariff
   const calculateTariff = () => {
     const dutyRate = calcForm.isAfcfta ? 0 : 20; // AfCFTA = 0% duty
-    const vatRate = calcForm.destination === 'Kenya' ? 16 : calcForm.destination === 'Nigeria' ? 7.5 : calcForm.destination === 'South Africa' ? 15 : calcForm.destination === 'Egypt' ? 14 : 15;
+    const vatRate =
+      calcForm.destination === 'Kenya'
+        ? 16
+        : calcForm.destination === 'Nigeria'
+          ? 7.5
+          : calcForm.destination === 'South Africa'
+            ? 15
+            : calcForm.destination === 'Egypt'
+              ? 14
+              : 15;
     const duty = (calcForm.cifValue * dutyRate) / 100;
     const vat = ((calcForm.cifValue + duty) * vatRate) / 100;
     const afcftaDiscount = calcForm.isAfcfta ? (calcForm.cifValue * 20) / 100 : 0;
     setCalcResult({
       cif: calcForm.cifValue,
-      duty, dutyRate, vat, vatRate,
+      duty,
+      dutyRate,
+      vat,
+      vatRate,
       afcftaDiscount,
       totalTax: duty + vat,
       totalLanded: calcForm.cifValue + duty + vat,
@@ -176,7 +333,7 @@ export const TradeFinance: React.FC = () => {
     const loadData = async () => {
       setLoadingFinanciers(true);
       setLoadingMetrics(true);
-      
+
       try {
         // Try to load FX rates from Supabase first
         const supabaseFxRates = await enterpriseExporterService.getFXRates('USD');
@@ -186,9 +343,12 @@ export const TradeFinance: React.FC = () => {
             rate: r.rate,
             change: r.change_1d,
             changePercent: (r.change_1d / r.rate) * 100,
-            history: Array.from({length: 30}, (_, i) => ({ 
-              time: `Day ${i+1}`, 
-              rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02) + (Math.random() - 0.5) * (r.rate * 0.01)
+            history: Array.from({ length: 30 }, (_, i) => ({
+              time: `Day ${i + 1}`,
+              rate:
+                r.rate +
+                Math.sin(i * 0.3) * (r.rate * 0.02) +
+                (Math.random() - 0.5) * (r.rate * 0.01),
             })),
           }));
           setFxRates(ratesWithHistory);
@@ -199,11 +359,16 @@ export const TradeFinance: React.FC = () => {
             .filter((r: SupabaseFXRate) => r.ai_hedge_recommendation)
             .map((r: SupabaseFXRate, idx: number) => ({
               id: `h${idx + 1}`,
-              type: r.volatility_30d > 5 ? 'forward' : 'option' as 'forward' | 'option' | 'swap',
+              type: r.volatility_30d > 5 ? 'forward' : ('option' as 'forward' | 'option' | 'swap'),
               pair: `${r.base_currency}/${r.quote_currency}`,
               description: r.ai_hedge_recommendation || 'Consider hedging this currency pair',
               savings: `$${Math.floor(r.volatility_30d * 500)}`,
-              risk: r.volatility_30d > 5 ? 'high' : r.volatility_30d > 3 ? 'medium' : 'low' as 'low' | 'medium' | 'high',
+              risk:
+                r.volatility_30d > 5
+                  ? 'high'
+                  : r.volatility_30d > 3
+                    ? 'medium'
+                    : ('low' as 'low' | 'medium' | 'high'),
               term: '90 days',
             }));
           if (hedgingSuggestions.length > 0) {
@@ -214,11 +379,17 @@ export const TradeFinance: React.FC = () => {
           const dbFxRates = await mockDatabase.getFXRates();
           if (dbFxRates.length > 0) {
             const ratesWithHistory: FXRate[] = await Promise.all(
-              dbFxRates.map(async (r) => {
+              dbFxRates.map(async r => {
                 const history = await mockDatabase.getFXRateHistory(r.pair);
                 return {
                   ...r,
-                  history: history.length > 0 ? history : Array.from({length: 30}, (_, i) => ({ time: `Day ${i+1}`, rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02) })),
+                  history:
+                    history.length > 0
+                      ? history
+                      : Array.from({ length: 30 }, (_, i) => ({
+                          time: `Day ${i + 1}`,
+                          rate: r.rate + Math.sin(i * 0.3) * (r.rate * 0.02),
+                        })),
                 };
               })
             );
@@ -236,12 +407,12 @@ export const TradeFinance: React.FC = () => {
         // Load financiers from mock (no Supabase table for this yet)
         const financiersData = await mockDatabase.getFinanciers();
         setFinanciers(financiersData.length > 0 ? financiersData : FALLBACK_FUNDING_OPTIONS);
-        
+
         // Load finance readiness score
         const readiness = await mockDatabase.calculateFinanceReadiness();
         setReadinessScore(readiness.score);
         setReadinessBreakdown(readiness.breakdown);
-        
+
         // Load country risk exposure
         const risks = await mockDatabase.calculateCountryRiskExposure();
         setCountryRisks(risks);
@@ -262,20 +433,20 @@ export const TradeFinance: React.FC = () => {
   }, []);
 
   const fetchApplications = async () => {
-      setLoading(true);
-      try {
-          const data = await mockDatabase.getFinanceRequests('current_user');
-          setApplications(data);
-      } catch(e) {
-          console.error("Failed to fetch applications", e);
-      } finally {
-          setLoading(false);
-      }
+    setLoading(true);
+    try {
+      const data = await mockDatabase.getFinanceRequests('current_user');
+      setApplications(data);
+    } catch (e) {
+      console.error('Failed to fetch applications', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (activeTab === 'applications') {
-        fetchApplications();
+      fetchApplications();
     }
   }, [activeTab]);
 
@@ -287,15 +458,20 @@ export const TradeFinance: React.FC = () => {
 
   const handleSubmitApplication = async () => {
     if (!applyForm.amount || !selectedProvider) return;
-    
+
     setSubmitting(true);
     try {
       const result = await mockDatabase.createFinanceRequest({
         product_type: `${selectedProvider.name} - ${applyForm.product_type}`,
         amount: parseFloat(applyForm.amount),
-        financier_id: selectedProvider.id !== 'opt_1' && selectedProvider.id !== 'opt_2' && selectedProvider.id !== 'opt_3' ? selectedProvider.id : undefined
+        financier_id:
+          selectedProvider.id !== 'opt_1' &&
+          selectedProvider.id !== 'opt_2' &&
+          selectedProvider.id !== 'opt_3'
+            ? selectedProvider.id
+            : undefined,
       });
-      
+
       if (result) {
         setShowApplyModal(false);
         setActiveTab('applications');
@@ -314,19 +490,28 @@ export const TradeFinance: React.FC = () => {
   return (
     <div className="h-full flex flex-col gap-6 animate-fade-in pb-6">
       <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex items-center justify-between">
-         <div className="flex items-center gap-3">
-             <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <Landmark className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-             </div>
-             <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Trade Finance & Risk</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">L/C, invoice financing, guarantees & cross-border risk management</p>
-             </div>
-         </div>
-         <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600">
-            <ShieldAlert className="w-4 h-4 text-orange-500" />
-            <span>FX Exposure: <span className="font-bold text-gray-900 dark:text-white">${financeSummary.fxExposure > 0 ? financeSummary.fxExposure.toLocaleString() : '0'}</span></span>
-         </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+            <Landmark className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Trade Finance & Risk
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              L/C, invoice financing, guarantees & cross-border risk management
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-600">
+          <ShieldAlert className="w-4 h-4 text-orange-500" />
+          <span>
+            FX Exposure:{' '}
+            <span className="font-bold text-gray-900 dark:text-white">
+              ${financeSummary.fxExposure > 0 ? financeSummary.fxExposure.toLocaleString() : '0'}
+            </span>
+          </span>
+        </div>
       </div>
 
       {/* AI-Powered Finance Recommendations */}
@@ -339,22 +524,41 @@ export const TradeFinance: React.FC = () => {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">AI Recommendation</span>
+              <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                AI Recommendation
+              </span>
             </div>
             <p className="text-sm font-medium leading-relaxed opacity-95">
-              Based on your trade history and credit score of <span className="font-bold">{readinessScore}/100</span>, we recommend 
-              <span className="font-bold"> {financiers.length > 0 ? `${financiers[0].product} with ${financiers[0].name}` : 'Invoice Factoring with Ecobank'}</span> at {financiers.length > 0 ? financiers[0].interest_rate : 2.5}% — you could unlock up to <span className="font-bold">${financeSummary.approvedCredit > 0 ? `$${financeSummary.approvedCredit.toLocaleString()}` : '$45,000'}</span> in 
-              working capital within 48 hours.
+              Based on your trade history and credit score of{' '}
+              <span className="font-bold">{readinessScore}/100</span>, we recommend
+              <span className="font-bold">
+                {' '}
+                {financiers.length > 0
+                  ? `${financiers[0].product} with ${financiers[0].name}`
+                  : 'Invoice Factoring with Ecobank'}
+              </span>{' '}
+              at {financiers.length > 0 ? financiers[0].interest_rate : 2.5}% — you could unlock up
+              to{' '}
+              <span className="font-bold">
+                $
+                {financeSummary.approvedCredit > 0
+                  ? `$${financeSummary.approvedCredit.toLocaleString()}`
+                  : '$45,000'}
+              </span>{' '}
+              in working capital within 48 hours.
             </p>
           </div>
-          <button 
+          <button
             onClick={() => {
               // Pre-populate with AI recommendation
               if (financiers.length > 0) {
                 setSelectedProvider(financiers[0]);
-                setApplyForm({ 
-                  amount: financeSummary.approvedCredit > 0 ? financeSummary.approvedCredit.toString() : '25000', 
-                  product_type: financiers[0].product 
+                setApplyForm({
+                  amount:
+                    financeSummary.approvedCredit > 0
+                      ? financeSummary.approvedCredit.toString()
+                      : '25000',
+                  product_type: financiers[0].product,
                 });
                 setShowApplyModal(true);
               } else {
@@ -373,8 +577,15 @@ export const TradeFinance: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
           <p className="text-[10px] font-bold text-gray-400 uppercase">Approved Credit</p>
-          <p className="text-xl font-bold text-green-600 mt-1">${financeSummary.approvedCredit > 0 ? financeSummary.approvedCredit.toLocaleString() : '0'}</p>
-          <p className="text-[10px] text-green-600">{financeSummary.approvedCredit > 0 ? 'Available to draw' : 'No approved credit'}</p>
+          <p className="text-xl font-bold text-green-600 mt-1">
+            $
+            {financeSummary.approvedCredit > 0
+              ? financeSummary.approvedCredit.toLocaleString()
+              : '0'}
+          </p>
+          <p className="text-[10px] text-green-600">
+            {financeSummary.approvedCredit > 0 ? 'Available to draw' : 'No approved credit'}
+          </p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
           <p className="text-[10px] font-bold text-gray-400 uppercase">Pending Requests</p>
@@ -383,527 +594,776 @@ export const TradeFinance: React.FC = () => {
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
           <p className="text-[10px] font-bold text-gray-400 uppercase">Avg Interest Rate</p>
-          <p className="text-xl font-bold text-indigo-600 mt-1">{financeSummary.avgInterestRate > 0 ? `${financeSummary.avgInterestRate}%` : '—'}</p>
+          <p className="text-xl font-bold text-indigo-600 mt-1">
+            {financeSummary.avgInterestRate > 0 ? `${financeSummary.avgInterestRate}%` : '—'}
+          </p>
           <p className="text-[10px] text-gray-500">Across products</p>
         </div>
         <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
           <p className="text-[10px] font-bold text-gray-400 uppercase">Next Repayment</p>
-          <p className="text-xl font-bold text-trade-primary mt-1">{financeSummary.nextRepaymentDate ? new Date(financeSummary.nextRepaymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}</p>
-          <p className="text-[10px] text-gray-500">{financeSummary.nextRepaymentAmount > 0 ? `$${financeSummary.nextRepaymentAmount.toLocaleString()} due` : 'No upcoming payments'}</p>
+          <p className="text-xl font-bold text-trade-primary mt-1">
+            {financeSummary.nextRepaymentDate
+              ? new Date(financeSummary.nextRepaymentDate).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              : '—'}
+          </p>
+          <p className="text-[10px] text-gray-500">
+            {financeSummary.nextRepaymentAmount > 0
+              ? `$${financeSummary.nextRepaymentAmount.toLocaleString()} due`
+              : 'No upcoming payments'}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
-        
         {/* Left Column: Stats & Risk */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-           
-           {/* Readiness Score */}
-           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 text-center">Finance Readiness Score</h3>
-              {loadingMetrics ? (
-                <div className="h-48 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                </div>
-              ) : (
-                <>
-                  <div className="h-48 w-full relative flex items-center justify-center">
-                     <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                           <Pie
-                              data={[
-                                { name: 'Ready', value: readinessScore, color: readinessScore >= 80 ? '#10b981' : readinessScore >= 60 ? '#f59e0b' : '#ef4444' },
-                                { name: 'Gap', value: 100 - readinessScore, color: '#e2e8f0' },
-                              ]}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={80}
-                              startAngle={180}
-                              endAngle={0}
-                              paddingAngle={5}
-                              dataKey="value"
-                           >
-                              <Cell fill={readinessScore >= 80 ? '#10b981' : readinessScore >= 60 ? '#f59e0b' : '#ef4444'} strokeWidth={0} />
-                              <Cell fill="#e2e8f0" strokeWidth={0} />
-                           </Pie>
-                        </PieChart>
-                     </ResponsiveContainer>
-                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-0 text-center">
-                        <span className="text-4xl font-black text-gray-900 dark:text-white">{readinessScore}</span>
-                        <span className="block text-xs text-gray-500">
-                          {readinessScore >= 80 ? 'Excellent' : readinessScore >= 60 ? 'Good' : readinessScore >= 40 ? 'Fair' : 'Poor'}
-                        </span>
-                     </div>
+          {/* Readiness Score */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 text-center">
+              Finance Readiness Score
+            </h3>
+            {loadingMetrics ? (
+              <div className="h-48 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+              </div>
+            ) : (
+              <>
+                <div className="h-48 w-full relative flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          {
+                            name: 'Ready',
+                            value: readinessScore,
+                            color:
+                              readinessScore >= 80
+                                ? '#10b981'
+                                : readinessScore >= 60
+                                  ? '#f59e0b'
+                                  : '#ef4444',
+                          },
+                          { name: 'Gap', value: 100 - readinessScore, color: '#e2e8f0' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        startAngle={180}
+                        endAngle={0}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        <Cell
+                          fill={
+                            readinessScore >= 80
+                              ? '#10b981'
+                              : readinessScore >= 60
+                                ? '#f59e0b'
+                                : '#ef4444'
+                          }
+                          strokeWidth={0}
+                        />
+                        <Cell fill="#e2e8f0" strokeWidth={0} />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-0 text-center">
+                    <span className="text-4xl font-black text-gray-900 dark:text-white">
+                      {readinessScore}
+                    </span>
+                    <span className="block text-xs text-gray-500">
+                      {readinessScore >= 80
+                        ? 'Excellent'
+                        : readinessScore >= 60
+                          ? 'Good'
+                          : readinessScore >= 40
+                            ? 'Fair'
+                            : 'Poor'}
+                    </span>
                   </div>
-                  
-                  {/* Breakdown */}
-                  {readinessBreakdown.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {readinessBreakdown.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">{item.label}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-20 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-indigo-500 rounded-full" 
-                                style={{ width: `${(item.score / item.max) * 100}%` }}
-                              />
-                            </div>
-                            <span className="font-bold text-gray-700 dark:text-gray-300 w-10 text-right">{item.score}/{item.max}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-gray-500 mt-4 text-center">
-                     {readinessScore >= 80 
-                       ? 'You qualify for premium trade financing options.' 
-                       : readinessScore >= 60 
-                         ? 'You qualify for standard trade loans. Complete KYC to improve.' 
-                         : 'Complete your profile and KYC to unlock financing options.'}
-                  </p>
-                </>
-              )}
-           </div>
-
-           {/* Risk Dashboard */}
-           <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex-1 min-h-0 overflow-hidden">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center justify-between">
-                  Country Risk Exposure
-                  <TrendingUp className="w-4 h-4" />
-              </h3>
-              {loadingMetrics ? (
-                <div className="h-48 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 </div>
-              ) : countryRisks.length === 0 ? (
-                <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
-                  No trade data available
-                </div>
-              ) : (
-                <div className="flex flex-col h-full">
-                  <div className="h-48 flex-shrink-0">
-                     <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={countryRisks.map(r => ({ name: r.country, risk: r.risk }))} layout="vertical">
-                           <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" opacity={0.5} />
-                           <XAxis type="number" hide domain={[0, 100]} />
-                           <YAxis dataKey="name" type="category" width={70} tick={{fontSize: 10, fill: '#64748b'}} />
-                           <Tooltip
-                             cursor={{fill: 'transparent'}}
-                             contentStyle={{ backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white' }}
-                             formatter={(value: number) => [`${value}/100`, 'Risk Score']}
-                           />
-                           <Bar dataKey="risk" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={10} name="Risk Score" />
-                        </BarChart>
-                     </ResponsiveContainer>
-                  </div>
 
-                  {/* Exposure breakdown */}
-                  <div className="mt-3 space-y-1 flex-shrink-0">
-                    {countryRisks.slice(0, 3).map((r, idx) => (
+                {/* Breakdown */}
+                {readinessBreakdown.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {readinessBreakdown.map((item, idx) => (
                       <div key={idx} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500 truncate max-w-[100px]">{r.country}</span>
-                        <span className="font-bold text-gray-700 dark:text-gray-300">
-                          {r.percentage > 0 ? `${r.percentage}%` : 'No trades'}
-                        </span>
+                        <span className="text-gray-500">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-500 rounded-full"
+                              style={{ width: `${(item.score / item.max) * 100}%` }}
+                            />
+                          </div>
+                          <span className="font-bold text-gray-700 dark:text-gray-300 w-10 text-right">
+                            {item.score}/{item.max}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
+                )}
 
-                  {countryRisks.some(r => r.risk >= 60 && r.percentage >= 30) && (
-                    <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30 flex-shrink-0">
-                       <p className="text-[10px] text-red-700 dark:text-red-300">
-                          <span className="font-bold">Alert:</span> High concentration in risky markets.
-                       </p>
-                    </div>
-                  )}
+                <p className="text-xs text-gray-500 mt-4 text-center">
+                  {readinessScore >= 80
+                    ? 'You qualify for premium trade financing options.'
+                    : readinessScore >= 60
+                      ? 'You qualify for standard trade loans. Complete KYC to improve.'
+                      : 'Complete your profile and KYC to unlock financing options.'}
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Risk Dashboard */}
+          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm flex-1 min-h-0 overflow-hidden">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center justify-between">
+              Country Risk Exposure
+              <TrendingUp className="w-4 h-4" />
+            </h3>
+            {loadingMetrics ? (
+              <div className="h-48 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+              </div>
+            ) : countryRisks.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
+                No trade data available
+              </div>
+            ) : (
+              <div className="flex flex-col h-full">
+                <div className="h-48 flex-shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={countryRisks.map(r => ({ name: r.country, risk: r.risk }))}
+                      layout="vertical"
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        horizontal={false}
+                        stroke="#e2e8f0"
+                        opacity={0.5}
+                      />
+                      <XAxis type="number" hide domain={[0, 100]} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        width={70}
+                        tick={{ fontSize: 10, fill: '#64748b' }}
+                      />
+                      <Tooltip
+                        cursor={{ fill: 'transparent' }}
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: '8px',
+                          border: 'none',
+                          color: 'white',
+                        }}
+                        formatter={(value: number) => [`${value}/100`, 'Risk Score']}
+                      />
+                      <Bar
+                        dataKey="risk"
+                        fill="#ef4444"
+                        radius={[0, 4, 4, 0]}
+                        barSize={10}
+                        name="Risk Score"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
-           </div>
+
+                {/* Exposure breakdown */}
+                <div className="mt-3 space-y-1 flex-shrink-0">
+                  {countryRisks.slice(0, 3).map((r, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 truncate max-w-[100px]">{r.country}</span>
+                      <span className="font-bold text-gray-700 dark:text-gray-300">
+                        {r.percentage > 0 ? `${r.percentage}%` : 'No trades'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {countryRisks.some(r => r.risk >= 60 && r.percentage >= 30) && (
+                  <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-900/30 flex-shrink-0">
+                    <p className="text-[10px] text-red-700 dark:text-red-300">
+                      <span className="font-bold">Alert:</span> High concentration in risky markets.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column: Funding Marketplace + New Tabs */}
         <div className="lg:col-span-8 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-           <div className="flex border-b border-gray-100 dark:border-slate-700 overflow-x-auto">
-              {[
-                { id: 'options' as const, label: 'Funding', icon: Landmark },
-                { id: 'applications' as const, label: 'Applications', icon: FileCheck },
-                { id: 'fx_rates' as const, label: 'FX Rates', icon: TrendingUp },
-                { id: 'calculator' as const, label: 'Calculator', icon: Calculator },
-                { id: 'hedging' as const, label: 'Hedging', icon: Shield },
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10'
-                      : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  <tab.icon className="w-3.5 h-3.5" /> {tab.label}
-                </button>
-              ))}
-           </div>
+          <div className="flex border-b border-gray-100 dark:border-slate-700 overflow-x-auto">
+            {[
+              { id: 'options' as const, label: 'Funding', icon: Landmark },
+              { id: 'applications' as const, label: 'Applications', icon: FileCheck },
+              { id: 'fx_rates' as const, label: 'FX Rates', icon: TrendingUp },
+              { id: 'calculator' as const, label: 'Calculator', icon: Calculator },
+              { id: 'hedging' as const, label: 'Hedging', icon: Shield },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold transition-colors whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/10'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                }`}
+              >
+                <tab.icon className="w-3.5 h-3.5" /> {tab.label}
+              </button>
+            ))}
+          </div>
 
-           <div className="p-6 flex-1 overflow-y-auto">
-
-              {/* A9: FX RATES CHARTS */}
-              {activeTab === 'fx_rates' && (
-                <div className="space-y-6">
-                  {/* Rate Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {fxRates.map(fx => (
-                      <button
-                        key={fx.pair}
-                        onClick={() => setSelectedFXPair(fx)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          selectedFXPair.pair === fx.pair
-                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500'
-                            : 'border-gray-200 dark:border-slate-700 hover:border-indigo-300'
-                        }`}
+          <div className="p-6 flex-1 overflow-y-auto">
+            {/* A9: FX RATES CHARTS */}
+            {activeTab === 'fx_rates' && (
+              <div className="space-y-6">
+                {/* Rate Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {fxRates.map(fx => (
+                    <button
+                      key={fx.pair}
+                      onClick={() => setSelectedFXPair(fx)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        selectedFXPair.pair === fx.pair
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500'
+                          : 'border-gray-200 dark:border-slate-700 hover:border-indigo-300'
+                      }`}
+                    >
+                      <p className="text-[10px] font-bold text-gray-500 uppercase">{fx.pair}</p>
+                      <p className="text-lg font-black text-gray-900 dark:text-white">
+                        {fx.rate.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                      <p
+                        className={`text-xs font-bold flex items-center gap-1 ${fx.change >= 0 ? 'text-green-600' : 'text-red-600'}`}
                       >
-                        <p className="text-[10px] font-bold text-gray-500 uppercase">{fx.pair}</p>
-                        <p className="text-lg font-black text-gray-900 dark:text-white">{fx.rate.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
-                        <p className={`text-xs font-bold flex items-center gap-1 ${fx.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {fx.change >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {fx.change >= 0 ? '+' : ''}{fx.changePercent.toFixed(2)}%
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Selected Chart */}
-                  <div className="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="text-lg font-bold text-gray-900 dark:text-white">{selectedFXPair.pair}</h4>
-                        <p className="text-xs text-gray-500">30-Day Historical Chart</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-black text-gray-900 dark:text-white">{selectedFXPair.rate.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
-                        <p className={`text-xs font-bold ${selectedFXPair.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {selectedFXPair.change >= 0 ? '+' : ''}{selectedFXPair.change.toFixed(2)} ({selectedFXPair.changePercent.toFixed(2)}%)
-                        </p>
-                      </div>
-                    </div>
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={selectedFXPair.history}>
-                          <defs>
-                            <linearGradient id="fxGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" opacity={0.5} />
-                          <XAxis dataKey="time" tick={{fontSize: 9}} stroke="#94a3b8" />
-                          <YAxis tick={{fontSize: 10}} stroke="#94a3b8" domain={['auto', 'auto']} />
-                          <Tooltip contentStyle={{backgroundColor: '#1e293b', borderRadius: '8px', border: 'none', color: 'white', fontSize: '12px'}} />
-                          <Area type="monotone" dataKey="rate" stroke="#6366f1" fill="url(#fxGrad)" strokeWidth={2} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* A10: TARIFF/VAT/AfCFTA CALCULATOR */}
-              {activeTab === 'calculator' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Calculator Form */}
-                  <div className="space-y-4">
-                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Calculator className="w-5 h-5 text-indigo-500" /> Tariff & Tax Calculator
-                    </h3>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">CIF Value (USD)</label>
-                        <input
-                          type="number"
-                          value={calcForm.cifValue}
-                          onChange={(e) => setCalcForm(prev => ({ ...prev, cifValue: parseFloat(e.target.value) || 0 }))}
-                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">HS Code</label>
-                        <input
-                          type="text"
-                          value={calcForm.hsCode}
-                          onChange={(e) => setCalcForm(prev => ({ ...prev, hsCode: e.target.value }))}
-                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
-                          placeholder="####.##"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Origin</label>
-                          <select
-                            value={calcForm.origin}
-                            onChange={(e) => setCalcForm(prev => ({ ...prev, origin: e.target.value }))}
-                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none"
-                          >
-                            {['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'Egypt'].map(c => <option key={c}>{c}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Destination</label>
-                          <select
-                            value={calcForm.destination}
-                            onChange={(e) => setCalcForm(prev => ({ ...prev, destination: e.target.value }))}
-                            className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none"
-                          >
-                            {['Kenya', 'Nigeria', 'South Africa', 'Egypt', 'Ghana'].map(c => <option key={c}>{c}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                      <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-slate-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={calcForm.isAfcfta}
-                          onChange={(e) => setCalcForm(prev => ({ ...prev, isAfcfta: e.target.checked }))}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <div>
-                          <span className="text-sm font-bold text-gray-800 dark:text-white">AfCFTA Preferential Tariff</span>
-                          <p className="text-[10px] text-gray-500">Apply 0% duty under African Continental Free Trade Area</p>
-                        </div>
-                      </label>
-                      <button
-                        onClick={calculateTariff}
-                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Calculator className="w-4 h-4" /> Calculate
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Results */}
-                  <div>
-                    {calcResult ? (
-                      <div className="space-y-4">
-                        <h3 className="font-bold text-gray-900 dark:text-white">Cost Breakdown</h3>
-                        <div className="space-y-2">
-                          {[
-                            { label: 'CIF Value', value: calcResult.cif, color: 'text-gray-900' },
-                            { label: `Import Duty (${calcResult.dutyRate}%)`, value: calcResult.duty, color: calcResult.duty === 0 ? 'text-green-600' : 'text-red-600' },
-                            { label: `VAT (${calcResult.vatRate}%)`, value: calcResult.vat, color: 'text-amber-600' },
-                          ].map((item, idx) => (
-                            <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg">
-                              <span className="text-sm text-gray-600 dark:text-gray-400">{item.label}</span>
-                              <span className={`font-bold font-mono ${item.color} dark:text-white`}>${item.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {calcResult.afcftaDiscount > 0 && (
-                          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900/30 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-600" />
-                              <span className="text-sm font-medium text-green-800 dark:text-green-300">AfCFTA Savings</span>
-                            </div>
-                            <span className="font-bold font-mono text-green-700 dark:text-green-400">-${calcResult.afcftaDiscount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                          </div>
+                        {fx.change >= 0 ? (
+                          <TrendingUp className="w-3 h-3" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3" />
                         )}
-                        <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-900/30">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-indigo-900 dark:text-indigo-300">Total Landed Cost</span>
-                            <span className="text-2xl font-black font-mono text-indigo-700 dark:text-indigo-400">${calcResult.totalLanded.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                          </div>
-                          <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">Total taxes: ${calcResult.totalTax.toLocaleString(undefined, {minimumFractionDigits: 2})}</p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-gray-400 py-12">
-                        <Calculator className="w-16 h-16 mb-4 opacity-20" />
-                        <p className="text-sm">Enter trade details and click Calculate</p>
-                        <p className="text-xs mt-1">to see the full cost breakdown</p>
-                      </div>
-                    )}
+                        {fx.change >= 0 ? '+' : ''}
+                        {fx.changePercent.toFixed(2)}%
+                      </p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected Chart */}
+                <div className="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-5 border border-gray-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                        {selectedFXPair.pair}
+                      </h4>
+                      <p className="text-xs text-gray-500">30-Day Historical Chart</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-black text-gray-900 dark:text-white">
+                        {selectedFXPair.rate.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}
+                      </p>
+                      <p
+                        className={`text-xs font-bold ${selectedFXPair.change >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                      >
+                        {selectedFXPair.change >= 0 ? '+' : ''}
+                        {selectedFXPair.change.toFixed(2)} (
+                        {selectedFXPair.changePercent.toFixed(2)}%)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={selectedFXPair.history}>
+                        <defs>
+                          <linearGradient id="fxGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#e2e8f0"
+                          opacity={0.5}
+                        />
+                        <XAxis dataKey="time" tick={{ fontSize: 9 }} stroke="#94a3b8" />
+                        <YAxis tick={{ fontSize: 10 }} stroke="#94a3b8" domain={['auto', 'auto']} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: '#1e293b',
+                            borderRadius: '8px',
+                            border: 'none',
+                            color: 'white',
+                            fontSize: '12px',
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="rate"
+                          stroke="#6366f1"
+                          fill="url(#fxGrad)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* A11: CURRENCY HEDGING SUGGESTIONS */}
-              {activeTab === 'hedging' && (
+            {/* A10: TARIFF/VAT/AfCFTA CALCULATOR */}
+            {activeTab === 'calculator' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Calculator Form */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-indigo-500" /> AI Hedging Recommendations
-                    </h3>
-                    <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Zap className="w-3 h-3" /> AI-Powered
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500">Based on your trade portfolio exposure and current FX volatility</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Calculator className="w-5 h-5 text-indigo-500" /> Tariff & Tax Calculator
+                  </h3>
                   <div className="space-y-3">
-                    {hedgingSuggestions.map(h => (
-                      <div key={h.id} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 transition-all">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${
-                              h.type === 'forward' ? 'bg-blue-100 text-blue-600' :
-                              h.type === 'option' ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'
-                            }`}>
-                              {h.type === 'forward' ? <ArrowRight className="w-4 h-4" /> :
-                               h.type === 'option' ? <Shield className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-900 dark:text-white capitalize">{h.type} Contract</h4>
-                              <span className="text-xs text-gray-500">{h.pair} &middot; {h.term}</span>
-                            </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
+                        CIF Value (USD)
+                      </label>
+                      <input
+                        type="number"
+                        value={calcForm.cifValue}
+                        onChange={e =>
+                          setCalcForm(prev => ({
+                            ...prev,
+                            cifValue: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                        className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
+                        HS Code
+                      </label>
+                      <input
+                        type="text"
+                        value={calcForm.hsCode}
+                        onChange={e => setCalcForm(prev => ({ ...prev, hsCode: e.target.value }))}
+                        className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
+                        placeholder="####.##"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
+                          Origin
+                        </label>
+                        <select
+                          value={calcForm.origin}
+                          onChange={e => setCalcForm(prev => ({ ...prev, origin: e.target.value }))}
+                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none"
+                        >
+                          {['Ghana', 'Nigeria', 'Kenya', 'South Africa', 'Egypt'].map(c => (
+                            <option key={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase mb-1 block">
+                          Destination
+                        </label>
+                        <select
+                          value={calcForm.destination}
+                          onChange={e =>
+                            setCalcForm(prev => ({ ...prev, destination: e.target.value }))
+                          }
+                          className="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none"
+                        >
+                          {['Kenya', 'Nigeria', 'South Africa', 'Egypt', 'Ghana'].map(c => (
+                            <option key={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-slate-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={calcForm.isAfcfta}
+                        onChange={e =>
+                          setCalcForm(prev => ({ ...prev, isAfcfta: e.target.checked }))
+                        }
+                        className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div>
+                        <span className="text-sm font-bold text-gray-800 dark:text-white">
+                          AfCFTA Preferential Tariff
+                        </span>
+                        <p className="text-[10px] text-gray-500">
+                          Apply 0% duty under African Continental Free Trade Area
+                        </p>
+                      </div>
+                    </label>
+                    <button
+                      onClick={calculateTariff}
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Calculator className="w-4 h-4" /> Calculate
+                    </button>
+                  </div>
+                </div>
+
+                {/* Results */}
+                <div>
+                  {calcResult ? (
+                    <div className="space-y-4">
+                      <h3 className="font-bold text-gray-900 dark:text-white">Cost Breakdown</h3>
+                      <div className="space-y-2">
+                        {[
+                          { label: 'CIF Value', value: calcResult.cif, color: 'text-gray-900' },
+                          {
+                            label: `Import Duty (${calcResult.dutyRate}%)`,
+                            value: calcResult.duty,
+                            color: calcResult.duty === 0 ? 'text-green-600' : 'text-red-600',
+                          },
+                          {
+                            label: `VAT (${calcResult.vatRate}%)`,
+                            value: calcResult.vat,
+                            color: 'text-amber-600',
+                          },
+                        ].map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-900/50 rounded-lg"
+                          >
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {item.label}
+                            </span>
+                            <span className={`font-bold font-mono ${item.color} dark:text-white`}>
+                              ${item.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            </span>
                           </div>
-                          <div className="text-right">
-                            <span className="text-lg font-bold text-green-600">{h.savings}</span>
-                            <p className="text-[10px] text-gray-400">Est. savings</p>
+                        ))}
+                      </div>
+                      {calcResult.afcftaDiscount > 0 && (
+                        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900/30 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium text-green-800 dark:text-green-300">
+                              AfCFTA Savings
+                            </span>
+                          </div>
+                          <span className="font-bold font-mono text-green-700 dark:text-green-400">
+                            -$
+                            {calcResult.afcftaDiscount.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      )}
+                      <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-900/30">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-indigo-900 dark:text-indigo-300">
+                            Total Landed Cost
+                          </span>
+                          <span className="text-2xl font-black font-mono text-indigo-700 dark:text-indigo-400">
+                            $
+                            {calcResult.totalLanded.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                          Total taxes: $
+                          {calcResult.totalTax.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-400 py-12">
+                      <Calculator className="w-16 h-16 mb-4 opacity-20" />
+                      <p className="text-sm">Enter trade details and click Calculate</p>
+                      <p className="text-xs mt-1">to see the full cost breakdown</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* A11: CURRENCY HEDGING SUGGESTIONS */}
+            {activeTab === 'hedging' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-indigo-500" /> AI Hedging Recommendations
+                  </h3>
+                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> AI-Powered
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Based on your trade portfolio exposure and current FX volatility
+                </p>
+                <div className="space-y-3">
+                  {hedgingSuggestions.map(h => (
+                    <div
+                      key={h.id}
+                      className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`p-2 rounded-lg ${
+                              h.type === 'forward'
+                                ? 'bg-blue-100 text-blue-600'
+                                : h.type === 'option'
+                                  ? 'bg-purple-100 text-purple-600'
+                                  : 'bg-teal-100 text-teal-600'
+                            }`}
+                          >
+                            {h.type === 'forward' ? (
+                              <ArrowRight className="w-4 h-4" />
+                            ) : h.type === 'option' ? (
+                              <Shield className="w-4 h-4" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-gray-900 dark:text-white capitalize">
+                              {h.type} Contract
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              {h.pair} &middot; {h.term}
+                            </span>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{h.description}</p>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            h.risk === 'low' ? 'bg-green-100 text-green-700' :
-                            h.risk === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                          }`}>Risk: {h.risk}</span>
-                          {hedgeApplied.includes(h.id) ? (
-                            <span className="text-xs text-green-600 font-bold flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" /> Strategy Applied
-                            </span>
-                          ) : (
-                            <button 
-                              onClick={() => {
-                                setSelectedHedge(h);
-                                setShowHedgeModal(true);
-                              }}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
+                        <div className="text-right">
+                          <span className="text-lg font-bold text-green-600">{h.savings}</span>
+                          <p className="text-[10px] text-gray-400">Est. savings</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        {h.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            h.risk === 'low'
+                              ? 'bg-green-100 text-green-700'
+                              : h.risk === 'medium'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          Risk: {h.risk}
+                        </span>
+                        {hedgeApplied.includes(h.id) ? (
+                          <span className="text-xs text-green-600 font-bold flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" /> Strategy Applied
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSelectedHedge(h);
+                              setShowHedgeModal(true);
+                            }}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
+                          >
+                            Apply Strategy <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Portfolio Summary */}
+                <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                    <Info className="w-4 h-4" /> Portfolio FX Exposure Summary
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-xs text-gray-500">Total Exposure</p>
+                      <p className="text-lg font-bold text-gray-900 dark:text-white">
+                        $
+                        {financeSummary.fxExposure > 0
+                          ? financeSummary.fxExposure.toLocaleString()
+                          : '0'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Hedged</p>
+                      <p className="text-lg font-bold text-green-600">
+                        $
+                        {financeSummary.hedgedAmount > 0
+                          ? financeSummary.hedgedAmount.toLocaleString()
+                          : '0'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Unhedged</p>
+                      <p className="text-lg font-bold text-red-600">
+                        $
+                        {financeSummary.fxExposure - financeSummary.hedgedAmount > 0
+                          ? (
+                              financeSummary.fxExposure - financeSummary.hedgedAmount
+                            ).toLocaleString()
+                          : '0'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'options' && (
+              <div className="grid grid-cols-1 gap-4">
+                {loadingFinanciers ? (
+                  <div className="text-center py-10">
+                    <Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" />
+                  </div>
+                ) : (
+                  financiers.map(opt => (
+                    <div
+                      key={opt.id}
+                      className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group relative overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center font-bold text-gray-500 text-xl">
+                            {opt.logo_initial}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-gray-900 dark:text-white text-lg">
+                                {opt.name}
+                              </h4>
+                              <span className="text-[10px] uppercase font-bold bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
+                                {opt.type}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-500">{opt.product}</p>
+                          </div>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                            {opt.interest_rate}%
+                          </p>
+                          <p className="text-xs text-gray-400">Interest Rate</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-6 pt-4 border-t border-gray-100 dark:border-slate-700">
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase">Term</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{opt.term}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase">Readiness</p>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={`font-semibold ${readinessScore >= opt.min_score ? 'text-emerald-500' : 'text-red-500'}`}
                             >
-                              Apply Strategy <ArrowRight className="w-3 h-3" />
-                            </button>
+                              {readinessScore >= opt.min_score
+                                ? 'Qualified'
+                                : `Need ${opt.min_score}`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-auto">
+                          <button
+                            onClick={() => handleApply(opt)}
+                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold transition-colors"
+                          >
+                            Apply Now <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === 'applications' && (
+              <div className="space-y-4">
+                {loading ? (
+                  <div className="text-center py-10">
+                    <Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" />
+                  </div>
+                ) : (
+                  applications.map(app => (
+                    <div
+                      key={app.id}
+                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-lg border border-gray-200 dark:border-slate-700"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={`p-2 rounded-full ${
+                            app.status === 'approved'
+                              ? 'bg-emerald-100 text-emerald-600'
+                              : app.status === 'under_review'
+                                ? 'bg-amber-100 text-amber-600'
+                                : 'bg-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {app.status === 'approved' ? (
+                            <CheckCircle className="w-5 h-5" />
+                          ) : (
+                            <Clock className="w-5 h-5" />
                           )}
                         </div>
+                        <div>
+                          <h4 className="font-bold text-gray-900 dark:text-white">
+                            {app.provider_name}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {app.product_type} • {app.id}
+                          </p>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Portfolio Summary */}
-                  <div className="p-4 bg-gray-50 dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700">
-                    <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                      <Info className="w-4 h-4" /> Portfolio FX Exposure Summary
-                    </h4>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-xs text-gray-500">Total Exposure</p>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">${financeSummary.fxExposure > 0 ? financeSummary.fxExposure.toLocaleString() : '0'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Hedged</p>
-                        <p className="text-lg font-bold text-green-600">${financeSummary.hedgedAmount > 0 ? financeSummary.hedgedAmount.toLocaleString() : '0'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Unhedged</p>
-                        <p className="text-lg font-bold text-red-600">${(financeSummary.fxExposure - financeSummary.hedgedAmount) > 0 ? (financeSummary.fxExposure - financeSummary.hedgedAmount).toLocaleString() : '0'}</p>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900 dark:text-white">
+                          ${app.amount.toLocaleString()}
+                        </p>
+                        <p
+                          className={`text-xs font-bold ${
+                            app.status === 'approved' ? 'text-emerald-500' : 'text-amber-500'
+                          }`}
+                        >
+                          {app.status.replace('_', ' ')}
+                        </p>
+                        <p className="text-[10px] text-gray-400">{app.date_requested}</p>
                       </div>
                     </div>
+                  ))
+                )}
+
+                {!loading && applications.length === 0 && (
+                  <div className="text-center py-12 text-gray-400">
+                    <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p>No active applications</p>
+                    <button
+                      onClick={() => setActiveTab('options')}
+                      className="mt-4 text-indigo-600 hover:underline text-sm font-medium"
+                    >
+                      Browse funding options
+                    </button>
                   </div>
-                </div>
-              )}
-
-              {activeTab === 'options' && (
-                 <div className="grid grid-cols-1 gap-4">
-                    {loadingFinanciers ? (
-                      <div className="text-center py-10"><Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" /></div>
-                    ) : financiers.map(opt => (
-                       <div key={opt.id} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 transition-all group relative overflow-hidden">
-                          <div className="flex items-center justify-between">
-                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center font-bold text-gray-500 text-xl">
-                                   {opt.logo_initial}
-                                </div>
-                                <div>
-                                   <div className="flex items-center gap-2">
-                                      <h4 className="font-bold text-gray-900 dark:text-white text-lg">{opt.name}</h4>
-                                      <span className="text-[10px] uppercase font-bold bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">{opt.type}</span>
-                                   </div>
-                                   <p className="text-sm text-gray-500">{opt.product}</p>
-                                </div>
-                             </div>
-                             <div className="text-right hidden sm:block">
-                                <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{opt.interest_rate}%</p>
-                                <p className="text-xs text-gray-400">Interest Rate</p>
-                             </div>
-                          </div>
-                          
-                          <div className="mt-4 flex items-center gap-6 pt-4 border-t border-gray-100 dark:border-slate-700">
-                             <div>
-                                <p className="text-xs text-gray-400 uppercase">Term</p>
-                                <p className="font-semibold text-gray-900 dark:text-white">{opt.term}</p>
-                             </div>
-                             <div>
-                                <p className="text-xs text-gray-400 uppercase">Readiness</p>
-                                <div className="flex items-center gap-1">
-                                    <span className={`font-semibold ${readinessScore >= opt.min_score ? 'text-emerald-500' : 'text-red-500'}`}>
-                                        {readinessScore >= opt.min_score ? 'Qualified' : `Need ${opt.min_score}`}
-                                    </span>
-                                </div>
-                             </div>
-                             <div className="ml-auto">
-                                <button 
-                                   onClick={() => handleApply(opt)}
-                                   className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold transition-colors"
-                                >
-                                   Apply Now <ArrowRight className="w-4 h-4" />
-                                </button>
-                             </div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
-              )}
-
-              {activeTab === 'applications' && (
-                 <div className="space-y-4">
-                    {loading ? (
-                        <div className="text-center py-10"><Loader2 className="animate-spin w-8 h-8 text-indigo-500 mx-auto" /></div>
-                    ) : applications.map(app => (
-                       <div key={app.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700/30 rounded-lg border border-gray-200 dark:border-slate-700">
-                          <div className="flex items-center gap-4">
-                             <div className={`p-2 rounded-full ${
-                                app.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 
-                                app.status === 'under_review' ? 'bg-amber-100 text-amber-600' : 'bg-gray-200 text-gray-500'
-                             }`}>
-                                {app.status === 'approved' ? <CheckCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                             </div>
-                             <div>
-                                <h4 className="font-bold text-gray-900 dark:text-white">{app.provider_name}</h4>
-                                <p className="text-xs text-gray-500">{app.product_type} • {app.id}</p>
-                             </div>
-                          </div>
-                          <div className="text-right">
-                             <p className="font-bold text-gray-900 dark:text-white">${app.amount.toLocaleString()}</p>
-                             <p className={`text-xs font-bold ${
-                                app.status === 'approved' ? 'text-emerald-500' : 'text-amber-500'
-                             }`}>{app.status.replace('_', ' ')}</p>
-                             <p className="text-[10px] text-gray-400">{app.date_requested}</p>
-                          </div>
-                       </div>
-                    ))}
-                    
-                    {!loading && applications.length === 0 && (
-                        <div className="text-center py-12 text-gray-400">
-                            <FileCheck className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                            <p>No active applications</p>
-                            <button 
-                              onClick={() => setActiveTab('options')}
-                              className="mt-4 text-indigo-600 hover:underline text-sm font-medium"
-                            >
-                              Browse funding options
-                            </button>
-                        </div>
-                    )}
-                 </div>
-              )}
-           </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -918,7 +1378,9 @@ export const TradeFinance: React.FC = () => {
                     {selectedProvider.logo_initial}
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">{selectedProvider.name}</h2>
+                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {selectedProvider.name}
+                    </h2>
                     <p className="text-sm text-gray-500">{selectedProvider.product}</p>
                   </div>
                 </div>
@@ -941,7 +1403,7 @@ export const TradeFinance: React.FC = () => {
                   <input
                     type="number"
                     value={applyForm.amount}
-                    onChange={(e) => setApplyForm(prev => ({ ...prev, amount: e.target.value }))}
+                    onChange={e => setApplyForm(prev => ({ ...prev, amount: e.target.value }))}
                     placeholder="Enter amount"
                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   />
@@ -951,11 +1413,15 @@ export const TradeFinance: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-xl">
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Interest Rate</p>
-                  <p className="text-lg font-bold text-indigo-600">{selectedProvider.interest_rate}%</p>
+                  <p className="text-lg font-bold text-indigo-600">
+                    {selectedProvider.interest_rate}%
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Term</p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedProvider.term}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {selectedProvider.term}
+                  </p>
                 </div>
               </div>
 
@@ -963,16 +1429,22 @@ export const TradeFinance: React.FC = () => {
               <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-4 h-4 text-indigo-600" />
-                  <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase">AI Eligibility Assessment</span>
+                  <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase">
+                    AI Eligibility Assessment
+                  </span>
                 </div>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
                     <p className="text-[10px] text-gray-500">Risk Score</p>
-                    <p className="text-sm font-bold text-green-600">{readinessScore >= 70 ? 'Low' : readinessScore >= 50 ? 'Medium' : 'High'}</p>
+                    <p className="text-sm font-bold text-green-600">
+                      {readinessScore >= 70 ? 'Low' : readinessScore >= 50 ? 'Medium' : 'High'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500">Approval Odds</p>
-                    <p className="text-sm font-bold text-indigo-600">{Math.min(95, readinessScore + 15)}%</p>
+                    <p className="text-sm font-bold text-indigo-600">
+                      {Math.min(95, readinessScore + 15)}%
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500">Est. Time</p>
@@ -983,7 +1455,8 @@ export const TradeFinance: React.FC = () => {
 
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-900/30">
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  <span className="font-bold">Note:</span> Your application will be reviewed within 2-3 business days. Ensure all trade documents are up to date.
+                  <span className="font-bold">Note:</span> Your application will be reviewed within
+                  2-3 business days. Ensure all trade documents are up to date.
                 </p>
               </div>
 
@@ -1002,9 +1475,13 @@ export const TradeFinance: React.FC = () => {
                 className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors"
               >
                 {submitting ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /> Submitting...</>
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> Submitting...
+                  </>
                 ) : (
-                  <><Plus className="w-5 h-5" /> Submit Application</>
+                  <>
+                    <Plus className="w-5 h-5" /> Submit Application
+                  </>
                 )}
               </button>
             </div>
@@ -1021,32 +1498,55 @@ export const TradeFinance: React.FC = () => {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <Shield className="w-5 h-5 text-indigo-500" /> Apply Hedging Strategy
                 </h3>
-                <button onClick={() => setShowHedgeModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <button
+                  onClick={() => setShowHedgeModal(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
 
             <div className="p-6 space-y-4">
-              <div className={`p-4 rounded-xl border ${
-                selectedHedge.type === 'forward' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' :
-                selectedHedge.type === 'option' ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' :
-                'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800'
-              }`}>
+              <div
+                className={`p-4 rounded-xl border ${
+                  selectedHedge.type === 'forward'
+                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                    : selectedHedge.type === 'option'
+                      ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800'
+                      : 'bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800'
+                }`}
+              >
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded-lg ${
-                    selectedHedge.type === 'forward' ? 'bg-blue-100 text-blue-600' :
-                    selectedHedge.type === 'option' ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'
-                  }`}>
-                    {selectedHedge.type === 'forward' ? <ArrowRight className="w-4 h-4" /> :
-                     selectedHedge.type === 'option' ? <Shield className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
+                  <div
+                    className={`p-2 rounded-lg ${
+                      selectedHedge.type === 'forward'
+                        ? 'bg-blue-100 text-blue-600'
+                        : selectedHedge.type === 'option'
+                          ? 'bg-purple-100 text-purple-600'
+                          : 'bg-teal-100 text-teal-600'
+                    }`}
+                  >
+                    {selectedHedge.type === 'forward' ? (
+                      <ArrowRight className="w-4 h-4" />
+                    ) : selectedHedge.type === 'option' ? (
+                      <Shield className="w-4 h-4" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white capitalize">{selectedHedge.type} Contract</h4>
-                    <span className="text-xs text-gray-500">{selectedHedge.pair} • {selectedHedge.term}</span>
+                    <h4 className="font-bold text-gray-900 dark:text-white capitalize">
+                      {selectedHedge.type} Contract
+                    </h4>
+                    <span className="text-xs text-gray-500">
+                      {selectedHedge.pair} • {selectedHedge.term}
+                    </span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{selectedHedge.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {selectedHedge.description}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1056,16 +1556,25 @@ export const TradeFinance: React.FC = () => {
                 </div>
                 <div className="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-center">
                   <p className="text-xs text-gray-500">Risk Level</p>
-                  <p className={`text-xl font-bold capitalize ${
-                    selectedHedge.risk === 'low' ? 'text-green-600' :
-                    selectedHedge.risk === 'medium' ? 'text-amber-600' : 'text-red-600'
-                  }`}>{selectedHedge.risk}</p>
+                  <p
+                    className={`text-xl font-bold capitalize ${
+                      selectedHedge.risk === 'low'
+                        ? 'text-green-600'
+                        : selectedHedge.risk === 'medium'
+                          ? 'text-amber-600'
+                          : 'text-red-600'
+                    }`}
+                  >
+                    {selectedHedge.risk}
+                  </p>
                 </div>
               </div>
 
               <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-900/30">
                 <p className="text-xs text-amber-700 dark:text-amber-300">
-                  <span className="font-bold">Note:</span> By applying this strategy, you agree to the terms and conditions of the hedging contract. A confirmation will be sent to your registered email.
+                  <span className="font-bold">Note:</span> By applying this strategy, you agree to
+                  the terms and conditions of the hedging contract. A confirmation will be sent to
+                  your registered email.
                 </p>
               </div>
 
@@ -1089,9 +1598,13 @@ export const TradeFinance: React.FC = () => {
                   className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold rounded-xl transition-colors"
                 >
                   {hedgeApplying ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Applying...</>
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> Applying...
+                    </>
                   ) : (
-                    <><CheckCircle className="w-5 h-5" /> Apply Now</>
+                    <>
+                      <CheckCircle className="w-5 h-5" /> Apply Now
+                    </>
                   )}
                 </button>
               </div>

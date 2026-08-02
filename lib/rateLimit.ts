@@ -16,9 +16,7 @@ function getStore(): Map<string, Bucket> {
   return globalStore.__afritradeRateLimits;
 }
 
-export type RateLimitResult =
-  | { allowed: true }
-  | { allowed: false; retryAfterSec: number };
+export type RateLimitResult = { allowed: true } | { allowed: false; retryAfterSec: number };
 
 /**
  * Fixed-window counter per key (e.g. IP or email).
@@ -41,10 +39,7 @@ export function checkRateLimit(
   map.set(key, existing);
 
   if (existing.count > maxAttempts) {
-    const retryAfterSec = Math.max(
-      1,
-      Math.ceil((windowMs - (now - existing.windowStart)) / 1000)
-    );
+    const retryAfterSec = Math.max(1, Math.ceil((windowMs - (now - existing.windowStart)) / 1000));
     return { allowed: false, retryAfterSec };
   }
 

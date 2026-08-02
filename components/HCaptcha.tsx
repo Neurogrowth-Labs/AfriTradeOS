@@ -9,14 +9,17 @@ interface HCaptchaProps {
 declare global {
   interface Window {
     hcaptcha: {
-      render: (container: HTMLElement, options: {
-        sitekey: string;
-        callback: (token: string) => void;
-        'error-callback'?: (error: string) => void;
-        'expired-callback'?: () => void;
-        theme?: 'light' | 'dark';
-        size?: 'normal' | 'compact' | 'invisible';
-      }) => string;
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          'error-callback'?: (error: string) => void;
+          'expired-callback'?: () => void;
+          theme?: 'light' | 'dark';
+          size?: 'normal' | 'compact' | 'invisible';
+        }
+      ) => string;
       reset: (widgetId: string) => void;
       remove: (widgetId: string) => void;
       execute: (widgetId: string) => void;
@@ -27,21 +30,18 @@ declare global {
 
 // hCaptcha test key for localhost development
 // In production, use the real site key from Supabase dashboard
-const isDev = typeof window !== 'undefined' &&
+const isDev =
+  typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 // hCaptcha test keys:
 // Site key: 10000000-ffff-ffff-ffff-000000000001 (always passes)
 // Secret key: 0x0000000000000000000000000000000000000000 (for testing)
 const HCAPTCHA_SITE_KEY = isDev
-  ? '10000000-ffff-ffff-ffff-000000000001'  // Test key that always passes
-  : ((import.meta as any).env?.VITE_HCAPTCHA_SITE_KEY || '');
+  ? '10000000-ffff-ffff-ffff-000000000001' // Test key that always passes
+  : (import.meta as any).env?.VITE_HCAPTCHA_SITE_KEY || '';
 
-export const HCaptcha: React.FC<HCaptchaProps> = ({
-  onVerify,
-  onError,
-  onExpire,
-}) => {
+export const HCaptcha: React.FC<HCaptchaProps> = ({ onVerify, onError, onExpire }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
@@ -113,11 +113,7 @@ export const HCaptcha: React.FC<HCaptchaProps> = ({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="flex justify-center my-4"
-      data-testid="hcaptcha-container"
-    />
+    <div ref={containerRef} className="flex justify-center my-4" data-testid="hcaptcha-container" />
   );
 };
 

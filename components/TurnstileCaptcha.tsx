@@ -16,37 +16,35 @@ export interface TurnstileCaptchaRef {
 // Make sure to add 'localhost' to Allowed Hostnames in Cloudflare Turnstile widget settings
 const TURNSTILE_SITE_KEY = (import.meta as any).env?.VITE_TURNSTILE_SITE_KEY || '';
 
-export const TurnstileCaptcha = forwardRef<TurnstileCaptchaRef, TurnstileCaptchaProps>(({
-  onVerify,
-  onError,
-  onExpire,
-}, ref) => {
-  const turnstileRef = useRef<TurnstileInstance>(null);
+export const TurnstileCaptcha = forwardRef<TurnstileCaptchaRef, TurnstileCaptchaProps>(
+  ({ onVerify, onError, onExpire }, ref) => {
+    const turnstileRef = useRef<TurnstileInstance>(null);
 
-  // Expose reset method to parent
-  useImperativeHandle(ref, () => ({
-    reset: () => {
-      turnstileRef.current?.reset();
+    // Expose reset method to parent
+    useImperativeHandle(ref, () => ({
+      reset: () => {
+        turnstileRef.current?.reset();
+      },
+    }));
+
+    if (!TURNSTILE_SITE_KEY) {
+      console.warn('Turnstile site key not configured');
+      return null;
     }
-  }));
 
-  if (!TURNSTILE_SITE_KEY) {
-    console.warn('Turnstile site key not configured');
-    return null;
+    return (
+      <div className="flex justify-center my-4" data-testid="turnstile-container">
+        <Turnstile
+          ref={turnstileRef}
+          siteKey={TURNSTILE_SITE_KEY}
+          onSuccess={token => onVerify(token)}
+          onError={() => onError?.('Turnstile verification failed')}
+          onExpire={() => onExpire?.()}
+        />
+      </div>
+    );
   }
-
-  return (
-    <div className="flex justify-center my-4" data-testid="turnstile-container">
-      <Turnstile
-        ref={turnstileRef}
-        siteKey={TURNSTILE_SITE_KEY}
-        onSuccess={(token) => onVerify(token)}
-        onError={() => onError?.('Turnstile verification failed')}
-        onExpire={() => onExpire?.()}
-      />
-    </div>
-  );
-});
+);
 
 TurnstileCaptcha.displayName = 'TurnstileCaptcha';
 

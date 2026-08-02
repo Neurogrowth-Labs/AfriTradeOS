@@ -10,7 +10,7 @@ const AFRICAN_TRADE_HUBS = [
   { name: 'Cairo', lat: 30.0444, lng: 31.2357, color: '#E8B547' },
   { name: 'Casablanca', lat: 33.5731, lng: -7.5898, color: '#E8B547' },
   { name: 'Accra', lat: 5.6037, lng: -0.187, color: '#E8B547' },
-  { name: 'Addis Ababa', lat: 9.0320, lng: 38.7469, color: '#E8B547' },
+  { name: 'Addis Ababa', lat: 9.032, lng: 38.7469, color: '#E8B547' },
   { name: 'Dar es Salaam', lat: -6.7924, lng: 39.2083, color: '#E8B547' },
 ];
 
@@ -114,7 +114,7 @@ export const Globe3D: React.FC<Globe3DProps> = ({ width = 450, height = 350 }) =
     directionalLight.position.set(100, 50, 100);
     scene.add(directionalLight);
 
-    const secondaryLight = new THREE.DirectionalLight(0x1D4FFF, 0.3);
+    const secondaryLight = new THREE.DirectionalLight(0x1d4fff, 0.3);
     secondaryLight.position.set(-100, -50, -100);
     scene.add(secondaryLight);
 
@@ -199,7 +199,7 @@ export const Globe3D: React.FC<Globe3DProps> = ({ width = 450, height = 350 }) =
     scene.add(markersGroup);
 
     // Add location markers
-    AFRICAN_TRADE_HUBS.forEach((loc) => {
+    AFRICAN_TRADE_HUBS.forEach(loc => {
       const coord = lon2xyz(globeRadius * 1.01, loc.lng, loc.lat);
 
       // Glowing dot
@@ -287,10 +287,7 @@ export const Globe3D: React.FC<Globe3DProps> = ({ width = 450, height = 350 }) =
     }
 
     const starsGeometry = new THREE.BufferGeometry();
-    starsGeometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(starPositions, 3)
-    );
+    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
 
     const starsMaterial = new THREE.PointsMaterial({
       size: 1.2,
@@ -322,7 +319,7 @@ export const Globe3D: React.FC<Globe3DProps> = ({ width = 450, height = 350 }) =
       });
 
       // Animate arc particles
-      arcsGroup.children.forEach((child) => {
+      arcsGroup.children.forEach(child => {
         if (child.userData.curve) {
           child.userData.progress += child.userData.speed;
           if (child.userData.progress > 1) {

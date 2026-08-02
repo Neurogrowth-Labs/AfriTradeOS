@@ -12,7 +12,7 @@ import {
   Bell,
   AlertOctagon,
   TrendingUp,
-  Terminal
+  Terminal,
 } from 'lucide-react';
 import {
   Radar,
@@ -30,7 +30,7 @@ import {
   Line,
   CartesianGrid,
   AreaChart,
-  Area
+  Area,
 } from 'recharts';
 
 // System health dimensions
@@ -56,7 +56,7 @@ const LATENCY_DATA = [
 const _UPTIME_HISTORY = Array.from({ length: 30 }, (_, i) => ({
   day: i + 1,
   uptime: 99.5 + Math.random() * 0.5,
-  incidents: Math.random() > 0.9 ? 1 : 0
+  incidents: Math.random() > 0.9 ? 1 : 0,
 }));
 
 // Real-time metrics
@@ -72,33 +72,121 @@ const REALTIME_METRICS = [
 
 // Incident logs
 const INCIDENT_LOGS = [
-  { id: 'INC-001', title: 'High API latency detected', severity: 'warning', service: 'Payment Gateway', time: '15 mins ago', status: 'investigating', description: 'Response times exceeded 500ms threshold' },
-  { id: 'INC-002', title: 'Database connection pool exhausted', severity: 'critical', service: 'PostgreSQL', time: '2 hours ago', status: 'resolved', description: 'Connection limit reached causing query failures' },
-  { id: 'INC-003', title: 'AI service timeout', severity: 'warning', service: 'Gemini API', time: '4 hours ago', status: 'resolved', description: 'Gemini API returned timeout errors for 3 minutes' },
-  { id: 'INC-004', title: 'SSL certificate expiring', severity: 'info', service: 'CDN', time: '1 day ago', status: 'scheduled', description: 'Certificate expires in 14 days - auto-renewal scheduled' },
-  { id: 'INC-005', title: 'Memory usage spike', severity: 'warning', service: 'Worker Nodes', time: '2 days ago', status: 'resolved', description: 'Memory usage exceeded 90% - auto-scaled successfully' },
+  {
+    id: 'INC-001',
+    title: 'High API latency detected',
+    severity: 'warning',
+    service: 'Payment Gateway',
+    time: '15 mins ago',
+    status: 'investigating',
+    description: 'Response times exceeded 500ms threshold',
+  },
+  {
+    id: 'INC-002',
+    title: 'Database connection pool exhausted',
+    severity: 'critical',
+    service: 'PostgreSQL',
+    time: '2 hours ago',
+    status: 'resolved',
+    description: 'Connection limit reached causing query failures',
+  },
+  {
+    id: 'INC-003',
+    title: 'AI service timeout',
+    severity: 'warning',
+    service: 'Gemini API',
+    time: '4 hours ago',
+    status: 'resolved',
+    description: 'Gemini API returned timeout errors for 3 minutes',
+  },
+  {
+    id: 'INC-004',
+    title: 'SSL certificate expiring',
+    severity: 'info',
+    service: 'CDN',
+    time: '1 day ago',
+    status: 'scheduled',
+    description: 'Certificate expires in 14 days - auto-renewal scheduled',
+  },
+  {
+    id: 'INC-005',
+    title: 'Memory usage spike',
+    severity: 'warning',
+    service: 'Worker Nodes',
+    time: '2 days ago',
+    status: 'resolved',
+    description: 'Memory usage exceeded 90% - auto-scaled successfully',
+  },
 ];
 
 // Service status
 const SERVICES = [
   { name: 'API Gateway', status: 'operational', uptime: 99.98, latency: 45, region: 'Global' },
   { name: 'Authentication', status: 'operational', uptime: 99.99, latency: 85, region: 'Global' },
-  { name: 'Database (Primary)', status: 'operational', uptime: 99.95, latency: 32, region: 'EU-West' },
-  { name: 'Database (Replica)', status: 'operational', uptime: 99.92, latency: 38, region: 'US-East' },
+  {
+    name: 'Database (Primary)',
+    status: 'operational',
+    uptime: 99.95,
+    latency: 32,
+    region: 'EU-West',
+  },
+  {
+    name: 'Database (Replica)',
+    status: 'operational',
+    uptime: 99.92,
+    latency: 38,
+    region: 'US-East',
+  },
   { name: 'Payment Gateway', status: 'degraded', uptime: 99.85, latency: 180, region: 'Global' },
-  { name: 'AI/ML Services', status: 'operational', uptime: 99.90, latency: 650, region: 'US-Central' },
+  {
+    name: 'AI/ML Services',
+    status: 'operational',
+    uptime: 99.9,
+    latency: 650,
+    region: 'US-Central',
+  },
   { name: 'Storage (CDN)', status: 'operational', uptime: 99.99, latency: 15, region: 'Global' },
   { name: 'Queue Workers', status: 'operational', uptime: 99.88, latency: 120, region: 'EU-West' },
   { name: 'Email Service', status: 'operational', uptime: 99.95, latency: 200, region: 'US-East' },
-  { name: 'Customs Integration', status: 'maintenance', uptime: 98.50, latency: 420, region: 'Africa' },
+  {
+    name: 'Customs Integration',
+    status: 'maintenance',
+    uptime: 98.5,
+    latency: 420,
+    region: 'Africa',
+  },
 ];
 
 // Backup status
 const BACKUP_STATUS = [
-  { name: 'Database Full Backup', lastRun: '2 hours ago', nextRun: 'In 22 hours', status: 'success', size: '2.4 GB' },
-  { name: 'Database Incremental', lastRun: '30 mins ago', nextRun: 'In 30 mins', status: 'success', size: '124 MB' },
-  { name: 'File Storage Sync', lastRun: '1 hour ago', nextRun: 'In 5 hours', status: 'success', size: '8.2 GB' },
-  { name: 'Log Archive', lastRun: '6 hours ago', nextRun: 'In 18 hours', status: 'success', size: '1.8 GB' },
+  {
+    name: 'Database Full Backup',
+    lastRun: '2 hours ago',
+    nextRun: 'In 22 hours',
+    status: 'success',
+    size: '2.4 GB',
+  },
+  {
+    name: 'Database Incremental',
+    lastRun: '30 mins ago',
+    nextRun: 'In 30 mins',
+    status: 'success',
+    size: '124 MB',
+  },
+  {
+    name: 'File Storage Sync',
+    lastRun: '1 hour ago',
+    nextRun: 'In 5 hours',
+    status: 'success',
+    size: '8.2 GB',
+  },
+  {
+    name: 'Log Archive',
+    lastRun: '6 hours ago',
+    nextRun: 'In 18 hours',
+    status: 'success',
+    size: '1.8 GB',
+  },
 ];
 
 // Queue status
@@ -135,27 +223,38 @@ export const SystemDiagnostic: React.FC = () => {
   }, [autoRefresh]);
 
   // Calculate overall health score
-  const overallHealth = Math.round(HEALTH_DATA.reduce((sum, d) => sum + d.A, 0) / HEALTH_DATA.length);
+  const overallHealth = Math.round(
+    HEALTH_DATA.reduce((sum, d) => sum + d.A, 0) / HEALTH_DATA.length
+  );
   const operationalServices = SERVICES.filter(s => s.status === 'operational').length;
   const avgUptime = (SERVICES.reduce((sum, s) => sum + s.uptime, 0) / SERVICES.length).toFixed(2);
   const activeIncidents = INCIDENT_LOGS.filter(i => i.status === 'investigating').length;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'operational': return 'bg-green-500';
-      case 'degraded': return 'bg-amber-500';
-      case 'maintenance': return 'bg-blue-500';
-      case 'outage': return 'bg-red-500';
-      default: return 'bg-gray-500';
+      case 'operational':
+        return 'bg-green-500';
+      case 'degraded':
+        return 'bg-amber-500';
+      case 'maintenance':
+        return 'bg-blue-500';
+      case 'outage':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-600 text-white';
-      case 'warning': return 'bg-amber-500 text-white';
-      case 'info': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'critical':
+        return 'bg-red-600 text-white';
+      case 'warning':
+        return 'bg-amber-500 text-white';
+      case 'info':
+        return 'bg-blue-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
     }
   };
 
@@ -174,11 +273,17 @@ export const SystemDiagnostic: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-xl ${overallHealth >= 90 ? 'bg-green-100 dark:bg-green-900/30' : overallHealth >= 70 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}>
-              <Activity className={`w-8 h-8 ${overallHealth >= 90 ? 'text-green-600' : overallHealth >= 70 ? 'text-amber-600' : 'text-red-600'}`} />
+            <div
+              className={`p-3 rounded-xl ${overallHealth >= 90 ? 'bg-green-100 dark:bg-green-900/30' : overallHealth >= 70 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-red-100 dark:bg-red-900/30'}`}
+            >
+              <Activity
+                className={`w-8 h-8 ${overallHealth >= 90 ? 'text-green-600' : overallHealth >= 70 ? 'text-amber-600' : 'text-red-600'}`}
+              />
             </div>
             <div>
-              <h1 className="text-2xl font-bold font-heading text-trade-primary dark:text-slate-50">System Health & Diagnostics</h1>
+              <h1 className="text-2xl font-bold font-heading text-trade-primary dark:text-slate-50">
+                System Health & Diagnostics
+              </h1>
               <p className="text-sm text-gray-500 dark:text-slate-400">
                 Real-time infrastructure monitoring and incident management
               </p>
@@ -186,9 +291,14 @@ export const SystemDiagnostic: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Health Score</p>
-              <p className={`text-3xl font-black ${overallHealth >= 90 ? 'text-green-600' : overallHealth >= 70 ? 'text-amber-600' : 'text-red-600'}`}>
-                {overallHealth}<span className="text-sm text-gray-400 font-medium">/100</span>
+              <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                Health Score
+              </p>
+              <p
+                className={`text-3xl font-black ${overallHealth >= 90 ? 'text-green-600' : overallHealth >= 70 ? 'text-amber-600' : 'text-red-600'}`}
+              >
+                {overallHealth}
+                <span className="text-sm text-gray-400 font-medium">/100</span>
               </p>
             </div>
             <div className="h-10 w-px bg-gray-200 dark:bg-slate-600 mx-2"></div>
@@ -198,11 +308,14 @@ export const SystemDiagnostic: React.FC = () => {
                 className={`p-2 rounded-lg transition-colors ${autoRefresh ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}
                 title={autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
               >
-                <RefreshCw className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                <RefreshCw
+                  className={`w-4 h-4 ${autoRefresh ? 'animate-spin' : ''}`}
+                  style={{ animationDuration: '3s' }}
+                />
               </button>
               <select
                 value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
+                onChange={e => setTimeRange(e.target.value)}
                 className="bg-gray-100 dark:bg-slate-700 text-sm p-2 rounded-lg border-none outline-none"
               >
                 <option value="1h">Last 1 hour</option>
@@ -221,43 +334,75 @@ export const SystemDiagnostic: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
           <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800">
             <p className="text-xs font-bold text-green-600 dark:text-green-400 uppercase">Uptime</p>
-            <p className="text-2xl font-black text-green-700 dark:text-green-300 mt-1">{avgUptime}%</p>
+            <p className="text-2xl font-black text-green-700 dark:text-green-300 mt-1">
+              {avgUptime}%
+            </p>
             <p className="text-xs text-green-600 mt-1">Last 30 days</p>
           </div>
           <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
             <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase">Services</p>
-            <p className="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">{operationalServices}/{SERVICES.length}</p>
+            <p className="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">
+              {operationalServices}/{SERVICES.length}
+            </p>
             <p className="text-xs text-blue-600 mt-1">Operational</p>
           </div>
           <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
-            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase">Avg Latency</p>
+            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase">
+              Avg Latency
+            </p>
             <p className="text-2xl font-black text-purple-700 dark:text-purple-300 mt-1">145ms</p>
             <p className="text-xs text-purple-600 mt-1">P95: 320ms</p>
           </div>
-          <div className={`p-3 rounded-xl ${activeIncidents > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800' : 'bg-gray-50 dark:bg-slate-700 border border-gray-100 dark:border-slate-600'}`}>
-            <p className={`text-xs font-bold uppercase ${activeIncidents > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'}`}>Incidents</p>
-            <p className={`text-2xl font-black mt-1 ${activeIncidents > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}>{activeIncidents}</p>
-            <p className={`text-xs mt-1 ${activeIncidents > 0 ? 'text-amber-600' : 'text-gray-600'}`}>Active</p>
+          <div
+            className={`p-3 rounded-xl ${activeIncidents > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800' : 'bg-gray-50 dark:bg-slate-700 border border-gray-100 dark:border-slate-600'}`}
+          >
+            <p
+              className={`text-xs font-bold uppercase ${activeIncidents > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'}`}
+            >
+              Incidents
+            </p>
+            <p
+              className={`text-2xl font-black mt-1 ${activeIncidents > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300'}`}
+            >
+              {activeIncidents}
+            </p>
+            <p
+              className={`text-xs mt-1 ${activeIncidents > 0 ? 'text-amber-600' : 'text-gray-600'}`}
+            >
+              Active
+            </p>
           </div>
           <div className="p-3 rounded-xl bg-gray-50 dark:bg-slate-700 border border-gray-100 dark:border-slate-600">
-            <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">Last Refresh</p>
-            <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mt-1">{lastRefresh.toLocaleTimeString()}</p>
-            <p className="text-xs text-gray-600 mt-1">{autoRefresh ? 'Auto-refresh ON' : 'Manual'}</p>
+            <p className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase">
+              Last Refresh
+            </p>
+            <p className="text-lg font-bold text-gray-700 dark:text-gray-300 mt-1">
+              {lastRefresh.toLocaleTimeString()}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              {autoRefresh ? 'Auto-refresh ON' : 'Manual'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Critical Alert Banner */}
-      {INCIDENT_LOGS.filter(i => i.severity === 'critical' && i.status === 'investigating').length > 0 && (
+      {INCIDENT_LOGS.filter(i => i.severity === 'critical' && i.status === 'investigating').length >
+        0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 flex items-center justify-between animate-pulse">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-full">
               <AlertOctagon className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <p className="font-bold text-red-800 dark:text-red-300 text-sm">Critical Incident Active</p>
+              <p className="font-bold text-red-800 dark:text-red-300 text-sm">
+                Critical Incident Active
+              </p>
               <p className="text-xs text-red-700 dark:text-red-400">
-                {INCIDENT_LOGS.find(i => i.severity === 'critical' && i.status === 'investigating')?.title}
+                {
+                  INCIDENT_LOGS.find(i => i.severity === 'critical' && i.status === 'investigating')
+                    ?.title
+                }
               </p>
             </div>
           </div>
@@ -300,7 +445,10 @@ export const SystemDiagnostic: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={HEALTH_DATA}>
                       <PolarGrid stroke="#e2e8f0" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 'bold' }} />
+                      <PolarAngleAxis
+                        dataKey="subject"
+                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 'bold' }}
+                      />
                       <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
                       <Radar
                         name="AfriTradeOS"
@@ -311,7 +459,11 @@ export const SystemDiagnostic: React.FC = () => {
                         strokeWidth={2}
                       />
                       <Tooltip
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: 'none',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        }}
                         itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
                       />
                     </RadarChart>
@@ -322,7 +474,8 @@ export const SystemDiagnostic: React.FC = () => {
               {/* Real-time Traffic */}
               <div className="lg:col-span-8 bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-100 dark:border-slate-700 shadow-sm">
                 <h3 className="text-base font-bold font-heading text-trade-primary dark:text-slate-50 mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-trade-secondary" /> Real-time Traffic & Performance
+                  <TrendingUp className="w-4 h-4 text-trade-secondary" /> Real-time Traffic &
+                  Performance
                 </h3>
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
@@ -334,11 +487,38 @@ export const SystemDiagnostic: React.FC = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="time" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                      <XAxis
+                        dataKey="time"
+                        stroke="#94a3b8"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                      />
                       <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
-                      <Area type="monotone" dataKey="requests" stroke="#3b82f6" strokeWidth={2} fill="url(#colorRequests)" name="Requests/min" />
-                      <Line type="monotone" dataKey="latency" stroke="#f59e0b" strokeWidth={2} dot={false} name="Latency (ms)" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1e293b',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: '#fff',
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="requests"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        fill="url(#colorRequests)"
+                        name="Requests/min"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="latency"
+                        stroke="#f59e0b"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Latency (ms)"
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -375,17 +555,26 @@ export const SystemDiagnostic: React.FC = () => {
                   <div
                     key={service.name}
                     className={`p-3 rounded-lg border ${
-                      service.status === 'operational' ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
-                      service.status === 'degraded' ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20' :
-                      service.status === 'maintenance' ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20' :
-                      'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                      service.status === 'operational'
+                        ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
+                        : service.status === 'degraded'
+                          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+                          : service.status === 'maintenance'
+                            ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <div className={`w-2 h-2 rounded-full ${getStatusColor(service.status)} ${service.status === 'operational' ? 'animate-pulse' : ''}`}></div>
-                      <span className="text-xs font-bold text-gray-900 dark:text-white truncate">{service.name}</span>
+                      <div
+                        className={`w-2 h-2 rounded-full ${getStatusColor(service.status)} ${service.status === 'operational' ? 'animate-pulse' : ''}`}
+                      ></div>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                        {service.name}
+                      </span>
                     </div>
-                    <p className="text-[10px] text-gray-500">{service.latency}ms • {service.uptime}%</p>
+                    <p className="text-[10px] text-gray-500">
+                      {service.latency}ms • {service.uptime}%
+                    </p>
                   </div>
                 ))}
               </div>
@@ -401,14 +590,29 @@ export const SystemDiagnostic: React.FC = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={LATENCY_DATA} layout="vertical">
                       <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }} />
+                      <YAxis
+                        dataKey="name"
+                        type="category"
+                        width={100}
+                        tick={{ fontSize: 12, fill: '#64748b', fontWeight: 'bold' }}
+                      />
                       <Tooltip
                         cursor={{ fill: 'transparent' }}
-                        contentStyle={{ borderRadius: '8px', border: 'none', backgroundColor: '#0B1F33', color: 'white' }}
+                        contentStyle={{
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: '#0B1F33',
+                          color: 'white',
+                        }}
                       />
                       <Bar dataKey="ms" radius={[0, 4, 4, 0]} barSize={20}>
                         {LATENCY_DATA.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.ms > 300 ? '#f59e0b' : entry.ms > 500 ? '#ef4444' : '#10b981'} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              entry.ms > 300 ? '#f59e0b' : entry.ms > 500 ? '#ef4444' : '#10b981'
+                            }
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -423,10 +627,17 @@ export const SystemDiagnostic: React.FC = () => {
                 </h3>
                 <div className="space-y-3">
                   {ALERT_CHANNELS.map(channel => (
-                    <div key={channel.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                    <div
+                      key={channel.name}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${channel.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">{channel.name}</span>
+                        <div
+                          className={`w-2 h-2 rounded-full ${channel.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}
+                        ></div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {channel.name}
+                        </span>
                       </div>
                       <span className="text-xs text-gray-500">{channel.lastAlert}</span>
                     </div>
@@ -456,32 +667,48 @@ export const SystemDiagnostic: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {SERVICES.map(service => (
-                      <tr key={service.name} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
+                      <tr
+                        key={service.name}
+                        className="hover:bg-gray-50 dark:hover:bg-slate-700/30"
+                      >
                         <td className="p-4">
                           <div className="flex items-center gap-2">
                             <Server className="w-4 h-4 text-gray-400" />
-                            <span className="font-bold text-gray-900 dark:text-white">{service.name}</span>
+                            <span className="font-bold text-gray-900 dark:text-white">
+                              {service.name}
+                            </span>
                           </div>
                         </td>
                         <td className="p-4 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                            service.status === 'operational' ? 'bg-green-100 text-green-700' :
-                            service.status === 'degraded' ? 'bg-amber-100 text-amber-700' :
-                            service.status === 'maintenance' ? 'bg-blue-100 text-blue-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-bold uppercase ${
+                              service.status === 'operational'
+                                ? 'bg-green-100 text-green-700'
+                                : service.status === 'degraded'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : service.status === 'maintenance'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             {service.status}
                           </span>
                         </td>
-                        <td className="p-4 text-center font-bold text-gray-900 dark:text-white">{service.uptime}%</td>
+                        <td className="p-4 text-center font-bold text-gray-900 dark:text-white">
+                          {service.uptime}%
+                        </td>
                         <td className="p-4 text-center">
-                          <span className={`font-bold ${service.latency > 300 ? 'text-amber-600' : 'text-green-600'}`}>
+                          <span
+                            className={`font-bold ${service.latency > 300 ? 'text-amber-600' : 'text-green-600'}`}
+                          >
                             {service.latency}ms
                           </span>
                         </td>
                         <td className="p-4 text-center text-gray-500">{service.region}</td>
                         <td className="p-4 text-right">
-                          <button className="text-trade-primary hover:underline text-sm font-bold">Details</button>
+                          <button className="text-trade-primary hover:underline text-sm font-bold">
+                            Details
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -507,35 +734,49 @@ export const SystemDiagnostic: React.FC = () => {
                   <div
                     key={incident.id}
                     className={`p-4 rounded-xl border ${
-                      incident.status === 'investigating' ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20' :
-                      incident.status === 'resolved' ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
-                      'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                      incident.status === 'investigating'
+                        ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+                        : incident.status === 'resolved'
+                          ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'
+                          : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          incident.severity === 'critical' ? 'bg-red-100 text-red-600' :
-                          incident.severity === 'warning' ? 'bg-amber-100 text-amber-600' :
-                          'bg-blue-100 text-blue-600'
-                        }`}>
+                        <div
+                          className={`p-2 rounded-lg ${
+                            incident.severity === 'critical'
+                              ? 'bg-red-100 text-red-600'
+                              : incident.severity === 'warning'
+                                ? 'bg-amber-100 text-amber-600'
+                                : 'bg-blue-100 text-blue-600'
+                          }`}
+                        >
                           <AlertTriangle className="w-5 h-5" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-mono text-xs text-gray-500">{incident.id}</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getSeverityColor(incident.severity)}`}>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getSeverityColor(incident.severity)}`}
+                            >
                               {incident.severity}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                              incident.status === 'investigating' ? 'bg-amber-100 text-amber-700' :
-                              incident.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                              'bg-blue-100 text-blue-700'
-                            }`}>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                incident.status === 'investigating'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : incident.status === 'resolved'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
                               {incident.status}
                             </span>
                           </div>
-                          <h4 className="font-bold text-gray-900 dark:text-white">{incident.title}</h4>
+                          <h4 className="font-bold text-gray-900 dark:text-white">
+                            {incident.title}
+                          </h4>
                           <p className="text-sm text-gray-500 mt-1">{incident.description}</p>
                           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                             <span className="flex items-center gap-1">
@@ -547,7 +788,9 @@ export const SystemDiagnostic: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <button className="text-trade-primary hover:underline text-sm font-bold">View</button>
+                      <button className="text-trade-primary hover:underline text-sm font-bold">
+                        View
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -576,23 +819,35 @@ export const SystemDiagnostic: React.FC = () => {
                   <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
                     {QUEUE_STATUS.map(queue => (
                       <tr key={queue.name} className="hover:bg-gray-50 dark:hover:bg-slate-700/30">
-                        <td className="p-4 font-mono font-bold text-gray-900 dark:text-white">{queue.name}</td>
+                        <td className="p-4 font-mono font-bold text-gray-900 dark:text-white">
+                          {queue.name}
+                        </td>
                         <td className="p-4 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${queue.pending > 100 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'}`}>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-bold ${queue.pending > 100 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-700'}`}
+                          >
                             {queue.pending}
                           </span>
                         </td>
                         <td className="p-4 text-center">
-                          <span className="px-2 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700">{queue.processing}</span>
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-blue-100 text-blue-700">
+                            {queue.processing}
+                          </span>
                         </td>
                         <td className="p-4 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${queue.failed > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-bold ${queue.failed > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                          >
                             {queue.failed}
                           </span>
                         </td>
-                        <td className="p-4 text-center font-bold text-gray-900 dark:text-white">{queue.throughput}</td>
+                        <td className="p-4 text-center font-bold text-gray-900 dark:text-white">
+                          {queue.throughput}
+                        </td>
                         <td className="p-4 text-right">
-                          <button className="text-trade-primary hover:underline text-sm font-bold">Manage</button>
+                          <button className="text-trade-primary hover:underline text-sm font-bold">
+                            Manage
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -615,10 +870,15 @@ export const SystemDiagnostic: React.FC = () => {
               </div>
               <div className="space-y-3">
                 {BACKUP_STATUS.map(backup => (
-                  <div key={backup.name} className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+                  <div
+                    key={backup.name}
+                    className="p-4 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${backup.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                        <div
+                          className={`p-2 rounded-lg ${backup.status === 'success' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}
+                        >
                           <Database className="w-5 h-5" />
                         </div>
                         <div>
@@ -630,9 +890,13 @@ export const SystemDiagnostic: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
-                        backup.status === 'success' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold uppercase ${
+                          backup.status === 'success'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
                         {backup.status}
                       </span>
                     </div>
@@ -664,19 +928,71 @@ export const SystemDiagnostic: React.FC = () => {
               </div>
               <div className="bg-gray-900 rounded-lg p-4 font-mono text-xs text-gray-300 h-[400px] overflow-y-auto">
                 <div className="space-y-1">
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:15</span> API Gateway started successfully</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:16</span> Database connection pool initialized (max: 100)</p>
-                  <p><span className="text-amber-400">[WARN]</span> <span className="text-gray-500">2024-03-15 14:32:18</span> Payment gateway response time exceeded threshold (520ms)</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:20</span> Cache warmed up successfully (1,245 entries)</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:22</span> Worker nodes scaled to 8 instances</p>
-                  <p><span className="text-red-400">[ERROR]</span> <span className="text-gray-500">2024-03-15 14:32:25</span> Failed to connect to Customs API: timeout after 30s</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:26</span> Retry attempt 1/3 for Customs API connection</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:28</span> Customs API connection restored</p>
-                  <p><span className="text-blue-400">[DEBUG]</span> <span className="text-gray-500">2024-03-15 14:32:30</span> Processing batch: 45 trade documents</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:32</span> Compliance check completed for trade TRD-2024-12345</p>
-                  <p><span className="text-amber-400">[WARN]</span> <span className="text-gray-500">2024-03-15 14:32:35</span> Memory usage at 78% - monitoring closely</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:38</span> Scheduled backup initiated</p>
-                  <p><span className="text-green-400">[INFO]</span> <span className="text-gray-500">2024-03-15 14:32:40</span> Health check passed for all services</p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:15</span> API Gateway started
+                    successfully
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:16</span> Database connection
+                    pool initialized (max: 100)
+                  </p>
+                  <p>
+                    <span className="text-amber-400">[WARN]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:18</span> Payment gateway
+                    response time exceeded threshold (520ms)
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:20</span> Cache warmed up
+                    successfully (1,245 entries)
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:22</span> Worker nodes scaled
+                    to 8 instances
+                  </p>
+                  <p>
+                    <span className="text-red-400">[ERROR]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:25</span> Failed to connect to
+                    Customs API: timeout after 30s
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:26</span> Retry attempt 1/3 for
+                    Customs API connection
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:28</span> Customs API
+                    connection restored
+                  </p>
+                  <p>
+                    <span className="text-blue-400">[DEBUG]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:30</span> Processing batch: 45
+                    trade documents
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:32</span> Compliance check
+                    completed for trade TRD-2024-12345
+                  </p>
+                  <p>
+                    <span className="text-amber-400">[WARN]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:35</span> Memory usage at 78% -
+                    monitoring closely
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:38</span> Scheduled backup
+                    initiated
+                  </p>
+                  <p>
+                    <span className="text-green-400">[INFO]</span>{' '}
+                    <span className="text-gray-500">2024-03-15 14:32:40</span> Health check passed
+                    for all services
+                  </p>
                 </div>
               </div>
             </div>

@@ -22,7 +22,7 @@ import {
   History,
   Lock,
   Zap,
-  Download
+  Download,
 } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -38,7 +38,13 @@ interface Document {
 interface KYCRequest {
   id: string;
   request_type: 'kyc' | 'kyb';
-  status: 'not_started' | 'documents_pending' | 'under_review' | 'approved' | 'rejected' | 'expired';
+  status:
+    | 'not_started'
+    | 'documents_pending'
+    | 'under_review'
+    | 'approved'
+    | 'rejected'
+    | 'expired';
   submitted_at?: string;
   review_notes?: string;
   rejection_reason?: string;
@@ -48,16 +54,48 @@ type VerificationType = 'individual' | 'business';
 
 const REQUIRED_DOCUMENTS = {
   individual: [
-    { type: 'identity_document', label: 'Government ID', description: 'Passport, National ID, or Driver\'s License' },
-    { type: 'bank_statement', label: 'Proof of Address', description: 'Bank statement or utility bill (last 3 months)' },
+    {
+      type: 'identity_document',
+      label: 'Government ID',
+      description: "Passport, National ID, or Driver's License",
+    },
+    {
+      type: 'bank_statement',
+      label: 'Proof of Address',
+      description: 'Bank statement or utility bill (last 3 months)',
+    },
   ],
   business: [
-    { type: 'business_registration', label: 'Business Registration', description: 'Certificate of Incorporation' },
-    { type: 'tax_certificate', label: 'Tax Certificate', description: 'Tax registration or clearance certificate' },
-    { type: 'trade_license', label: 'Import License', description: 'Valid import permit or trade license' },
-    { type: 'identity_document', label: 'Director ID', description: 'ID of company director or authorized signatory' },
-    { type: 'afcfta_certificate', label: 'AfCFTA Certificate', description: 'Certificate of Origin for preferential tariff rates' },
-    { type: 'customs_bond', label: 'Customs Bond', description: 'Customs bond or guarantee for import clearance' },
+    {
+      type: 'business_registration',
+      label: 'Business Registration',
+      description: 'Certificate of Incorporation',
+    },
+    {
+      type: 'tax_certificate',
+      label: 'Tax Certificate',
+      description: 'Tax registration or clearance certificate',
+    },
+    {
+      type: 'trade_license',
+      label: 'Import License',
+      description: 'Valid import permit or trade license',
+    },
+    {
+      type: 'identity_document',
+      label: 'Director ID',
+      description: 'ID of company director or authorized signatory',
+    },
+    {
+      type: 'afcfta_certificate',
+      label: 'AfCFTA Certificate',
+      description: 'Certificate of Origin for preferential tariff rates',
+    },
+    {
+      type: 'customs_bond',
+      label: 'Customs Bond',
+      description: 'Customs bond or guarantee for import clearance',
+    },
   ],
 };
 
@@ -77,23 +115,50 @@ export const KYCVerification: React.FC = () => {
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricScanning, setBiometricScanning] = useState(false);
   // Audit logs state
-  const [auditLogs, setAuditLogs] = useState<Array<{
-    id: string;
-    action: string;
-    timestamp: string;
-    user: string;
-    details: string;
-    status: 'success' | 'warning' | 'info';
-  }>>([
-    { id: '1', action: 'Document Uploaded', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), user: 'You', details: 'Business Registration uploaded', status: 'success' },
-    { id: '2', action: 'Verification Started', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), user: 'System', details: 'KYB verification process initiated', status: 'info' },
-    { id: '3', action: 'Document Verified', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), user: 'Admin', details: 'Tax Certificate approved', status: 'success' },
+  const [auditLogs, setAuditLogs] = useState<
+    Array<{
+      id: string;
+      action: string;
+      timestamp: string;
+      user: string;
+      details: string;
+      status: 'success' | 'warning' | 'info';
+    }>
+  >([
+    {
+      id: '1',
+      action: 'Document Uploaded',
+      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      user: 'You',
+      details: 'Business Registration uploaded',
+      status: 'success',
+    },
+    {
+      id: '2',
+      action: 'Verification Started',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      user: 'System',
+      details: 'KYB verification process initiated',
+      status: 'info',
+    },
+    {
+      id: '3',
+      action: 'Document Verified',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      user: 'Admin',
+      details: 'Tax Certificate approved',
+      status: 'success',
+    },
   ]);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(true);
 
   // Add audit log entry
-  const addAuditLog = (action: string, details: string, status: 'success' | 'warning' | 'info' = 'info') => {
+  const addAuditLog = (
+    action: string,
+    details: string,
+    status: 'success' | 'warning' | 'info' = 'info'
+  ) => {
     const newLog = {
       id: Date.now().toString(),
       action,
@@ -113,7 +178,7 @@ export const KYCVerification: React.FC = () => {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -128,7 +193,9 @@ export const KYCVerification: React.FC = () => {
   const fetchKYCStatus = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
         return;
@@ -178,7 +245,9 @@ export const KYCVerification: React.FC = () => {
     setError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       // Upload to Supabase Storage
@@ -210,12 +279,20 @@ export const KYCVerification: React.FC = () => {
 
       if (docData) {
         setDocuments(prev => [docData, ...prev]);
-        addAuditLog('Document Uploaded', `${selectedDocType} document uploaded successfully`, 'success');
-        
+        addAuditLog(
+          'Document Uploaded',
+          `${selectedDocType} document uploaded successfully`,
+          'success'
+        );
+
         // Auto-approval trigger for low-risk documents
         if (autoApprovalEnabled && ['bank_statement', 'trade_license'].includes(selectedDocType)) {
           setTimeout(() => {
-            addAuditLog('Auto-Verification', `${selectedDocType} passed automated verification checks`, 'success');
+            addAuditLog(
+              'Auto-Verification',
+              `${selectedDocType} passed automated verification checks`,
+              'success'
+            );
           }, 2000);
         }
       }
@@ -234,7 +311,6 @@ export const KYCVerification: React.FC = () => {
 
         if (newKyc) setKycRequest(newKyc);
       }
-
     } catch (err: any) {
       console.error('Upload failed:', err);
       setError(err.message || 'Failed to upload document');
@@ -259,7 +335,9 @@ export const KYCVerification: React.FC = () => {
 
       if (error) throw error;
 
-      setKycRequest(prev => prev ? { ...prev, status: 'under_review', submitted_at: new Date().toISOString() } : null);
+      setKycRequest(prev =>
+        prev ? { ...prev, status: 'under_review', submitted_at: new Date().toISOString() } : null
+      );
       addAuditLog('Verification Submitted', 'All documents submitted for review', 'success');
     } catch (err: any) {
       setError(err.message || 'Failed to submit for review');
@@ -273,22 +351,46 @@ export const KYCVerification: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full"><CheckCircle className="w-3 h-3" /> Approved</span>;
+        return (
+          <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
+            <CheckCircle className="w-3 h-3" /> Approved
+          </span>
+        );
       case 'rejected':
-        return <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full"><XCircle className="w-3 h-3" /> Rejected</span>;
+        return (
+          <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+            <XCircle className="w-3 h-3" /> Rejected
+          </span>
+        );
       case 'under_review':
-        return <span className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full"><Clock className="w-3 h-3" /> Under Review</span>;
+        return (
+          <span className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+            <Clock className="w-3 h-3" /> Under Review
+          </span>
+        );
       case 'expired':
-        return <span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-full"><AlertTriangle className="w-3 h-3" /> Expired</span>;
+        return (
+          <span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+            <AlertTriangle className="w-3 h-3" /> Expired
+          </span>
+        );
       default:
-        return <span className="flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full"><Clock className="w-3 h-3" /> Pending</span>;
+        return (
+          <span className="flex items-center gap-1 text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+            <Clock className="w-3 h-3" /> Pending
+          </span>
+        );
     }
   };
 
   const requiredDocs = REQUIRED_DOCUMENTS[verificationType];
   const uploadedCount = requiredDocs.filter(doc => getDocumentForType(doc.type)).length;
   const allDocsUploaded = uploadedCount === requiredDocs.length;
-  const canSubmit = allDocsUploaded && (!kycRequest || kycRequest.status === 'documents_pending' || kycRequest.status === 'not_started');
+  const canSubmit =
+    allDocsUploaded &&
+    (!kycRequest ||
+      kycRequest.status === 'documents_pending' ||
+      kycRequest.status === 'not_started');
 
   if (loading) {
     return (
@@ -321,8 +423,13 @@ export const KYCVerification: React.FC = () => {
             <RefreshCw className="w-4 h-4 text-green-600" />
           </div>
           <div>
-            <p className="text-xs font-bold text-green-800 dark:text-green-300">One-Time Submission</p>
-            <p className="text-[10px] text-green-700 dark:text-green-400 mt-0.5">Your verified documents are automatically reused across trades, tenders, and finance applications.</p>
+            <p className="text-xs font-bold text-green-800 dark:text-green-300">
+              One-Time Submission
+            </p>
+            <p className="text-[10px] text-green-700 dark:text-green-400 mt-0.5">
+              Your verified documents are automatically reused across trades, tenders, and finance
+              applications.
+            </p>
           </div>
         </div>
         <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-xl p-4 flex items-start gap-3">
@@ -330,8 +437,12 @@ export const KYCVerification: React.FC = () => {
             <Info className="w-4 h-4 text-blue-600" />
           </div>
           <div>
-            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">Multi-Language Support</p>
-            <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-0.5">Documents accepted in English, French, Arabic, and Portuguese for pan-African SMEs.</p>
+            <p className="text-xs font-bold text-blue-800 dark:text-blue-300">
+              Multi-Language Support
+            </p>
+            <p className="text-[10px] text-blue-700 dark:text-blue-400 mt-0.5">
+              Documents accepted in English, French, Arabic, and Portuguese for pan-African SMEs.
+            </p>
           </div>
         </div>
         <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-900/30 rounded-xl p-4 flex items-start gap-3">
@@ -339,13 +450,17 @@ export const KYCVerification: React.FC = () => {
             <Fingerprint className="w-4 h-4 text-purple-600" />
           </div>
           <div>
-            <p className="text-xs font-bold text-purple-800 dark:text-purple-300">Biometric Verification</p>
-            <p className="text-[10px] text-purple-700 dark:text-purple-400 mt-0.5">Enhanced security with fingerprint or facial recognition for identity verification.</p>
-            <button 
+            <p className="text-xs font-bold text-purple-800 dark:text-purple-300">
+              Biometric Verification
+            </p>
+            <p className="text-[10px] text-purple-700 dark:text-purple-400 mt-0.5">
+              Enhanced security with fingerprint or facial recognition for identity verification.
+            </p>
+            <button
               onClick={() => setShowBiometricModal(true)}
               className={`mt-1.5 text-[10px] font-bold px-3 py-1 rounded-lg transition-colors ${
-                biometricEnabled 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                biometricEnabled
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
                   : 'bg-purple-600 hover:bg-purple-700 text-white'
               }`}
             >
@@ -442,8 +557,12 @@ export const KYCVerification: React.FC = () => {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${uploadedDoc ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}>
-                    <FileText className={`w-5 h-5 ${uploadedDoc ? 'text-green-600' : 'text-gray-500'}`} />
+                  <div
+                    className={`p-2 rounded-lg ${uploadedDoc ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-slate-700'}`}
+                  >
+                    <FileText
+                      className={`w-5 h-5 ${uploadedDoc ? 'text-green-600' : 'text-gray-500'}`}
+                    />
                   </div>
                   <div>
                     <h3 className="font-bold text-trade-primary dark:text-white">{doc.label}</h3>
@@ -518,8 +637,13 @@ export const KYCVerification: React.FC = () => {
 
       <div className="flex justify-between items-center">
         {!showWizard && (
-          <button onClick={() => { setShowWizard(true); setWizardStep(0); }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors">
+          <button
+            onClick={() => {
+              setShowWizard(true);
+              setWizardStep(0);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors"
+          >
             <ScanLine className="w-5 h-5" /> Start Guided Verification
           </button>
         )}
@@ -560,9 +684,11 @@ export const KYCVerification: React.FC = () => {
                     autoApprovalEnabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-slate-600'
                   }`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                    autoApprovalEnabled ? 'translate-x-5' : ''
-                  }`} />
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                      autoApprovalEnabled ? 'translate-x-5' : ''
+                    }`}
+                  />
                 </button>
                 {autoApprovalEnabled && <Zap className="w-3 h-3 text-green-500" />}
               </label>
@@ -576,20 +702,35 @@ export const KYCVerification: React.FC = () => {
           </div>
           <div className="max-h-64 overflow-y-auto">
             {auditLogs.map(log => (
-              <div key={log.id} className="flex items-start gap-3 p-4 border-b border-gray-50 dark:border-slate-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
-                <div className={`p-1.5 rounded-lg ${
-                  log.status === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
-                  log.status === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30' :
-                  'bg-blue-100 dark:bg-blue-900/30'
-                }`}>
-                  {log.status === 'success' ? <CheckCircle className="w-4 h-4 text-green-600" /> :
-                   log.status === 'warning' ? <AlertTriangle className="w-4 h-4 text-amber-600" /> :
-                   <Info className="w-4 h-4 text-blue-600" />}
+              <div
+                key={log.id}
+                className="flex items-start gap-3 p-4 border-b border-gray-50 dark:border-slate-700/50 last:border-0 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
+              >
+                <div
+                  className={`p-1.5 rounded-lg ${
+                    log.status === 'success'
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : log.status === 'warning'
+                        ? 'bg-amber-100 dark:bg-amber-900/30'
+                        : 'bg-blue-100 dark:bg-blue-900/30'
+                  }`}
+                >
+                  {log.status === 'success' ? (
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  ) : log.status === 'warning' ? (
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  ) : (
+                    <Info className="w-4 h-4 text-blue-600" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{log.action}</p>
-                    <span className="text-[10px] text-gray-400">{formatAuditTime(log.timestamp)}</span>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      {log.action}
+                    </p>
+                    <span className="text-[10px] text-gray-400">
+                      {formatAuditTime(log.timestamp)}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">{log.details}</p>
                   <p className="text-[10px] text-gray-400 mt-1">By: {log.user}</p>
@@ -617,24 +758,37 @@ export const KYCVerification: React.FC = () => {
                 <h2 className="text-xl font-bold text-trade-primary dark:text-white flex items-center gap-2">
                   <Fingerprint className="w-5 h-5 text-indigo-500" /> Verification Wizard
                 </h2>
-                <button onClick={() => setShowWizard(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg">
+                <button
+                  onClick={() => setShowWizard(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
+                >
                   <XCircle className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
               {/* Step Progress */}
               <div className="flex items-center gap-1">
-                {['Type', ...requiredDocs.map(d => d.label.split(' ')[0]), 'Review'].map((label, idx) => (
-                  <React.Fragment key={idx}>
-                    <div className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold transition-all ${
-                      wizardStep > idx ? 'bg-green-500 text-white' :
-                      wizardStep === idx ? 'bg-indigo-600 text-white' :
-                      'bg-gray-200 dark:bg-slate-700 text-gray-500'
-                    }`}>
-                      {wizardStep > idx ? <Check className="w-3.5 h-3.5" /> : idx + 1}
-                    </div>
-                    {idx < requiredDocs.length + 1 && <div className={`flex-1 h-1 rounded ${wizardStep > idx ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'}`} />}
-                  </React.Fragment>
-                ))}
+                {['Type', ...requiredDocs.map(d => d.label.split(' ')[0]), 'Review'].map(
+                  (label, idx) => (
+                    <React.Fragment key={idx}>
+                      <div
+                        className={`flex items-center justify-center w-7 h-7 rounded-full text-[10px] font-bold transition-all ${
+                          wizardStep > idx
+                            ? 'bg-green-500 text-white'
+                            : wizardStep === idx
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-200 dark:bg-slate-700 text-gray-500'
+                        }`}
+                      >
+                        {wizardStep > idx ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                      </div>
+                      {idx < requiredDocs.length + 1 && (
+                        <div
+                          className={`flex-1 h-1 rounded ${wizardStep > idx ? 'bg-green-500' : 'bg-gray-200 dark:bg-slate-700'}`}
+                        />
+                      )}
+                    </React.Fragment>
+                  )
+                )}
               </div>
             </div>
 
@@ -643,21 +797,39 @@ export const KYCVerification: React.FC = () => {
               {/* Step 0: Choose Verification Type */}
               {wizardStep === 0 && (
                 <div className="space-y-4">
-                  <h3 className="font-bold text-gray-900 dark:text-white">Select Verification Type</h3>
-                  <p className="text-sm text-gray-500">Choose whether you are verifying as an individual or a business entity.</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white">
+                    Select Verification Type
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Choose whether you are verifying as an individual or a business entity.
+                  </p>
                   <div className="grid grid-cols-2 gap-4 mt-4">
-                    <button onClick={() => { setVerificationType('individual'); setWizardStep(1); }}
+                    <button
+                      onClick={() => {
+                        setVerificationType('individual');
+                        setWizardStep(1);
+                      }}
                       className={`p-5 rounded-xl border-2 text-center transition-all hover:border-indigo-500 ${
-                        verificationType === 'individual' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-slate-700'
-                      }`}>
+                        verificationType === 'individual'
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10'
+                          : 'border-gray-200 dark:border-slate-700'
+                      }`}
+                    >
                       <User className="w-8 h-8 mx-auto mb-2 text-indigo-600" />
                       <h4 className="font-bold text-gray-900 dark:text-white">Individual</h4>
                       <p className="text-[10px] text-gray-500 mt-1">KYC for personal accounts</p>
                     </button>
-                    <button onClick={() => { setVerificationType('business'); setWizardStep(1); }}
+                    <button
+                      onClick={() => {
+                        setVerificationType('business');
+                        setWizardStep(1);
+                      }}
                       className={`p-5 rounded-xl border-2 text-center transition-all hover:border-indigo-500 ${
-                        verificationType === 'business' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-slate-700'
-                      }`}>
+                        verificationType === 'business'
+                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10'
+                          : 'border-gray-200 dark:border-slate-700'
+                      }`}
+                    >
                       <Building className="w-8 h-8 mx-auto mb-2 text-purple-600" />
                       <h4 className="font-bold text-gray-900 dark:text-white">Business</h4>
                       <p className="text-[10px] text-gray-500 mt-1">KYB for registered companies</p>
@@ -667,77 +839,91 @@ export const KYCVerification: React.FC = () => {
               )}
 
               {/* Steps 1-N: Document Upload for each required doc */}
-              {wizardStep > 0 && wizardStep <= requiredDocs.length && (() => {
-                const docIdx = wizardStep - 1;
-                const doc = requiredDocs[docIdx];
-                const uploadedDoc = getDocumentForType(doc.type);
-                const isUploading = uploading === doc.type;
-                return (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
-                        <FileText className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white">{doc.label}</h3>
-                        <p className="text-sm text-gray-500">{doc.description}</p>
-                      </div>
-                    </div>
-
-                    {uploadedDoc ? (
-                      <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-900/30">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="w-6 h-6 text-green-600" />
-                          <div>
-                            <p className="font-bold text-green-800 dark:text-green-300">Document Uploaded</p>
-                            <p className="text-xs text-green-600">{uploadedDoc.file_name}</p>
-                          </div>
+              {wizardStep > 0 &&
+                wizardStep <= requiredDocs.length &&
+                (() => {
+                  const docIdx = wizardStep - 1;
+                  const doc = requiredDocs[docIdx];
+                  const uploadedDoc = getDocumentForType(doc.type);
+                  const isUploading = uploading === doc.type;
+                  return (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+                          <FileText className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900 dark:text-white">{doc.label}</h3>
+                          <p className="text-sm text-gray-500">{doc.description}</p>
                         </div>
                       </div>
-                    ) : (
-                      <div
-                        onDragOver={(e) => { e.preventDefault(); setDragOver(doc.type); }}
-                        onDragLeave={() => setDragOver(null)}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setDragOver(null);
-                          const file = e.dataTransfer.files[0];
-                          if (file) {
-                            setSelectedDocType(doc.type);
-                            const dt = new DataTransfer();
-                            dt.items.add(file);
-                            if (fileInputRef.current) {
-                              fileInputRef.current.files = dt.files;
-                              fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                          }
-                        }}
-                        className={`p-8 border-2 border-dashed rounded-xl text-center transition-all cursor-pointer ${
-                          dragOver === doc.type ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-gray-300 dark:border-slate-600 hover:border-indigo-400'
-                        }`}
-                        onClick={() => handleFileSelect(doc.type)}
-                      >
-                        {isUploading ? (
-                          <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto" />
-                        ) : (
-                          <>
-                            <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                            <p className="font-bold text-gray-700 dark:text-gray-300">Drag & drop or click to upload</p>
-                            <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG (max 10MB)</p>
-                          </>
-                        )}
-                      </div>
-                    )}
 
-                    <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg flex items-start gap-2">
-                      <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        Ensure the document is clear, unedited, and matches your registered details. Blurry or expired documents will be rejected.
-                      </p>
+                      {uploadedDoc ? (
+                        <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-200 dark:border-green-900/30">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle className="w-6 h-6 text-green-600" />
+                            <div>
+                              <p className="font-bold text-green-800 dark:text-green-300">
+                                Document Uploaded
+                              </p>
+                              <p className="text-xs text-green-600">{uploadedDoc.file_name}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onDragOver={e => {
+                            e.preventDefault();
+                            setDragOver(doc.type);
+                          }}
+                          onDragLeave={() => setDragOver(null)}
+                          onDrop={e => {
+                            e.preventDefault();
+                            setDragOver(null);
+                            const file = e.dataTransfer.files[0];
+                            if (file) {
+                              setSelectedDocType(doc.type);
+                              const dt = new DataTransfer();
+                              dt.items.add(file);
+                              if (fileInputRef.current) {
+                                fileInputRef.current.files = dt.files;
+                                fileInputRef.current.dispatchEvent(
+                                  new Event('change', { bubbles: true })
+                                );
+                              }
+                            }
+                          }}
+                          className={`p-8 border-2 border-dashed rounded-xl text-center transition-all cursor-pointer ${
+                            dragOver === doc.type
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10'
+                              : 'border-gray-300 dark:border-slate-600 hover:border-indigo-400'
+                          }`}
+                          onClick={() => handleFileSelect(doc.type)}
+                        >
+                          {isUploading ? (
+                            <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto" />
+                          ) : (
+                            <>
+                              <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                              <p className="font-bold text-gray-700 dark:text-gray-300">
+                                Drag & drop or click to upload
+                              </p>
+                              <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG (max 10MB)</p>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg flex items-start gap-2">
+                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Ensure the document is clear, unedited, and matches your registered
+                          details. Blurry or expired documents will be rejected.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
 
               {/* Final Step: Review */}
               {wizardStep === requiredDocs.length + 1 && (
@@ -745,34 +931,60 @@ export const KYCVerification: React.FC = () => {
                   <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500" /> Review & Submit
                   </h3>
-                  <p className="text-sm text-gray-500">Review your uploaded documents before submitting for verification.</p>
+                  <p className="text-sm text-gray-500">
+                    Review your uploaded documents before submitting for verification.
+                  </p>
                   <div className="space-y-3 mt-4">
                     {requiredDocs.map(doc => {
                       const uploaded = getDocumentForType(doc.type);
                       return (
-                        <div key={doc.type} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-xl">
+                        <div
+                          key={doc.type}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-800 rounded-xl"
+                        >
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${uploaded ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                              {uploaded ? <Check className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                            <div
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center ${uploaded ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
+                            >
+                              {uploaded ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                <XCircle className="w-4 h-4" />
+                              )}
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-gray-900 dark:text-white">{doc.label}</p>
-                              <p className="text-[10px] text-gray-500">{uploaded ? uploaded.file_name : 'Not uploaded'}</p>
+                              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                {doc.label}
+                              </p>
+                              <p className="text-[10px] text-gray-500">
+                                {uploaded ? uploaded.file_name : 'Not uploaded'}
+                              </p>
                             </div>
                           </div>
                           {uploaded ? (
-                            <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Ready</span>
+                            <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                              Ready
+                            </span>
                           ) : (
-                            <button onClick={() => setWizardStep(requiredDocs.indexOf(doc) + 1)}
-                              className="text-xs text-indigo-600 font-bold hover:underline">Upload</button>
+                            <button
+                              onClick={() => setWizardStep(requiredDocs.indexOf(doc) + 1)}
+                              className="text-xs text-indigo-600 font-bold hover:underline"
+                            >
+                              Upload
+                            </button>
                           )}
                         </div>
                       );
                     })}
                   </div>
                   {allDocsUploaded && (
-                    <button onClick={() => { handleSubmitForReview(); setShowWizard(false); }}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors mt-4">
+                    <button
+                      onClick={() => {
+                        handleSubmitForReview();
+                        setShowWizard(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-trade-primary hover:bg-trade-primary/90 text-white font-bold rounded-xl transition-colors mt-4"
+                    >
                       <Shield className="w-5 h-5" /> Submit for Verification
                     </button>
                   )}
@@ -782,14 +994,21 @@ export const KYCVerification: React.FC = () => {
 
             {/* Wizard Footer */}
             <div className="p-6 border-t border-gray-100 dark:border-slate-700 flex justify-between">
-              <button onClick={() => wizardStep > 0 ? setWizardStep(wizardStep - 1) : setShowWizard(false)}
-                className="flex items-center gap-1 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium">
+              <button
+                onClick={() =>
+                  wizardStep > 0 ? setWizardStep(wizardStep - 1) : setShowWizard(false)
+                }
+                className="flex items-center gap-1 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg font-medium"
+              >
                 <ArrowLeft className="w-4 h-4" /> {wizardStep > 0 ? 'Back' : 'Close'}
               </button>
               {wizardStep < requiredDocs.length + 1 && wizardStep > 0 && (
-                <button onClick={() => setWizardStep(wizardStep + 1)}
-                  className="flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">
-                  {getDocumentForType(requiredDocs[wizardStep - 1]?.type) ? 'Next' : 'Skip'} <ChevronRight className="w-4 h-4" />
+                <button
+                  onClick={() => setWizardStep(wizardStep + 1)}
+                  className="flex items-center gap-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold"
+                >
+                  {getDocumentForType(requiredDocs[wizardStep - 1]?.type) ? 'Next' : 'Skip'}{' '}
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -804,8 +1023,8 @@ export const KYCVerification: React.FC = () => {
           <div>
             <h3 className="font-bold text-blue-800 dark:text-blue-300">Verification In Progress</h3>
             <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-              Your documents are being reviewed. This typically takes 1-2 business days.
-              You&apos;ll receive a notification once the review is complete.
+              Your documents are being reviewed. This typically takes 1-2 business days. You&apos;ll
+              receive a notification once the review is complete.
             </p>
           </div>
         </div>
@@ -829,7 +1048,8 @@ export const KYCVerification: React.FC = () => {
           <div>
             <h3 className="font-bold text-red-800 dark:text-red-300">Verification Failed</h3>
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-              {kycRequest.rejection_reason || 'Your documents could not be verified. Please re-upload the required documents.'}
+              {kycRequest.rejection_reason ||
+                'Your documents could not be verified. Please re-upload the required documents.'}
             </p>
           </div>
         </div>
@@ -844,7 +1064,10 @@ export const KYCVerification: React.FC = () => {
                 <h3 className="text-xl font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
                   <Fingerprint className="w-5 h-5" /> Biometric Verification
                 </h3>
-                <button onClick={() => setShowBiometricModal(false)} className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg">
+                <button
+                  onClick={() => setShowBiometricModal(false)}
+                  className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg"
+                >
                   <XCircle className="w-5 h-5 text-purple-600" />
                 </button>
               </div>
@@ -853,7 +1076,8 @@ export const KYCVerification: React.FC = () => {
               {!biometricScanning && !biometricEnabled && (
                 <>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Enable biometric verification for enhanced security. Choose your preferred method:
+                    Enable biometric verification for enhanced security. Choose your preferred
+                    method:
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <button
@@ -866,7 +1090,9 @@ export const KYCVerification: React.FC = () => {
                       className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all flex flex-col items-center gap-2"
                     >
                       <Fingerprint className="w-8 h-8 text-purple-600" />
-                      <span className="text-sm font-bold text-gray-800 dark:text-white">Fingerprint</span>
+                      <span className="text-sm font-bold text-gray-800 dark:text-white">
+                        Fingerprint
+                      </span>
                     </button>
                     <button
                       onClick={async () => {
@@ -878,31 +1104,38 @@ export const KYCVerification: React.FC = () => {
                       className="p-4 rounded-xl border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all flex flex-col items-center gap-2"
                     >
                       <Camera className="w-8 h-8 text-purple-600" />
-                      <span className="text-sm font-bold text-gray-800 dark:text-white">Face ID</span>
+                      <span className="text-sm font-bold text-gray-800 dark:text-white">
+                        Face ID
+                      </span>
                     </button>
                   </div>
                 </>
               )}
-              
+
               {biometricScanning && (
                 <div className="text-center py-8">
                   <div className="relative w-24 h-24 mx-auto mb-4">
                     <ScanLine className="w-24 h-24 text-purple-600 animate-pulse" />
                     <div className="absolute inset-0 border-4 border-purple-400 rounded-full animate-ping opacity-30" />
                   </div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Scanning biometric data...</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Scanning biometric data...
+                  </p>
                   <p className="text-xs text-gray-500 mt-1">Please hold still</p>
                 </div>
               )}
-              
+
               {biometricEnabled && !biometricScanning && (
                 <div className="text-center py-6">
                   <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
-                  <h4 className="font-bold text-green-700 dark:text-green-400 mb-2">Biometric Enabled Successfully</h4>
+                  <h4 className="font-bold text-green-700 dark:text-green-400 mb-2">
+                    Biometric Enabled Successfully
+                  </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Your biometric data has been securely registered. You can now use biometric verification for identity confirmation.
+                    Your biometric data has been securely registered. You can now use biometric
+                    verification for identity confirmation.
                   </p>
                   <button
                     onClick={() => setShowBiometricModal(false)}

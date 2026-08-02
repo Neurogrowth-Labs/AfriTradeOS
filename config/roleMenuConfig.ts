@@ -21,7 +21,7 @@ import {
   BarChart3,
   Shield,
   LucideIcon,
-  Zap
+  Zap,
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -47,7 +47,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'My Trades' },
         { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Trade Finance' },
         { view: AppView.LOGISTICS, icon: Truck, label: 'Shipments' },
-      ]
+      ],
     },
     {
       title: 'Market',
@@ -56,28 +56,26 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.MARKETPLACE, icon: Users, label: 'Find Partners' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tenders & RFQ' },
         { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
-      ]
+      ],
     },
     {
       title: 'Compliance',
       items: [
         { view: AppView.COMPLIANCE, icon: Scale, label: 'Trade Compliance' },
         { view: AppView.KYC_VERIFICATION, icon: Key, label: 'KYC Documents' },
-      ]
+      ],
     },
     {
       title: 'Tools',
       items: [
         { view: AppView.LIVE_ASSISTANT, icon: Mic, label: 'AI Assistant' },
         { view: AppView.MARKETING, icon: ImageIcon, label: 'Marketing Studio' },
-      ]
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 
   // Enterprise Exporter - Similar to SME but with more analytics
@@ -89,7 +87,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.TRADE_LIFECYCLE, icon: Briefcase, label: 'Trade Workspace' },
         { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Trade Finance' },
         { view: AppView.LOGISTICS, icon: Truck, label: 'Logistics Grid' },
-      ]
+      ],
     },
     {
       title: 'Market',
@@ -98,28 +96,26 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.MARKETPLACE, icon: Users, label: 'Partner Network' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tenders & RFQ' },
         { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
-      ]
+      ],
     },
     {
       title: 'Compliance',
       items: [
         { view: AppView.COMPLIANCE, icon: Scale, label: 'Trade Compliance' },
         { view: AppView.KYC_VERIFICATION, icon: Key, label: 'KYC Verification' },
-      ]
+      ],
     },
     {
       title: 'Tools',
       items: [
         { view: AppView.LIVE_ASSISTANT, icon: Mic, label: 'Voice Assistant' },
         { view: AppView.MARKETING, icon: ImageIcon, label: 'Marketing Studio' },
-      ]
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Profile & Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Profile & Settings' }],
+    },
   ],
 
   // Importer - Dedicated Importer Panel with comprehensive import management
@@ -127,15 +123,18 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Command Center',
       items: [
-        { view: AppView.IMPORTER_PANEL, icon: Package, label: 'Importer Panel', description: 'Complete import operations, shipments, compliance & analytics' },
-      ]
+        {
+          view: AppView.IMPORTER_PANEL,
+          icon: Package,
+          label: 'Importer Panel',
+          description: 'Complete import operations, shipments, compliance & analytics',
+        },
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 
   // Customs Authority - Focus on compliance, verification, oversight
@@ -143,15 +142,18 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Command Center',
       items: [
-        { view: AppView.CUSTOMS, icon: Shield, label: 'Customs Panel', description: 'Full customs authority mission control' },
-      ]
+        {
+          view: AppView.CUSTOMS,
+          icon: Shield,
+          label: 'Customs Panel',
+          description: 'Full customs authority mission control',
+        },
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 
   // Logistics Provider - Focus on shipments, routes, tracking
@@ -159,15 +161,18 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Command Center',
       items: [
-        { view: AppView.LOGISTICS_PROVIDER, icon: LayoutDashboard, label: 'Logistics Panel', description: 'Full logistics provider mission control' },
-      ]
+        {
+          view: AppView.LOGISTICS_PROVIDER,
+          icon: LayoutDashboard,
+          label: 'Logistics Panel',
+          description: 'Full logistics provider mission control',
+        },
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 
   // Bank / Insurer - Focus on finance, risk, applications
@@ -175,34 +180,64 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Command Center',
       items: [
-        { view: AppView.BANK_DASHBOARD, icon: LayoutDashboard, label: 'Finance Dashboard', description: 'Portfolio snapshot, trade flows, credit pipeline & risk radar' },
-        { view: AppView.BANK_APPLICATIONS, icon: Landmark, label: 'Finance Applications', description: 'Smart application builder, document extraction & credit scoring' },
-      ]
+        {
+          view: AppView.BANK_DASHBOARD,
+          icon: LayoutDashboard,
+          label: 'Finance Dashboard',
+          description: 'Portfolio snapshot, trade flows, credit pipeline & risk radar',
+        },
+        {
+          view: AppView.BANK_APPLICATIONS,
+          icon: Landmark,
+          label: 'Finance Applications',
+          description: 'Smart application builder, document extraction & credit scoring',
+        },
+      ],
     },
     {
       title: 'Due Diligence',
       items: [
-        { view: AppView.BANK_DUE_DILIGENCE, icon: Shield, label: 'KYC & AML', description: 'KYC verification and AML screening' },
-      ]
+        {
+          view: AppView.BANK_DUE_DILIGENCE,
+          icon: Shield,
+          label: 'KYC & AML',
+          description: 'KYC verification and AML screening',
+        },
+      ],
     },
     {
       title: 'Risk & Clients',
       items: [
-        { view: AppView.BANK_RISK_CLIENTS, icon: BarChart3, label: 'Risk & Clients', description: 'Market risk monitoring and client directory' },
-      ]
+        {
+          view: AppView.BANK_RISK_CLIENTS,
+          icon: BarChart3,
+          label: 'Risk & Clients',
+          description: 'Market risk monitoring and client directory',
+        },
+      ],
     },
     {
       title: 'Tools',
       items: [
-        { view: AppView.BANK_TRADE_TOOLS, icon: Zap, label: 'Trade Tools', description: 'Insurance quoting, blockchain verification & AfCFTA checker' },
-      ]
+        {
+          view: AppView.BANK_TRADE_TOOLS,
+          icon: Zap,
+          label: 'Trade Tools',
+          description: 'Insurance quoting, blockchain verification & AfCFTA checker',
+        },
+      ],
     },
     {
       title: 'Account',
       items: [
-        { view: AppView.BANK_SETTINGS, icon: Settings, label: 'Account Settings', description: 'Users, roles, currencies, integrations & audit logs' },
-      ]
-    }
+        {
+          view: AppView.BANK_SETTINGS,
+          icon: Settings,
+          label: 'Account Settings',
+          description: 'Users, roles, currencies, integrations & audit logs',
+        },
+      ],
+    },
   ],
 
   // Government Agency - Focus on policy, oversight, analytics
@@ -210,36 +245,69 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
     {
       title: 'Dashboard',
       items: [
-        { view: AppView.REGULATOR, icon: Building, label: 'Command Center', description: 'Live trade monitoring, KPIs, risk alerts & AI anomaly detection' },
-      ]
+        {
+          view: AppView.REGULATOR,
+          icon: Building,
+          label: 'Command Center',
+          description: 'Live trade monitoring, KPIs, risk alerts & AI anomaly detection',
+        },
+      ],
     },
     {
       title: 'Policy & Compliance',
       items: [
-        { view: AppView.COMPLIANCE, icon: Scale, label: 'Policy & Compliance', description: 'Policy library, enforcement cases & regulatory gap analysis' },
-        { view: AppView.CONTRACTS, icon: FileSignature, label: 'Trade Agreements', description: 'AfCFTA, SADC, COMESA — tariffs, RoO & smart calculator' },
-      ]
+        {
+          view: AppView.COMPLIANCE,
+          icon: Scale,
+          label: 'Policy & Compliance',
+          description: 'Policy library, enforcement cases & regulatory gap analysis',
+        },
+        {
+          view: AppView.CONTRACTS,
+          icon: FileSignature,
+          label: 'Trade Agreements',
+          description: 'AfCFTA, SADC, COMESA — tariffs, RoO & smart calculator',
+        },
+      ],
     },
     {
       title: 'Statistics',
       items: [
-        { view: AppView.MARKET_INTEL, icon: BarChart3, label: 'Trade Statistics', description: 'Import/export volumes, AI insights & forecasts' },
-        { view: AppView.LOGISTICS, icon: Truck, label: 'Trade Flows', description: 'Border crossings, corridors & congestion intelligence' },
-      ]
+        {
+          view: AppView.MARKET_INTEL,
+          icon: BarChart3,
+          label: 'Trade Statistics',
+          description: 'Import/export volumes, AI insights & forecasts',
+        },
+        {
+          view: AppView.LOGISTICS,
+          icon: Truck,
+          label: 'Trade Flows',
+          description: 'Border crossings, corridors & congestion intelligence',
+        },
+      ],
     },
     {
       title: 'Registry',
       items: [
-        { view: AppView.KYC_VERIFICATION, icon: Key, label: 'Entity Verification', description: 'Digital KYC, AML screening & trusted trader tiers' },
-        { view: AppView.MARKETPLACE, icon: Users, label: 'Business Registry', description: 'Company profiles, ownership & compliance scores' },
-      ]
+        {
+          view: AppView.KYC_VERIFICATION,
+          icon: Key,
+          label: 'Entity Verification',
+          description: 'Digital KYC, AML screening & trusted trader tiers',
+        },
+        {
+          view: AppView.MARKETPLACE,
+          icon: Users,
+          label: 'Business Registry',
+          description: 'Company profiles, ownership & compliance scores',
+        },
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 
   // Trade Analyst - Focus on data, analytics, research
@@ -250,7 +318,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.DASHBOARD, icon: LayoutDashboard, label: 'Analytics Hub' },
         { view: AppView.MARKET_INTEL, icon: Globe, label: 'Market Research' },
         { view: AppView.TRADE_LIFECYCLE, icon: TrendingUp, label: 'Trade Trends' },
-      ]
+      ],
     },
     {
       title: 'Data',
@@ -258,21 +326,19 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.COMPLIANCE, icon: Scale, label: 'Regulatory Data' },
         { view: AppView.LOGISTICS, icon: Truck, label: 'Logistics Data' },
         { view: AppView.TRADE_FINANCE, icon: Landmark, label: 'Finance Metrics' },
-      ]
+      ],
     },
     {
       title: 'Network',
       items: [
         { view: AppView.MARKETPLACE, icon: Users, label: 'Market Players' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tender Analysis' },
-      ]
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 
   // Platform Admin - Full access
@@ -283,7 +349,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.ADMIN, icon: ShieldAlert, label: 'Admin Console' },
         { view: AppView.REGULATOR, icon: Building, label: 'Oversight Portal' },
         { view: AppView.DIAGNOSTIC, icon: Activity, label: 'System Health' },
-      ]
+      ],
     },
     {
       title: 'Platform',
@@ -294,7 +360,7 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.MARKETPLACE, icon: Users, label: 'Marketplace' },
         { view: AppView.TENDERS, icon: FileText, label: 'Tenders' },
         { view: AppView.CONTRACTS, icon: FileSignature, label: 'Contracts' },
-      ]
+      ],
     },
     {
       title: 'Operations',
@@ -303,21 +369,19 @@ const ROLE_MENUS: Record<UserPersona, MenuSection[]> = {
         { view: AppView.COMPLIANCE, icon: Scale, label: 'Compliance' },
         { view: AppView.LOGISTICS, icon: Truck, label: 'Logistics' },
         { view: AppView.KYC_VERIFICATION, icon: Key, label: 'KYC Management' },
-      ]
+      ],
     },
     {
       title: 'Tools',
       items: [
         { view: AppView.LIVE_ASSISTANT, icon: Mic, label: 'AI Assistant' },
         { view: AppView.MARKETING, icon: ImageIcon, label: 'Marketing' },
-      ]
+      ],
     },
     {
       title: 'Account',
-      items: [
-        { view: AppView.PROFILE, icon: Settings, label: 'Settings' },
-      ]
-    }
+      items: [{ view: AppView.PROFILE, icon: Settings, label: 'Settings' }],
+    },
   ],
 };
 

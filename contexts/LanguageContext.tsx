@@ -95,13 +95,16 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguageState] = useState(() => localStorage.getItem('selectedLanguage') || 'EN');
+  const [language, setLanguageState] = useState(
+    () => localStorage.getItem('selectedLanguage') || 'EN'
+  );
 
   const setLanguage = useCallback((code: string) => {
     const nextLanguage = LANGUAGES.some(item => item.code === code) ? code : 'EN';
     setLanguageState(nextLanguage);
     localStorage.setItem('selectedLanguage', nextLanguage);
-    document.documentElement.lang = LANGUAGES.find(item => item.code === nextLanguage)?.locale || 'en-US';
+    document.documentElement.lang =
+      LANGUAGES.find(item => item.code === nextLanguage)?.locale || 'en-US';
     document.documentElement.dir = nextLanguage === 'AR' ? 'rtl' : 'ltr';
   }, []);
 
@@ -110,7 +113,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     [language]
   );
 
-  const t = useCallback((key: TranslationKey) => TRANSLATIONS[language]?.[key] || TRANSLATIONS.EN[key], [language]);
+  const t = useCallback(
+    (key: TranslationKey) => TRANSLATIONS[language]?.[key] || TRANSLATIONS.EN[key],
+    [language]
+  );
 
   return (
     <LanguageContext.Provider value={{ language, languageData, setLanguage, t, LANGUAGES }}>

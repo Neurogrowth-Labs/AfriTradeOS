@@ -32,7 +32,7 @@ import {
   Percent,
   Target,
   RefreshCw,
-  Download
+  Download,
 } from 'lucide-react';
 
 interface Client {
@@ -106,7 +106,7 @@ const MOCK_CLIENTS: Client[] = [
     totalTransactions: 45,
     totalVolume: 2500000,
     isFavorite: true,
-    kycStatus: 'approved'
+    kycStatus: 'approved',
   },
   {
     id: 'CLT-002',
@@ -128,7 +128,7 @@ const MOCK_CLIENTS: Client[] = [
     totalTransactions: 78,
     totalVolume: 5200000,
     isFavorite: true,
-    kycStatus: 'approved'
+    kycStatus: 'approved',
   },
   {
     id: 'CLT-003',
@@ -151,7 +151,7 @@ const MOCK_CLIENTS: Client[] = [
     totalVolume: 450000,
     isFavorite: false,
     kycStatus: 'pending',
-    notes: 'Under review due to recent compliance concerns'
+    notes: 'Under review due to recent compliance concerns',
   },
   {
     id: 'CLT-004',
@@ -174,7 +174,7 @@ const MOCK_CLIENTS: Client[] = [
     totalVolume: 8900000,
     isFavorite: false,
     kycStatus: 'expired',
-    notes: 'Blocked due to sanctions match'
+    notes: 'Blocked due to sanctions match',
   },
   {
     id: 'CLT-005',
@@ -196,8 +196,8 @@ const MOCK_CLIENTS: Client[] = [
     totalTransactions: 23,
     totalVolume: 680000,
     isFavorite: false,
-    kycStatus: 'approved'
-  }
+    kycStatus: 'approved',
+  },
 ];
 
 const MOCK_MARKET_RISKS: MarketRisk[] = [
@@ -206,52 +206,52 @@ const MOCK_MARKET_RISKS: MarketRisk[] = [
     category: 'currency',
     name: 'USD/KES Exchange Rate',
     currentValue: 153.25,
-    previousValue: 151.80,
+    previousValue: 151.8,
     changePercent: 0.96,
     trend: 'up',
     riskLevel: 'medium',
     exposure: 2500000,
     hedgedPercent: 65,
-    lastUpdated: '2024-01-18T10:30:00Z'
+    lastUpdated: '2024-01-18T10:30:00Z',
   },
   {
     id: 'MR-002',
     category: 'currency',
     name: 'EUR/NGN Exchange Rate',
-    currentValue: 1650.50,
-    previousValue: 1680.20,
+    currentValue: 1650.5,
+    previousValue: 1680.2,
     changePercent: -1.77,
     trend: 'down',
     riskLevel: 'high',
     exposure: 3200000,
     hedgedPercent: 45,
-    lastUpdated: '2024-01-18T10:30:00Z'
+    lastUpdated: '2024-01-18T10:30:00Z',
   },
   {
     id: 'MR-003',
     category: 'commodity',
     name: 'Coffee (Arabica) Price',
-    currentValue: 185.40,
-    previousValue: 178.60,
+    currentValue: 185.4,
+    previousValue: 178.6,
     changePercent: 3.81,
     trend: 'up',
     riskLevel: 'low',
     exposure: 1800000,
     hedgedPercent: 80,
-    lastUpdated: '2024-01-18T09:00:00Z'
+    lastUpdated: '2024-01-18T09:00:00Z',
   },
   {
     id: 'MR-004',
     category: 'commodity',
     name: 'Gold Spot Price',
-    currentValue: 2028.50,
-    previousValue: 2045.30,
+    currentValue: 2028.5,
+    previousValue: 2045.3,
     changePercent: -0.82,
     trend: 'down',
     riskLevel: 'medium',
     exposure: 950000,
     hedgedPercent: 55,
-    lastUpdated: '2024-01-18T10:00:00Z'
+    lastUpdated: '2024-01-18T10:00:00Z',
   },
   {
     id: 'MR-005',
@@ -264,7 +264,7 @@ const MOCK_MARKET_RISKS: MarketRisk[] = [
     riskLevel: 'high',
     exposure: 4500000,
     hedgedPercent: 0,
-    lastUpdated: '2024-01-15T00:00:00Z'
+    lastUpdated: '2024-01-15T00:00:00Z',
   },
   {
     id: 'MR-006',
@@ -277,8 +277,8 @@ const MOCK_MARKET_RISKS: MarketRisk[] = [
     riskLevel: 'low',
     exposure: 8000000,
     hedgedPercent: 70,
-    lastUpdated: '2024-01-18T06:00:00Z'
-  }
+    lastUpdated: '2024-01-18T06:00:00Z',
+  },
 ];
 
 const MOCK_RISK_METRICS: RiskMetric[] = [
@@ -287,7 +287,7 @@ const MOCK_RISK_METRICS: RiskMetric[] = [
   { name: 'NPL Ratio', value: 3.2, target: 5.0, status: 'good', trend: 'improving' },
   { name: 'Concentration Risk', value: 28, target: 25, status: 'warning', trend: 'deteriorating' },
   { name: 'Liquidity Coverage', value: 125, target: 100, status: 'good', trend: 'stable' },
-  { name: 'FX Exposure', value: 45, target: 40, status: 'warning', trend: 'stable' }
+  { name: 'FX Exposure', value: 45, target: 40, status: 'warning', trend: 'stable' },
 ];
 
 export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
@@ -298,7 +298,9 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [riskFilter, setRiskFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [expandedRiskCategories, setExpandedRiskCategories] = useState<Set<string>>(new Set(['currency', 'commodity', 'country']));
+  const [expandedRiskCategories, setExpandedRiskCategories] = useState<Set<string>>(
+    new Set(['currency', 'commodity', 'country'])
+  );
 
   const toggleRiskCategory = (category: string) => {
     setExpandedRiskCategories(prev => {
@@ -313,13 +315,14 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
   };
 
   const toggleFavorite = (clientId: string) => {
-    setClients(prev => prev.map(c => 
-      c.id === clientId ? { ...c, isFavorite: !c.isFavorite } : c
-    ));
+    setClients(prev =>
+      prev.map(c => (c.id === clientId ? { ...c, isFavorite: !c.isFavorite } : c))
+    );
   };
 
   const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       client.contactPerson.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
@@ -333,7 +336,7 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
     active: clients.filter(c => c.status === 'active').length,
     totalExposure: clients.reduce((sum, c) => sum + c.currentExposure, 0),
     totalLimit: clients.reduce((sum, c) => sum + c.creditLimit, 0),
-    highRisk: clients.filter(c => ['high', 'critical'].includes(c.riskRating)).length
+    highRisk: clients.filter(c => ['high', 'critical'].includes(c.riskRating)).length,
   };
 
   const getRiskStyle = (risk: Client['riskRating']) => {
@@ -341,7 +344,7 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
       low: { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
       medium: { bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30' },
       high: { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' },
-      critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' }
+      critical: { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' },
     };
     return styles[risk];
   };
@@ -351,7 +354,7 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
       active: { bg: 'bg-green-500/20', text: 'text-green-400', icon: CheckCircle2 },
       inactive: { bg: 'bg-slate-500/20', text: 'text-slate-400', icon: Clock },
       under_review: { bg: 'bg-amber-500/20', text: 'text-amber-400', icon: Eye },
-      blocked: { bg: 'bg-red-500/20', text: 'text-red-400', icon: XCircle }
+      blocked: { bg: 'bg-red-500/20', text: 'text-red-400', icon: XCircle },
     };
     return styles[status];
   };
@@ -362,7 +365,7 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
       commodity: BarChart3,
       country: Globe,
       interest_rate: Percent,
-      credit: Shield
+      credit: Shield,
     };
     return icons[category];
   };
@@ -393,7 +396,9 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-slate-400">Total Exposure</p>
-              <p className="text-2xl font-bold text-white mt-1">${(clientStats.totalExposure / 1000000).toFixed(2)}M</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                ${(clientStats.totalExposure / 1000000).toFixed(2)}M
+              </p>
             </div>
             <TrendingUp className="w-8 h-8 text-purple-400" />
           </div>
@@ -481,8 +486,12 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Risk</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Status</th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Exposure</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Utilization</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Last Activity</th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">
+                Utilization
+              </th>
+              <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">
+                Last Activity
+              </th>
               <th className="text-left px-6 py-4 text-sm font-medium text-slate-400">Actions</th>
             </tr>
           </thead>
@@ -491,7 +500,8 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
               const riskStyle = getRiskStyle(client.riskRating);
               const statusStyle = getStatusStyle(client.status);
               const StatusIcon = statusStyle.icon;
-              const utilization = client.creditLimit > 0 ? (client.currentExposure / client.creditLimit) * 100 : 0;
+              const utilization =
+                client.creditLimit > 0 ? (client.currentExposure / client.creditLimit) * 100 : 0;
 
               return (
                 <tr
@@ -516,10 +526,15 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${
-                        client.type === 'corporate' ? 'bg-blue-500/20' :
-                        client.type === 'sme' ? 'bg-purple-500/20' : 'bg-green-500/20'
-                      }`}>
+                      <div
+                        className={`p-2 rounded-lg ${
+                          client.type === 'corporate'
+                            ? 'bg-blue-500/20'
+                            : client.type === 'sme'
+                              ? 'bg-purple-500/20'
+                              : 'bg-green-500/20'
+                        }`}
+                      >
                         {client.type === 'corporate' ? (
                           <Building2 className="w-5 h-5 text-blue-400" />
                         ) : client.type === 'sme' ? (
@@ -541,12 +556,16 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}
+                    >
                       {client.riskRating.toUpperCase()}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}
+                    >
                       <StatusIcon className="w-3 h-3" />
                       {client.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
@@ -561,8 +580,11 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                       <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            utilization >= 90 ? 'bg-red-500' :
-                            utilization >= 70 ? 'bg-amber-500' : 'bg-green-500'
+                            utilization >= 90
+                              ? 'bg-red-500'
+                              : utilization >= 70
+                                ? 'bg-amber-500'
+                                : 'bg-green-500'
                           }`}
                           style={{ width: `${Math.min(utilization, 100)}%` }}
                         />
@@ -607,7 +629,10 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
     const riskStyle = getRiskStyle(selectedClient.riskRating);
     const statusStyle = getStatusStyle(selectedClient.status);
     const StatusIcon = statusStyle.icon;
-    const utilization = selectedClient.creditLimit > 0 ? (selectedClient.currentExposure / selectedClient.creditLimit) * 100 : 0;
+    const utilization =
+      selectedClient.creditLimit > 0
+        ? (selectedClient.currentExposure / selectedClient.creditLimit) * 100
+        : 0;
 
     return (
       <div className="space-y-6">
@@ -621,16 +646,22 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
               ← Back to Clients
             </button>
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${
-                selectedClient.type === 'corporate' ? 'bg-blue-500/20' : 'bg-purple-500/20'
-              }`}>
-                <Building2 className={`w-8 h-8 ${
-                  selectedClient.type === 'corporate' ? 'text-blue-400' : 'text-purple-400'
-                }`} />
+              <div
+                className={`p-3 rounded-xl ${
+                  selectedClient.type === 'corporate' ? 'bg-blue-500/20' : 'bg-purple-500/20'
+                }`}
+              >
+                <Building2
+                  className={`w-8 h-8 ${
+                    selectedClient.type === 'corporate' ? 'text-blue-400' : 'text-purple-400'
+                  }`}
+                />
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white">{selectedClient.name}</h2>
-                <p className="text-slate-400">{selectedClient.id} • {selectedClient.industry} • {selectedClient.country}</p>
+                <p className="text-slate-400">
+                  {selectedClient.id} • {selectedClient.industry} • {selectedClient.country}
+                </p>
               </div>
             </div>
           </div>
@@ -645,10 +676,14 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                 <StarOff className="w-5 h-5" />
               )}
             </button>
-            <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${riskStyle.bg} ${riskStyle.text}`}>
+            <span
+              className={`px-3 py-1.5 rounded-full text-sm font-medium ${riskStyle.bg} ${riskStyle.text}`}
+            >
               {selectedClient.riskRating.toUpperCase()} RISK
             </span>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusStyle.bg} ${statusStyle.text}`}>
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium ${statusStyle.bg} ${statusStyle.text}`}
+            >
               <StatusIcon className="w-4 h-4" />
               {selectedClient.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </span>
@@ -672,8 +707,11 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
               <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full ${
-                    utilization >= 90 ? 'bg-red-500' :
-                    utilization >= 70 ? 'bg-amber-500' : 'bg-green-500'
+                    utilization >= 90
+                      ? 'bg-red-500'
+                      : utilization >= 70
+                        ? 'bg-amber-500'
+                        : 'bg-green-500'
                   }`}
                   style={{ width: `${Math.min(utilization, 100)}%` }}
                 />
@@ -686,11 +724,15 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
             <p className="text-2xl font-bold text-white mt-1">
               ${(selectedClient.totalVolume / 1000000).toFixed(2)}M
             </p>
-            <p className="text-xs text-slate-500 mt-1">{selectedClient.totalTransactions} transactions</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {selectedClient.totalTransactions} transactions
+            </p>
           </div>
           <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <p className="text-sm text-slate-400">Relationship Manager</p>
-            <p className="text-2xl font-bold text-white mt-1">{selectedClient.relationshipManager}</p>
+            <p className="text-2xl font-bold text-white mt-1">
+              {selectedClient.relationshipManager}
+            </p>
             <p className="text-xs text-slate-500 mt-1">Since {selectedClient.onboardingDate}</p>
           </div>
         </div>
@@ -747,11 +789,15 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                   <Shield className="w-5 h-5 text-slate-400" />
                   <span className="text-white">KYC Status</span>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                  selectedClient.kycStatus === 'approved' ? 'bg-green-500/20 text-green-400' :
-                  selectedClient.kycStatus === 'pending' ? 'bg-amber-500/20 text-amber-400' :
-                  'bg-red-500/20 text-red-400'
-                }`}>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                    selectedClient.kycStatus === 'approved'
+                      ? 'bg-green-500/20 text-green-400'
+                      : selectedClient.kycStatus === 'pending'
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-red-500/20 text-red-400'
+                  }`}
+                >
                   {selectedClient.kycStatus.toUpperCase()}
                 </span>
               </div>
@@ -767,7 +813,9 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                   <Activity className="w-5 h-5 text-slate-400" />
                   <span className="text-white">Risk Rating</span>
                 </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}
+                >
                   {selectedClient.riskRating.toUpperCase()}
                 </span>
               </div>
@@ -801,11 +849,14 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
   };
 
   const renderMarketRisk = () => {
-    const groupedRisks = MOCK_MARKET_RISKS.reduce((acc, risk) => {
-      if (!acc[risk.category]) acc[risk.category] = [];
-      acc[risk.category].push(risk);
-      return acc;
-    }, {} as Record<string, MarketRisk[]>);
+    const groupedRisks = MOCK_MARKET_RISKS.reduce(
+      (acc, risk) => {
+        if (!acc[risk.category]) acc[risk.category] = [];
+        acc[risk.category].push(risk);
+        return acc;
+      },
+      {} as Record<string, MarketRisk[]>
+    );
 
     return (
       <div className="space-y-6">
@@ -815,11 +866,15 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
             <div key={idx} className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-slate-400">{metric.name}</p>
-                <span className={`px-2 py-0.5 rounded text-xs ${
-                  metric.status === 'good' ? 'bg-green-500/20 text-green-400' :
-                  metric.status === 'warning' ? 'bg-amber-500/20 text-amber-400' :
-                  'bg-red-500/20 text-red-400'
-                }`}>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs ${
+                    metric.status === 'good'
+                      ? 'bg-green-500/20 text-green-400'
+                      : metric.status === 'warning'
+                        ? 'bg-amber-500/20 text-amber-400'
+                        : 'bg-red-500/20 text-red-400'
+                  }`}
+                >
                   {metric.status.toUpperCase()}
                 </span>
               </div>
@@ -833,10 +888,15 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                   ) : (
                     <Activity className="w-4 h-4 text-slate-400" />
                   )}
-                  <span className={`${
-                    metric.trend === 'improving' ? 'text-green-400' :
-                    metric.trend === 'deteriorating' ? 'text-red-400' : 'text-slate-400'
-                  }`}>
+                  <span
+                    className={`${
+                      metric.trend === 'improving'
+                        ? 'text-green-400'
+                        : metric.trend === 'deteriorating'
+                          ? 'text-red-400'
+                          : 'text-slate-400'
+                    }`}
+                  >
                     {metric.trend}
                   </span>
                 </div>
@@ -887,11 +947,18 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                               <p className="text-white font-medium">{risk.name}</p>
                               <div className="flex items-center gap-4 mt-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-2xl font-bold text-white">{risk.currentValue}</span>
-                                  <div className={`flex items-center gap-1 text-sm ${
-                                    risk.trend === 'up' ? 'text-green-400' :
-                                    risk.trend === 'down' ? 'text-red-400' : 'text-slate-400'
-                                  }`}>
+                                  <span className="text-2xl font-bold text-white">
+                                    {risk.currentValue}
+                                  </span>
+                                  <div
+                                    className={`flex items-center gap-1 text-sm ${
+                                      risk.trend === 'up'
+                                        ? 'text-green-400'
+                                        : risk.trend === 'down'
+                                          ? 'text-red-400'
+                                          : 'text-slate-400'
+                                    }`}
+                                  >
                                     {risk.trend === 'up' ? (
                                       <TrendingUp className="w-4 h-4" />
                                     ) : risk.trend === 'down' ? (
@@ -899,18 +966,25 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
                                     ) : (
                                       <Activity className="w-4 h-4" />
                                     )}
-                                    <span>{risk.changePercent > 0 ? '+' : ''}{risk.changePercent.toFixed(2)}%</span>
+                                    <span>
+                                      {risk.changePercent > 0 ? '+' : ''}
+                                      {risk.changePercent.toFixed(2)}%
+                                    </span>
                                   </div>
                                 </div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}>
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium ${riskStyle.bg} ${riskStyle.text}`}
+                              >
                                 {risk.riskLevel.toUpperCase()}
                               </span>
                               <div className="mt-2">
                                 <p className="text-xs text-slate-500">Exposure</p>
-                                <p className="text-sm text-white">${(risk.exposure / 1000000).toFixed(2)}M</p>
+                                <p className="text-sm text-white">
+                                  ${(risk.exposure / 1000000).toFixed(2)}M
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -980,7 +1054,9 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
               setSelectedClient(null);
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              activeView === 'clients' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+              activeView === 'clients'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -992,7 +1068,9 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
               setSelectedClient(null);
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-              activeView === 'risk' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+              activeView === 'risk'
+                ? 'bg-blue-600 text-white'
+                : 'bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
             <Activity className="w-4 h-4" />
@@ -1001,11 +1079,11 @@ export const BankRiskClients: React.FC<BankRiskClientsProps> = () => {
         </div>
 
         {/* Content */}
-        {activeView === 'clients' ? (
-          selectedClient ? renderClientDetail() : renderClientsList()
-        ) : (
-          renderMarketRisk()
-        )}
+        {activeView === 'clients'
+          ? selectedClient
+            ? renderClientDetail()
+            : renderClientsList()
+          : renderMarketRisk()}
       </div>
     </div>
   );

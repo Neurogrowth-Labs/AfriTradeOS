@@ -16,7 +16,7 @@ import {
   Filter,
   X,
   ZoomIn,
-  ChevronDown
+  ChevronDown,
 } from 'lucide-react';
 import { ApplicationDocument, DocumentExtractionResult } from './FinanceApplicationTypes';
 
@@ -38,7 +38,7 @@ const DOCUMENT_TYPES: { value: ApplicationDocument['type']; label: string; requi
   { value: 'customs_declaration', label: 'Customs Declaration', required: false },
   { value: 'contract', label: 'Sales Contract', required: true },
   { value: 'financial_statement', label: 'Financial Statement', required: true },
-  { value: 'other', label: 'Other Document', required: false }
+  { value: 'other', label: 'Other Document', required: false },
 ];
 
 export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
@@ -48,7 +48,7 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
   onVerify,
   onReject,
   onDelete,
-  onExtract
+  onExtract,
 }) => {
   const [selectedType, setSelectedType] = useState<ApplicationDocument['type']>('invoice');
   const [isDragging, setIsDragging] = useState(false);
@@ -56,7 +56,10 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
   const [extracting, setExtracting] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<ApplicationDocument | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [rejectModal, setRejectModal] = useState<{ docId: string; open: boolean }>({ docId: '', open: false });
+  const [rejectModal, setRejectModal] = useState<{ docId: string; open: boolean }>({
+    docId: '',
+    open: false,
+  });
   const [rejectReason, setRejectReason] = useState('');
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -69,19 +72,22 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      setUploading(true);
-      try {
-        await onUpload(files, selectedType);
-      } finally {
-        setUploading(false);
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        setUploading(true);
+        try {
+          await onUpload(files, selectedType);
+        } finally {
+          setUploading(false);
+        }
       }
-    }
-  }, [onUpload, selectedType]);
+    },
+    [onUpload, selectedType]
+  );
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
@@ -130,7 +136,7 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
       pending: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
       uploaded: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
       verified: 'bg-green-500/20 text-green-400 border-green-500/30',
-      rejected: 'bg-red-500/20 text-red-400 border-red-500/30'
+      rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
     };
     return (
       <span className={`px-2 py-0.5 text-xs rounded-full border ${styles[status]}`}>
@@ -139,15 +145,15 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
     );
   };
 
-  const filteredDocuments = documents.filter(doc => 
-    filterStatus === 'all' || doc.status === filterStatus
+  const filteredDocuments = documents.filter(
+    doc => filterStatus === 'all' || doc.status === filterStatus
   );
 
   const documentStats = {
     total: documents.length,
     verified: documents.filter(d => d.status === 'verified').length,
     pending: documents.filter(d => d.status === 'pending' || d.status === 'uploaded').length,
-    rejected: documents.filter(d => d.status === 'rejected').length
+    rejected: documents.filter(d => d.status === 'rejected').length,
   };
 
   const requiredDocs = DOCUMENT_TYPES.filter(t => t.required);
@@ -194,7 +200,7 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
       {/* Upload Section */}
       <div className="bg-slate-900 rounded-xl border border-slate-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Upload Documents</h3>
-        
+
         <div className="flex items-center gap-4 mb-4">
           <label className="text-sm text-slate-400">Document Type:</label>
           <select
@@ -469,18 +475,22 @@ export const DocumentExtraction: React.FC<DocumentExtractionProps> = ({
                         <div>
                           <p className="text-xs text-slate-500">Amount</p>
                           <p className="text-white">
-                            {previewDoc.extractedData.currency} {previewDoc.extractedData.amount.toLocaleString()}
+                            {previewDoc.extractedData.currency}{' '}
+                            {previewDoc.extractedData.amount.toLocaleString()}
                           </p>
                         </div>
                       )}
-                      {previewDoc.extractedData.parties && previewDoc.extractedData.parties.length > 0 && (
-                        <div>
-                          <p className="text-xs text-slate-500">Parties</p>
-                          {previewDoc.extractedData.parties.map((party, idx) => (
-                            <p key={idx} className="text-white">{party}</p>
-                          ))}
-                        </div>
-                      )}
+                      {previewDoc.extractedData.parties &&
+                        previewDoc.extractedData.parties.length > 0 && (
+                          <div>
+                            <p className="text-xs text-slate-500">Parties</p>
+                            {previewDoc.extractedData.parties.map((party, idx) => (
+                              <p key={idx} className="text-white">
+                                {party}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       {previewDoc.extractedData.origin && (
                         <div>
                           <p className="text-xs text-slate-500">Origin</p>

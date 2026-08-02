@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { UserPersona } from '../types';
 import { supabase } from '../services/supabase';
@@ -32,7 +31,7 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  Shield
+  Shield,
 } from 'lucide-react';
 
 // Lazy load the 3D globe for better performance
@@ -50,17 +49,69 @@ interface OnboardingProps {
 }
 
 const AFRICAN_COUNTRIES = [
-  "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde",
-  "Cameroon", "Central African Republic", "Chad", "Comoros", "DR Congo", "Republic of Congo",
-  "Cote d'Ivoire", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia",
-  "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia",
-  "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique",
-  "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles",
-  "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo",
-  "Tunisia", "Uganda", "Zambia", "Zimbabwe"
+  'Algeria',
+  'Angola',
+  'Benin',
+  'Botswana',
+  'Burkina Faso',
+  'Burundi',
+  'Cabo Verde',
+  'Cameroon',
+  'Central African Republic',
+  'Chad',
+  'Comoros',
+  'DR Congo',
+  'Republic of Congo',
+  "Cote d'Ivoire",
+  'Djibouti',
+  'Egypt',
+  'Equatorial Guinea',
+  'Eritrea',
+  'Eswatini',
+  'Ethiopia',
+  'Gabon',
+  'Gambia',
+  'Ghana',
+  'Guinea',
+  'Guinea-Bissau',
+  'Kenya',
+  'Lesotho',
+  'Liberia',
+  'Libya',
+  'Madagascar',
+  'Malawi',
+  'Mali',
+  'Mauritania',
+  'Mauritius',
+  'Morocco',
+  'Mozambique',
+  'Namibia',
+  'Niger',
+  'Nigeria',
+  'Rwanda',
+  'Sao Tome and Principe',
+  'Senegal',
+  'Seychelles',
+  'Sierra Leone',
+  'Somalia',
+  'South Africa',
+  'South Sudan',
+  'Sudan',
+  'Tanzania',
+  'Togo',
+  'Tunisia',
+  'Uganda',
+  'Zambia',
+  'Zimbabwe',
 ];
 
-type AuthView = 'LOGIN' | 'SIGNUP' | 'ROLE_SELECT' | 'PROFILE_SETUP' | 'FORGOT_PASSWORD' | 'EMAIL_VERIFICATION';
+type AuthView =
+  | 'LOGIN'
+  | 'SIGNUP'
+  | 'ROLE_SELECT'
+  | 'PROFILE_SETUP'
+  | 'FORGOT_PASSWORD'
+  | 'EMAIL_VERIFICATION';
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   const [view, setView] = useState<AuthView>('LOGIN');
@@ -102,30 +153,25 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     email: '',
     phone: '',
     products: 'Cocoa, Shea Butter',
-    size: 'SME'
+    size: 'SME',
   });
 
-  const syncOnboardingProgress = async (
-    updates: Record<string, any>,
-    fallbackView?: AuthView
-  ) => {
+  const syncOnboardingProgress = async (updates: Record<string, any>, fallbackView?: AuthView) => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
       if (fallbackView) setView(fallbackView);
       return;
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: userData.user.id,
-          email: userData.user.email,
-          updated_at: new Date().toISOString(),
-          ...updates,
-        },
-        { onConflict: 'id' }
-      );
+    const { error } = await supabase.from('profiles').upsert(
+      {
+        id: userData.user.id,
+        email: userData.user.email,
+        updated_at: new Date().toISOString(),
+        ...updates,
+      },
+      { onConflict: 'id' }
+    );
 
     if (error) {
       throw error;
@@ -137,26 +183,28 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   // Check if session already exists
   useEffect(() => {
     const checkExistingSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && (view === 'LOGIN' || view === 'SIGNUP')) {
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session && (view === 'LOGIN' || view === 'SIGNUP')) {
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
 
-            const resolvedStep = determineOnboardingStep(existingProfile);
-            setSelectedRole(existingProfile?.role || null);
-            setProfile(prev => ({
-                ...prev,
-                email: existingProfile?.email || session.user.email || '',
-                userName: existingProfile?.full_name || session.user.user_metadata?.full_name || '',
-                companyName: existingProfile?.company_name || '',
-                country: existingProfile?.country || prev.country,
-                phone: existingProfile?.phone || '',
-            }));
-            setView(resolvedStep >= ONBOARDING_STEP_PROFILE ? 'PROFILE_SETUP' : 'ROLE_SELECT');
-        }
+        const resolvedStep = determineOnboardingStep(existingProfile);
+        setSelectedRole(existingProfile?.role || null);
+        setProfile(prev => ({
+          ...prev,
+          email: existingProfile?.email || session.user.email || '',
+          userName: existingProfile?.full_name || session.user.user_metadata?.full_name || '',
+          companyName: existingProfile?.company_name || '',
+          country: existingProfile?.country || prev.country,
+          phone: existingProfile?.phone || '',
+        }));
+        setView(resolvedStep >= ONBOARDING_STEP_PROFILE ? 'PROFILE_SETUP' : 'ROLE_SELECT');
+      }
     };
     checkExistingSession();
   }, []);
@@ -189,11 +237,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
       if (error) throw error;
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to login with Google");
+      setErrorMsg(err.message || 'Failed to login with Google');
       setLoading(false);
     }
   };
-
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +254,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
     // Check captcha token
     if (!captchaToken) {
-      setErrorMsg("Please complete the CAPTCHA verification.");
+      setErrorMsg('Please complete the CAPTCHA verification.');
       return;
     }
 
@@ -277,7 +324,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
       clearLoginFailures();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to login");
+      setErrorMsg(err.message || 'Failed to login');
       setCaptchaToken(null);
       captchaRef.current?.reset();
     } finally {
@@ -290,23 +337,23 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     setErrorMsg(null);
 
     if (!signupName || !signupEmail || !signupPassword) {
-        setErrorMsg("Please fill in all fields.");
-        return;
+      setErrorMsg('Please fill in all fields.');
+      return;
     }
     if (signupPassword !== signupConfirmPassword) {
-        setErrorMsg("Passwords do not match.");
-        return;
+      setErrorMsg('Passwords do not match.');
+      return;
     }
     if (passwordStrength < 2) {
-        setErrorMsg("Password is too weak. Please use a stronger password.");
-        return;
+      setErrorMsg('Password is too weak. Please use a stronger password.');
+      return;
     }
     if (!termsAccepted) {
-        setErrorMsg("You must accept the Terms of Service to continue.");
-        return;
+      setErrorMsg('You must accept the Terms of Service to continue.');
+      return;
     }
     if (!captchaToken) {
-      setErrorMsg("Please complete the CAPTCHA verification.");
+      setErrorMsg('Please complete the CAPTCHA verification.');
       return;
     }
 
@@ -346,10 +393,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       } else if (data.session) {
         setView('ROLE_SELECT');
       }
-
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || "Failed to create account");
+      setErrorMsg(err.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -360,7 +406,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     if (!forgotEmail) return;
 
     if (!captchaToken) {
-      setErrorMsg("Please complete the CAPTCHA verification.");
+      setErrorMsg('Please complete the CAPTCHA verification.');
       return;
     }
 
@@ -375,18 +421,18 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       });
 
       if (error) {
-        console.error("Reset Password Error:", error);
+        console.error('Reset Password Error:', error);
         if (error.status === 429) {
-             setErrorMsg("Too many requests. Please try again in a few minutes.");
-             setLoading(false);
-             return;
+          setErrorMsg('Too many requests. Please try again in a few minutes.');
+          setLoading(false);
+          return;
         }
         throw error;
       }
 
       setForgotSuccess(true);
     } catch (err: any) {
-      setErrorMsg(err.message || "An unexpected error occurred. Please try again.");
+      setErrorMsg(err.message || 'An unexpected error occurred. Please try again.');
       setCaptchaToken(null);
       captchaRef.current?.reset();
     } finally {
@@ -427,111 +473,137 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   const handleRoleSelect = (role: UserPersona) => {
-      setSelectedRole(role);
+    setSelectedRole(role);
   };
 
   const handleRoleNext = () => {
-      if (!selectedRole) return;
+    if (!selectedRole) return;
 
-      setLoading(true);
-      setErrorMsg(null);
-      syncOnboardingProgress(
-        {
-          role: selectedRole,
-          full_name: profile.userName || signupName,
-          country: profile.country || 'Ghana',
-          onboarding_completed: false,
-          onboarding_step: ONBOARDING_STEP_PROFILE,
-        },
-        'PROFILE_SETUP'
-      )
-        .catch((err: any) => {
-          console.error(err);
-          setErrorMsg(err.message || 'Failed to save onboarding progress');
-        })
-        .finally(() => setLoading(false));
+    setLoading(true);
+    setErrorMsg(null);
+    syncOnboardingProgress(
+      {
+        role: selectedRole,
+        full_name: profile.userName || signupName,
+        country: profile.country || 'Ghana',
+        onboarding_completed: false,
+        onboarding_step: ONBOARDING_STEP_PROFILE,
+      },
+      'PROFILE_SETUP'
+    )
+      .catch((err: any) => {
+        console.error(err);
+        setErrorMsg(err.message || 'Failed to save onboarding progress');
+      })
+      .finally(() => setLoading(false));
   };
 
   const handleFinalize = async () => {
-      if (!selectedRole) return;
-      if (!profile.userName.trim() || !profile.companyName.trim() || !profile.country.trim()) {
-        setErrorMsg('Please complete your profile details before continuing.');
+    if (!selectedRole) return;
+    if (!profile.userName.trim() || !profile.companyName.trim() || !profile.country.trim()) {
+      setErrorMsg('Please complete your profile details before continuing.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        await new Promise(resolve => setTimeout(resolve, 800));
+        onComplete(selectedRole, {
+          ...profile,
+          id: `mock_user_${Date.now()}`,
+          role: selectedRole,
+          email: profile.email || 'simulation@afritrade.os',
+          isSimulated: true,
+          onboardingCompleted: true,
+          onboardingStep: ONBOARDING_STEP_COMPLETE,
+        });
         return;
       }
-      setLoading(true);
-      setErrorMsg(null);
 
-      try {
-        const { data: userData } = await supabase.auth.getUser();
+      const { error: dbError } = await supabase.from('profiles').upsert(
+        {
+          id: userData.user.id,
+          email: userData.user.email,
+          full_name: profile.userName.trim(),
+          role: selectedRole,
+          company_name: profile.companyName.trim(),
+          country: profile.country.trim(),
+          phone: profile.phone.trim(),
+          onboarding_completed: true,
+          onboarding_step: ONBOARDING_STEP_COMPLETE,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
 
-        if (!userData.user) {
-            await new Promise(resolve => setTimeout(resolve, 800));
-            onComplete(selectedRole, {
-                ...profile,
-                id: `mock_user_${Date.now()}`,
-                role: selectedRole,
-                email: profile.email || 'simulation@afritrade.os',
-                isSimulated: true,
-                onboardingCompleted: true,
-                onboardingStep: ONBOARDING_STEP_COMPLETE,
-            });
-            return;
-        }
-
-        const { error: dbError } = await supabase
-            .from('profiles')
-            .upsert({
-                id: userData.user.id,
-                email: userData.user.email,
-                full_name: profile.userName.trim(),
-                role: selectedRole,
-                company_name: profile.companyName.trim(),
-                country: profile.country.trim(),
-                phone: profile.phone.trim(),
-                onboarding_completed: true,
-                onboarding_step: ONBOARDING_STEP_COMPLETE,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'id' });
-
-        if (dbError) {
-            console.error("DB Profile Sync Failed:", dbError);
-        }
-
-        onComplete(selectedRole, {
-            ...profile,
-            id: userData.user.id,
-            role: selectedRole,
-            onboardingCompleted: true,
-            onboardingStep: ONBOARDING_STEP_COMPLETE,
-        });
-      } catch (err: any) {
-        console.error(err);
-        setErrorMsg(err.message || "Failed to update profile");
-      } finally {
-        setLoading(false);
+      if (dbError) {
+        console.error('DB Profile Sync Failed:', dbError);
       }
+
+      onComplete(selectedRole, {
+        ...profile,
+        id: userData.user.id,
+        role: selectedRole,
+        onboardingCompleted: true,
+        onboardingStep: ONBOARDING_STEP_COMPLETE,
+      });
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const roles = [
-      { id: UserPersona.EXPORTER_SME, icon: Briefcase, label: 'Exporter / Importer', desc: 'Trade goods across borders' },
-      { id: UserPersona.LOGISTICS, icon: Truck, label: 'Logistics Provider', desc: 'Move cargo & manage fleets' },
-      { id: UserPersona.BANK, icon: Landmark, label: 'Bank / Insurer', desc: 'Finance & risk management' },
-      { id: UserPersona.CUSTOMS, icon: ShieldCheck, label: 'Customs / Gov', desc: 'Regulatory oversight' },
-      { id: UserPersona.ANALYST, icon: TrendingUp, label: 'Trade Analyst', desc: 'Market data & insights' },
+    {
+      id: UserPersona.EXPORTER_SME,
+      icon: Briefcase,
+      label: 'Exporter / Importer',
+      desc: 'Trade goods across borders',
+    },
+    {
+      id: UserPersona.LOGISTICS,
+      icon: Truck,
+      label: 'Logistics Provider',
+      desc: 'Move cargo & manage fleets',
+    },
+    {
+      id: UserPersona.BANK,
+      icon: Landmark,
+      label: 'Bank / Insurer',
+      desc: 'Finance & risk management',
+    },
+    {
+      id: UserPersona.CUSTOMS,
+      icon: ShieldCheck,
+      label: 'Customs / Gov',
+      desc: 'Regulatory oversight',
+    },
+    {
+      id: UserPersona.ANALYST,
+      icon: TrendingUp,
+      label: 'Trade Analyst',
+      desc: 'Market data & insights',
+    },
   ];
 
   const getStrengthColor = (score: number) => {
-      if (score === 0) return 'bg-gray-700';
-      if (score < 2) return 'bg-red-500';
-      if (score < 4) return 'bg-yellow-500';
-      return 'bg-green-500';
+    if (score === 0) return 'bg-gray-700';
+    if (score < 2) return 'bg-red-500';
+    if (score < 4) return 'bg-yellow-500';
+    return 'bg-green-500';
   };
 
   const getStrengthLabel = (score: number) => {
-      if (score === 0) return '';
-      if (score < 2) return 'Weak';
-      if (score < 4) return 'Medium';
-      return 'Strong';
+    if (score === 0) return '';
+    if (score < 2) return 'Weak';
+    if (score < 4) return 'Medium';
+    return 'Strong';
   };
 
   // Premium Auth Container for Login/Signup views
@@ -548,26 +620,36 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       {/* Floating Light Streaks */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-64 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/30 to-transparent rotate-12 animate-pulse" />
-        <div className="absolute bottom-32 right-20 w-48 h-[1px] bg-gradient-to-r from-transparent via-[#E8B547]/20 to-transparent -rotate-12 animate-pulse" style={{animationDelay: '1s'}} />
-        <div className="absolute top-1/3 right-1/4 w-32 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/20 to-transparent rotate-45 animate-pulse" style={{animationDelay: '0.5s'}} />
+        <div
+          className="absolute bottom-32 right-20 w-48 h-[1px] bg-gradient-to-r from-transparent via-[#E8B547]/20 to-transparent -rotate-12 animate-pulse"
+          style={{ animationDelay: '1s' }}
+        />
+        <div
+          className="absolute top-1/3 right-1/4 w-32 h-[1px] bg-gradient-to-r from-transparent via-[#1D4FFF]/20 to-transparent rotate-45 animate-pulse"
+          style={{ animationDelay: '0.5s' }}
+        />
       </div>
 
       {/* Main Container - Centered Card */}
-      <div className="relative w-full max-w-[1200px] h-auto min-h-[650px] md:h-[750px] rounded-[32px] overflow-hidden flex flex-col md:flex-row
+      <div
+        className="relative w-full max-w-[1200px] h-auto min-h-[650px] md:h-[750px] rounded-[32px] overflow-hidden flex flex-col md:flex-row
                       bg-gradient-to-br from-[#071B34]/95 to-[#0D2A4D]/90
                       border border-white/[0.08]
                       shadow-[0_0_80px_rgba(29,79,255,0.15),0_0_120px_rgba(232,181,71,0.08),inset_0_1px_0_rgba(255,255,255,0.05)]
-                      backdrop-blur-xl">
-
+                      backdrop-blur-xl"
+      >
         {/* Glowing Border Effect */}
-        <div className="absolute inset-0 rounded-[32px] pointer-events-none"
-             style={{
-               background: 'linear-gradient(135deg, rgba(29,79,255,0.1) 0%, transparent 50%, rgba(232,181,71,0.1) 100%)',
-               padding: '1px',
-               mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-               maskComposite: 'xor',
-               WebkitMaskComposite: 'xor'
-             }} />
+        <div
+          className="absolute inset-0 rounded-[32px] pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(29,79,255,0.1) 0%, transparent 50%, rgba(232,181,71,0.1) 100%)',
+            padding: '1px',
+            mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+            maskComposite: 'xor',
+            WebkitMaskComposite: 'xor',
+          }}
+        />
 
         {/* LEFT PANEL */}
         <div className="hidden md:flex md:w-1/2 relative flex-col p-10 lg:p-12 overflow-hidden">
@@ -586,7 +668,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             <div className="flex items-center gap-3 mb-12">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8B547] to-[#D4A43A] flex items-center justify-center shadow-lg shadow-[#E8B547]/20">
                 <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#071126]" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
                 </svg>
               </div>
               <span className="text-xl font-bold text-white tracking-tight">AfriTradeOS</span>
@@ -594,15 +676,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
             {/* Hero Text */}
             <h1 className="text-[4rem] lg:text-[5rem] font-extrabold text-white leading-[1.05] tracking-[-0.03em] mb-8">
-              Welcome<br />
+              Welcome
+              <br />
               Back<span className="text-[#E8B547]">.</span>
             </h1>
 
             {/* Subtext */}
             <p className="text-base text-white/55 leading-[1.8] max-w-[360px] mb-10">
-              Securely access your trade dashboard,
-              monitor live shipments, and manage
-              compliance from one unified operating system.
+              Securely access your trade dashboard, monitor live shipments, and manage compliance
+              from one unified operating system.
             </p>
 
             {/* Feature List */}
@@ -610,13 +692,15 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               {[
                 'Instant Rules of Origin Compliance',
                 'Verified Partner Network',
-                'Access to Trade Finance'
+                'Access to Trade Finance',
               ].map((feature, i) => (
                 <div key={i} className="flex items-center gap-3 group">
-                  <div className="w-6 h-6 rounded-full border border-[#E8B547]/40 flex items-center justify-center
+                  <div
+                    className="w-6 h-6 rounded-full border border-[#E8B547]/40 flex items-center justify-center
                                 bg-gradient-to-br from-[#E8B547]/20 to-[#E8B547]/5
                                 shadow-[0_0_12px_rgba(232,181,71,0.2)]
-                                group-hover:shadow-[0_0_20px_rgba(232,181,71,0.4)] transition-shadow">
+                                group-hover:shadow-[0_0_20px_rgba(232,181,71,0.4)] transition-shadow"
+                  >
                     <CheckCircle className="w-3.5 h-3.5 text-[#E8B547]" />
                   </div>
                   <span className="text-sm text-white/70 font-medium">{feature}</span>
@@ -626,8 +710,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           </div>
 
           {/* 3D Globe Visual - Bottom Right Corner */}
-          <div className="absolute bottom-0 right-0 w-[420px] h-[350px] z-10 pointer-events-auto"
-               style={{ transform: 'translate(60px, 40px)' }}>
+          <div
+            className="absolute bottom-0 right-0 w-[420px] h-[350px] z-10 pointer-events-auto"
+            style={{ transform: 'translate(60px, 40px)' }}
+          >
             <Suspense fallback={<GlobeLoader />}>
               <Globe3D width={420} height={350} />
             </Suspense>
@@ -710,7 +796,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         <Lock className="w-5 h-5" />
                       </div>
                       <input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         required
                         className="w-full h-[68px] pl-12 pr-12 rounded-[18px]
                                  bg-white/[0.03] border border-white/[0.08]
@@ -727,7 +813,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -740,19 +830,26 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                       <input
                         type="checkbox"
                         checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
+                        onChange={e => setRememberMe(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-5 h-5 rounded-md border border-white/20 bg-white/5
+                      <div
+                        className="w-5 h-5 rounded-md border border-white/20 bg-white/5
                                     peer-checked:bg-[#1D4FFF] peer-checked:border-[#1D4FFF]
-                                    transition-all flex items-center justify-center">
+                                    transition-all flex items-center justify-center"
+                      >
                         {rememberMe && <CheckCircle className="w-3 h-3 text-white" />}
                       </div>
                     </div>
-                    <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors">Remember me</span>
+                    <span className="text-sm text-white/60 group-hover:text-white/80 transition-colors">
+                      Remember me
+                    </span>
                   </label>
 
-                  <button type="button" className="flex items-center gap-2 text-sm text-[#1D4FFF] hover:text-[#3D6FFF] transition-colors">
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 text-sm text-[#1D4FFF] hover:text-[#3D6FFF] transition-colors"
+                  >
                     <span>Use passkey</span>
                     <KeyRound className="w-4 h-4" />
                   </button>
@@ -762,7 +859,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 <div className="pt-2">
                   <TurnstileCaptcha
                     ref={captchaRef}
-                    onVerify={(token) => setCaptchaToken(token)}
+                    onVerify={token => setCaptchaToken(token)}
                     onExpire={() => setCaptchaToken(null)}
                     onError={() => setCaptchaToken(null)}
                   />
@@ -825,7 +922,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   </div>
                   <h2 className="text-3xl font-bold text-white mb-2">Forgot Password?</h2>
                   <p className="text-white/50 text-base leading-relaxed">
-                    Enter the email address associated with your account and we&apos;ll send you a secure link to reset your password.
+                    Enter the email address associated with your account and we&apos;ll send you a
+                    secure link to reset your password.
                   </p>
                 </div>
 
@@ -836,7 +934,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                     </div>
                     <h3 className="text-xl font-semibold text-green-400 mb-2">Check your email</h3>
                     <p className="text-green-400/70 mb-6">
-                      If an account exists for <span className="font-semibold block mt-1">{forgotEmail}</span>, you will receive a reset link shortly.
+                      If an account exists for{' '}
+                      <span className="font-semibold block mt-1">{forgotEmail}</span>, you will
+                      receive a reset link shortly.
                     </p>
                     <button
                       type="button"
@@ -850,7 +950,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 ) : (
                   <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
                     <div>
-                      <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-3">Work Email</label>
+                      <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-3">
+                        Work Email
+                      </label>
                       <div className="relative group">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors">
                           <Mail className="w-5 h-5" />
@@ -873,7 +975,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                     <TurnstileCaptcha
                       ref={captchaRef}
-                      onVerify={(token) => setCaptchaToken(token)}
+                      onVerify={token => setCaptchaToken(token)}
                       onExpire={() => setCaptchaToken(null)}
                       onError={() => setCaptchaToken(null)}
                     />
@@ -891,7 +993,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                                disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100
                                transition-all duration-200 group"
                     >
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                      {loading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
                         <>
                           Send Reset Link
                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -917,7 +1021,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 <div>
                   <h2 className="text-3xl font-bold text-white mb-3">Check your inbox</h2>
                   <p className="text-white/50 text-base leading-relaxed">
-                    We&apos;ve sent a welcome email to <span className="font-semibold text-white">{signupEmail}</span> with a verification link.
+                    We&apos;ve sent a welcome email to{' '}
+                    <span className="font-semibold text-white">{signupEmail}</span> with a
+                    verification link.
                   </p>
                   <p className="text-white/50 text-base mt-2">
                     Please click the link in the email to activate your account.
@@ -972,7 +1078,10 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                   <p className="text-xs text-white/40">
                     Didn&apos;t receive it? Check spam or{' '}
-                    <button className="text-[#1D4FFF] hover:underline" onClick={() => setView('SIGNUP')}>
+                    <button
+                      className="text-[#1D4FFF] hover:underline"
+                      onClick={() => setView('SIGNUP')}
+                    >
                       try another email
                     </button>
                   </p>
@@ -990,7 +1099,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Full Name</label>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                      Full Name
+                    </label>
                     <div className="relative group">
                       <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
                       <input
@@ -1010,7 +1121,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Work Email</label>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                      Work Email
+                    </label>
                     <div className="relative group">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
                       <input
@@ -1030,11 +1143,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Password</label>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                      Password
+                    </label>
                     <div className="relative group">
                       <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
                       <input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         required
                         className="w-full h-12 pl-10 pr-10 rounded-[14px]
                                  bg-white/[0.03] border border-white/[0.08]
@@ -1051,7 +1166,11 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                     {signupPassword && (
@@ -1062,13 +1181,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                             style={{ width: `${(passwordStrength / 4) * 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-medium text-white/50">{getStrengthLabel(passwordStrength)}</span>
+                        <span className="text-[10px] font-medium text-white/50">
+                          {getStrengthLabel(passwordStrength)}
+                        </span>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Confirm Password</label>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                      Confirm Password
+                    </label>
                     <div className="relative group">
                       <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-[#1D4FFF] transition-colors" />
                       <input
@@ -1092,33 +1215,47 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                       <input
                         type="checkbox"
                         checked={termsAccepted}
-                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        onChange={e => setTermsAccepted(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-4 h-4 rounded border border-white/20 bg-white/5
+                      <div
+                        className="w-4 h-4 rounded border border-white/20 bg-white/5
                                     peer-checked:bg-[#1D4FFF] peer-checked:border-[#1D4FFF]
-                                    transition-all flex items-center justify-center">
+                                    transition-all flex items-center justify-center"
+                      >
                         {termsAccepted && <CheckCircle className="w-2.5 h-2.5 text-white" />}
                       </div>
                     </div>
                     <span className="text-[11px] text-white/50 leading-snug">
                       I agree to the{' '}
-                      <a href="#" className="text-[#1D4FFF] hover:underline font-medium">Terms of Service</a>
-                      {' '}and{' '}
-                      <a href="#" className="text-[#1D4FFF] hover:underline font-medium">Privacy Policy</a>.
+                      <a href="#" className="text-[#1D4FFF] hover:underline font-medium">
+                        Terms of Service
+                      </a>{' '}
+                      and{' '}
+                      <a href="#" className="text-[#1D4FFF] hover:underline font-medium">
+                        Privacy Policy
+                      </a>
+                      .
                     </span>
                   </label>
                 </div>
 
                 <TurnstileCaptcha
-                  onVerify={(token) => setCaptchaToken(token)}
+                  onVerify={token => setCaptchaToken(token)}
                   onExpire={() => setCaptchaToken(null)}
                   onError={() => setCaptchaToken(null)}
                 />
 
                 <button
                   type="submit"
-                  disabled={loading || !termsAccepted || !signupName || !signupEmail || !signupPassword || !captchaToken}
+                  disabled={
+                    loading ||
+                    !termsAccepted ||
+                    !signupName ||
+                    !signupEmail ||
+                    !signupPassword ||
+                    !captchaToken
+                  }
                   className="w-full h-14 rounded-[16px]
                            bg-gradient-to-r from-[#0F4CFF] to-[#1A6BFF]
                            text-white font-semibold text-sm
@@ -1129,12 +1266,20 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                            disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100
                            transition-all duration-200"
                 >
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Start with AfriTradeOS'}
+                  {loading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Start with AfriTradeOS'
+                  )}
                 </button>
 
                 <p className="text-center text-xs text-white/50 pt-1">
                   Already have an account?{' '}
-                  <button type="button" onClick={() => setView('LOGIN')} className="text-[#1D4FFF] hover:text-[#3D6FFF] font-semibold transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setView('LOGIN')}
+                    className="text-[#1D4FFF] hover:text-[#3D6FFF] font-semibold transition-colors"
+                  >
                     Sign in
                   </button>
                 </p>
@@ -1173,12 +1318,13 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#1D4FFF]/8 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#E8B547]/6 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative w-full max-w-xl rounded-[28px] overflow-hidden
+      <div
+        className="relative w-full max-w-xl rounded-[28px] overflow-hidden
                     bg-gradient-to-br from-[#071B34]/95 to-[#0D2A4D]/90
                     border border-white/[0.08]
                     shadow-[0_0_60px_rgba(29,79,255,0.12)]
-                    backdrop-blur-xl p-8 md:p-10">
-
+                    backdrop-blur-xl p-8 md:p-10"
+      >
         {errorMsg && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0" />
@@ -1191,7 +1337,9 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           <div className="space-y-6 animate-fade-in">
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Select Account Type</h2>
-              <p className="text-white/50 text-base">Your role determines tools, permissions, and insights.</p>
+              <p className="text-white/50 text-base">
+                Your role determines tools, permissions, and insights.
+              </p>
             </div>
 
             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
@@ -1201,15 +1349,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                   onClick={() => handleRoleSelect(r.id)}
                   className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all ${
                     selectedRole === r.id
-                    ? 'border-[#E8B547]/50 bg-[#E8B547]/10 shadow-[0_0_30px_rgba(232,181,71,0.15)]'
-                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                      ? 'border-[#E8B547]/50 bg-[#E8B547]/10 shadow-[0_0_30px_rgba(232,181,71,0.15)]'
+                      : 'border-white/10 hover:border-white/20 hover:bg-white/5'
                   }`}
                 >
-                  <div className={`p-3 rounded-xl ${selectedRole === r.id ? 'bg-[#E8B547] text-[#071126]' : 'bg-white/10 text-white/60'}`}>
+                  <div
+                    className={`p-3 rounded-xl ${selectedRole === r.id ? 'bg-[#E8B547] text-[#071126]' : 'bg-white/10 text-white/60'}`}
+                  >
                     <r.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className={`text-base font-semibold ${selectedRole === r.id ? 'text-[#E8B547]' : 'text-white'}`}>{r.label}</h3>
+                    <h3
+                      className={`text-base font-semibold ${selectedRole === r.id ? 'text-[#E8B547]' : 'text-white'}`}
+                    >
+                      {r.label}
+                    </h3>
                     <p className="text-sm text-white/50">{r.desc}</p>
                   </div>
                 </button>
@@ -1228,8 +1382,12 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                        disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
                        transition-all duration-200"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>Continue <ArrowRight className="w-5 h-5" /></>
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Continue <ArrowRight className="w-5 h-5" />
+                </>
               )}
             </button>
           </div>
@@ -1240,13 +1398,17 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           <div className="space-y-5 animate-fade-in">
             <div>
               <h2 className="text-2xl font-bold text-white mb-2">Organization Profile</h2>
-              <p className="text-white/50 text-base">Tell us about your business to optimize the OS.</p>
+              <p className="text-white/50 text-base">
+                Tell us about your business to optimize the OS.
+              </p>
             </div>
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Your Name</label>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                    Your Name
+                  </label>
                   <input
                     type="text"
                     className="w-full h-14 px-4 rounded-[14px]
@@ -1255,12 +1417,14 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                              focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
                              transition-all duration-200"
                     value={profile.userName}
-                    onChange={(e) => setProfile({...profile, userName: e.target.value})}
+                    onChange={e => setProfile({ ...profile, userName: e.target.value })}
                     placeholder="John Doe"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Company</label>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                    Company
+                  </label>
                   <input
                     type="text"
                     className="w-full h-14 px-4 rounded-[14px]
@@ -1269,14 +1433,16 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                              focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
                              transition-all duration-200"
                     value={profile.companyName}
-                    onChange={(e) => setProfile({...profile, companyName: e.target.value})}
+                    onChange={e => setProfile({ ...profile, companyName: e.target.value })}
                     placeholder="Trading Co. Ltd"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Country of Operation</label>
+                <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                  Country of Operation
+                </label>
                 <select
                   className="w-full h-14 px-4 rounded-[14px]
                            bg-white/[0.03] border border-white/[0.08]
@@ -1284,15 +1450,21 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                            focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
                            transition-all duration-200 appearance-none cursor-pointer"
                   value={profile.country}
-                  onChange={(e) => setProfile({...profile, country: e.target.value})}
+                  onChange={e => setProfile({ ...profile, country: e.target.value })}
                 >
-                  {AFRICAN_COUNTRIES.map(c => <option key={c} value={c} className="bg-[#0D2A4D] text-white">{c}</option>)}
+                  {AFRICAN_COUNTRIES.map(c => (
+                    <option key={c} value={c} className="bg-[#0D2A4D] text-white">
+                      {c}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Phone</label>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                    Phone
+                  </label>
                   <input
                     type="tel"
                     className="w-full h-14 px-4 rounded-[14px]
@@ -1301,12 +1473,14 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                              focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
                              transition-all duration-200"
                     value={profile.phone}
-                    onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                    onChange={e => setProfile({ ...profile, phone: e.target.value })}
                     placeholder="+233..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">Size</label>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.1em] text-white/50 mb-2">
+                    Size
+                  </label>
                   <select
                     className="w-full h-14 px-4 rounded-[14px]
                              bg-white/[0.03] border border-white/[0.08]
@@ -1314,7 +1488,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                              focus:outline-none focus:border-[#1D4FFF]/50 focus:bg-white/[0.05]
                              transition-all duration-200 appearance-none cursor-pointer"
                     value={profile.size}
-                    onChange={(e) => setProfile({...profile, size: e.target.value})}
+                    onChange={e => setProfile({ ...profile, size: e.target.value })}
                   >
                     <option className="bg-[#0D2A4D] text-white">Sole Proprietor</option>
                     <option className="bg-[#0D2A4D] text-white">SME</option>
