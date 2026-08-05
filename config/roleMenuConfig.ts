@@ -405,6 +405,10 @@ export function getAllowedViewsForRole(role: UserPersona): AppView[] {
 
 // Check if a role can access a specific view
 export function canAccessView(role: UserPersona, view: AppView): boolean {
+  // Public/legal pages are accessible to all roles
+  if (view === AppView.PRIVACY || view === AppView.TERMS) {
+    return true;
+  }
   const allowedViews = getAllowedViewsForRole(role);
   return allowedViews.includes(view);
 }

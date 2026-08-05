@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { AppView, UserPersona } from '../types';
 import {
   Truck,
   MapPin,
@@ -77,8 +78,8 @@ type LogisticsTab =
   | 'settings';
 
 interface LogisticsProviderPanelProps {
-  userRole?: string;
-  navigateTo?: (view: string) => void;
+  userRole?: UserPersona;
+  navigateTo?: (view: AppView) => void;
 }
 
 export const LogisticsProviderPanel: React.FC<LogisticsProviderPanelProps> = ({
