@@ -30,6 +30,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import { useAuth } from './contexts/AuthContext';
 import { useNotifications } from './contexts/NotificationContext';
 import { supabase } from './services/supabase';
+import { Footer } from './components/Footer';
 import { getMenuForRole, canAccessView } from './config/roleMenuConfig';
 
 // --- Lazy-loaded route components (code splitting) ---
@@ -143,6 +144,12 @@ const BankDueDiligence = lazy(() => import('./components/BankDueDiligence'));
 const BankRiskClients = lazy(() => import('./components/BankRiskClients'));
 const BankAccountSettings = lazy(() => import('./components/BankAccountSettings'));
 const BankTradeTools = lazy(() => import('./components/BankTradeTools'));
+const PrivacyPolicy = lazy(() =>
+  import('./components/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy }))
+);
+const TermsOfService = lazy(() =>
+  import('./components/TermsOfService').then(m => ({ default: m.TermsOfService }))
+);
 
 // Internal Component: Password Reset Modal
 const PasswordResetModal = ({ onClose }: { onClose: () => void }) => {
@@ -251,6 +258,8 @@ const routeToView: Record<string, AppView> = {
   '/bank-settings': AppView.BANK_SETTINGS,
   '/bank-trade-tools': AppView.BANK_TRADE_TOOLS,
   '/importer': AppView.IMPORTER_PANEL,
+  '/privacy': AppView.PRIVACY,
+  '/terms': AppView.TERMS,
 };
 
 const viewToRoute: Record<AppView, string> = {
@@ -280,6 +289,8 @@ const viewToRoute: Record<AppView, string> = {
   [AppView.BANK_SETTINGS]: '/bank-settings',
   [AppView.BANK_TRADE_TOOLS]: '/bank-trade-tools',
   [AppView.IMPORTER_PANEL]: '/importer',
+  [AppView.PRIVACY]: '/privacy',
+  [AppView.TERMS]: '/terms',
 };
 
 // Suspense fallback
@@ -433,6 +444,14 @@ export default function App() {
   const toggleTheme = () => setIsDark(!isDark);
 
   const renderView = () => {
+    // Public/legal pages accessible regardless of role
+    switch (currentView) {
+      case AppView.PRIVACY:
+        return <PrivacyPolicy />;
+      case AppView.TERMS:
+        return <TermsOfService />;
+    }
+
     // Trade Analyst gets dedicated analyst-specific components
     if (userRole === UserPersona.ANALYST) {
       switch (currentView) {
@@ -589,6 +608,35 @@ export default function App() {
     return (
       <div className="flex h-screen items-center justify-center bg-trade-bg dark:bg-slate-950">
         <Loader2 className="w-8 h-8 animate-spin text-trade-accent" />
+      </div>
+    );
+  }
+
+  // Public legal pages accessible without authentication
+  if (location.pathname === '/privacy' || location.pathname === '/terms') {
+    return (
+      <div className="min-h-screen flex flex-col dark bg-gradient-to-br from-[#020617] via-[#071126] to-[#0a1628]">
+        <div className="w-full p-4 md:p-6 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E8B547] to-[#D4A43A] flex items-center justify-center shadow-lg shadow-[#E8B547]/25">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#071126]" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+              </svg>
+            </div>
+            <span className="text-xl font-bold text-white tracking-tight">AfriTradeOS</span>
+          </a>
+          <button
+            onClick={() => navigate('/')}
+            className="text-sm font-medium text-[#E8B547] hover:text-[#D4A43A] transition-colors"
+          >
+            Sign In
+          </button>
+        </div>
+        <div className="flex-1 p-4 md:p-8 lg:p-10">
+          <Suspense fallback={<LoadingFallback />}>
+            {location.pathname === '/privacy' ? <PrivacyPolicy /> : <TermsOfService />}
+          </Suspense>
+        </div>
       </div>
     );
   }
@@ -815,7 +863,11 @@ export default function App() {
                                               ? 'Tenders & RFQ'
                                               : currentView === AppView.CONTRACTS
                                                 ? 'Smart Contracts'
-                                                : 'Profile & Settings'}
+                                                : currentView === AppView.PRIVACY
+                                                  ? 'Privacy Policy'
+                                                  : currentView === AppView.TERMS
+                                                    ? 'Terms of Service'
+                                                    : 'Profile & Settings'}
             </h1>
           </div>
 
@@ -1099,9 +1151,10 @@ export default function App() {
         <div
           className={`flex-1 overflow-auto p-4 lg:p-6 relative flex flex-col custom-scrollbar ${isDark ? 'bg-[#0B0B0B]' : 'bg-[#f5f3ee]'}`}
         >
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="mx-auto w-full max-w-7xl flex-1">
             <Suspense fallback={<LoadingFallback />}>{renderView()}</Suspense>
           </div>
+          <Footer />
         </div>
 
         {/* Global AI Co-Pilot Overlay */}
