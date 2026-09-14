@@ -42,8 +42,8 @@ export const AuthContainer: React.FC<AuthContainerProps> = ({ children }) => {
             {/* Quote/Tagline */}
             <blockquote className="mb-8">
               <p className="text-2xl lg:text-3xl font-light text-white/90 leading-relaxed italic">
-                "Unlock seamless cross-border trade across Africa with intelligent compliance and
-                real-time logistics."
+                &ldquo;Unlock seamless cross-border trade across Africa with intelligent compliance and
+                real-time logistics.&rdquo;
               </p>
             </blockquote>
 
