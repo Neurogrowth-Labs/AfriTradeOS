@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { TurnstileCaptcha } from '../TurnstileCaptcha';
+import { TurnstileCaptcha, TurnstileCaptchaRef } from '../TurnstileCaptcha';
 import { supabase } from '../../services/supabase';
+import { isExistingAccountError } from '../../lib/authErrors';
 import { usePasswordStrength } from './hooks/usePasswordStrength';
 import { AuthView, ProfileData } from './types';
 
@@ -30,6 +31,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<TurnstileCaptchaRef>(null);
 
   const { strength: passwordStrength, color: strengthColor, label: strengthLabel } = usePasswordStrength(signupPassword);
 
@@ -61,8 +63,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({
     setLoading(true);
 
     try {
+      const email = signupEmail.trim().toLowerCase();
       const { data, error } = await supabase.auth.signUp({
-        email: signupEmail,
+        email,
         password: signupPassword,
         options: {
           data: {
@@ -74,20 +77,18 @@ export const SignupForm: React.FC<SignupFormProps> = ({
       });
 
       if (error) {
-        if (error.message.includes('already registered') || error.status === 422) {
+        if (isExistingAccountError(error)) {
           setErrorMsg('This email is already registered. Please sign in instead.');
-          setLoading(false);
-          setCaptchaToken(null);
-          return;
+        } else {
+          setErrorMsg(error.message || 'Failed to create account. Please try again.');
         }
-
-        setErrorMsg(error.message || 'Failed to create account. Please try again.');
-        setLoading(false);
         setCaptchaToken(null);
+        captchaRef.current?.reset();
         return;
       }
 
-      setProfile(prev => ({ ...prev, userName: signupName, email: signupEmail }));
+      setSignupEmail(email);
+      setProfile(prev => ({ ...prev, userName: signupName, email }));
 
       if (data.user && !data.session) {
         setView('EMAIL_VERIFICATION');
@@ -97,6 +98,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Failed to create account');
+      setCaptchaToken(null);
+      captchaRef.current?.reset();
     } finally {
       setLoading(false);
     }
@@ -225,6 +228,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
       {/* Turnstile CAPTCHA */}
       <div>
         <TurnstileCaptcha
+          ref={captchaRef}
           onVerify={token => setCaptchaToken(token)}
           onExpire={() => setCaptchaToken(null)}
           onError={() => setCaptchaToken(null)}

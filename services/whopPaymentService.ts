@@ -1,4 +1,5 @@
-const WHOP_PAYMENT_API_KEY = import.meta.env.VITE_WHOP_PAYMENT_API_KEY || '';
+import { supabase } from './supabase';
+
 const WHOP_PAYMENT_API_URL = import.meta.env.VITE_WHOP_PAYMENT_API_URL || '/api/payments/whop';
 
 export interface WhopPaymentRequest {
@@ -20,26 +21,24 @@ export interface WhopPaymentResponse {
 }
 
 export function isWhopPaymentConfigured(): boolean {
-  return WHOP_PAYMENT_API_KEY.length > 0;
+  // The credential is intentionally only available to the server-side proxy.
+  return Boolean(WHOP_PAYMENT_API_URL);
 }
 
 export function getMaskedWhopPaymentKey(): string {
-  if (!WHOP_PAYMENT_API_KEY) return 'Not configured';
-  return `${WHOP_PAYMENT_API_KEY.slice(0, 8)}••••${WHOP_PAYMENT_API_KEY.slice(-4)}`;
+  return 'Managed server-side';
 }
 
 export async function createWhopPayment(request: WhopPaymentRequest): Promise<WhopPaymentResponse> {
-  if (!WHOP_PAYMENT_API_KEY) {
-    throw new Error(
-      'Whop payment API key is not configured. Set VITE_WHOP_PAYMENT_API_KEY in the deployment environment.'
-    );
-  }
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) throw new Error('You must be signed in to create a payment.');
 
   const response = await fetch(WHOP_PAYMENT_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${WHOP_PAYMENT_API_KEY}`,
+      Authorization: `Bearer ${accessToken}`,
     },
     body: JSON.stringify(request),
   });
